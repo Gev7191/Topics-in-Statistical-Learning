@@ -16,7 +16,7 @@ editor_options:
 ---
 
 
-# General info #
+# General information #
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
@@ -30,6 +30,10 @@ can be found [here](https://www.insee.fr/fr/metadonnees/definition/c1135).
 Information about salaries around french town per job categories, age and sex (expressed in average net amount per hour in euro) can be found [here](https://www.insee.fr/fr/statistiques/2522515).
 Demographic information in France per town, age, sex and living mode
 can be found [here](https://www.insee.fr/fr/statistiques/2863607).
+
+Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire), 
+it allows to add cat√©gorie socioprofessionnelle.
+
 
 
 
@@ -124,7 +128,7 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_rÈgion, numÈro_dÈpartement, prÈfecture, numÈro_circonscription, codes_postaux, Èloignement))
+geo <- subset(geo, select = -c(EU_circo, code_r?gion, num?ro_d?partement, pr?fecture, num?ro_circonscription, codes_postaux, ?loignement))
 # change names 
 names(geo)[1:5] = 
   c("region", 
