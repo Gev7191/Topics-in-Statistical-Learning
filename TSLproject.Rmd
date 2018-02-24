@@ -47,18 +47,19 @@ In particular, we are interested in:
 
 # General pre-processing phase #
 
-Choose the working directory according to the user path: [but the project will be moved soon on GitHub]
+Choose the working directory according to the user path: [NEEDED?]
 ```{r}
 # Jisu
 # setwd("/Users/jisukim/Documents/TSL_INSEE data")
 # Luca
-setwd("C:/Users/Luca/Desktop/PhD SNS/Classes/Topics in Statistical Learning/Project")
+setwd("D:/Docs_D/PhD SNS/Classes/Topics in Statistical Learning/Project/git_TSL")
 # Gevorg
 # setwd("C:/Users/Gevorg/Desktop/TSL")
 ```
 
 Import data:
-```{r}
+```{r warning=FALSE}
+setwd("./data")
 firms       <- read.csv("base_etablissement_par_tranche_effectif.csv", encoding = "UTF-8")
 geo         <- read.csv("name_geographic_information.csv", encoding = "UTF-8")
 salary      <- read.csv("net_salary_per_town_categories.csv", encoding = "UTF-8")
@@ -75,7 +76,6 @@ names(geo)
 
 To better understand the data we assign meaningful names and drop some variables which are not needed (at the moment):
 ```{r}
-
 names(firms)[2:ncol(firms)] <-
   c("town", 
     "regNum",
@@ -124,13 +124,14 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, codes_postaux, éloignement))
+geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
 # change names 
-names(geo)[1:5] = 
+names(geo)[1:6] = 
   c("region", 
     "region_capital", 
     "department", 
     "town_name", 
+    "postal_code", 
     "CODGEO")
 ```
 
@@ -270,6 +271,60 @@ geo <- unique(geo, by = "CODGEO")
 # check again
 head(geo)
 summary(geo)
+
+```
+
+
+Assign lat and long values for NAs units:
+```{r}
+require(ggmap)
+
+# index of NAs
+indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
+# corresponding obs
+NA_coord = geo[indNA_coord,]
+
+# google key for API
+# https://developers.google.com/maps/documentation/geocoding/get-api-key
+# register_google(key = key)
+# key = "AIzaSyBqoOaevlfn5kTtQTOc1muK4lREAaUjPy8"
+# install.packages("googleway")
+# require(googleway)
+
+# initialize variables
+city_search = 0
+res = as.data.frame(matrix(c(0, 0, 0), 1, 3))
+names(res) = c("lon", "lat", "address")
+
+# retrieve lat and long
+# my_iter = floor(sum(indNA_coord)/3)
+for (i in 1:2){
+
+  # city searched
+  city_search[i] = paste(c(as.character(NA_coord$town_name[i]), as.character(NA_coord$postal_code[i]), as.character(NA_coord$department[i]), "France"), sep=" ", collapse = ", ")
+  
+  # solution
+  res[i,] = geocode(city_search[i], output = "latlona", source = c("google", "dsk"), messaging = FALSE)
+
+  # retrieve still missing data, because of existing problems with API (up to 15 trials)
+  j = 0
+  while (any(is.na(res[i,])) & j < 15){
+    res[i,] = geocode(city_search[i], output = "latlona", source = c("google", "dsk"), messaging = FALSE)
+    j = j + 1
+  }
+  
+}
+
+# check the solution
+sol = cbind(searched = city_search, res)
+# save it as a csv file to save time
+write.csv(sol, file = "geo_NAcoordinates", row.names=FALSE)
+# read it
+# sol = ?read.csv("geo_NAcoordinates", header = TRUE)
+
+# get only long and lat and assign to original NA 
+# geo$latitude[indNA_coord] = sol[,3]
+# geo$longitude[indNA_coord] = sol[,2]
 
 ```
 
@@ -500,5 +555,13 @@ summary(population)
 ## Regression ##
 
 ## Clustering ##
+
+
+```{r}
+summary(firms)
+summary(geo)
+summary(population)
+summary(salary)
+```
 
 
