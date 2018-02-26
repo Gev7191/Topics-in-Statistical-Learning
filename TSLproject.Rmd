@@ -128,11 +128,8 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-<<<<<<< HEAD
 geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
-=======
-geo <- subset(geo, select = -c(EU_circo, code_r?gion, num?ro_d?partement, pr?fecture, num?ro_circonscription, codes_postaux, ?loignement))
->>>>>>> f064218de2b3ed6ef2ad4a6762d03746a5274acd
+
 # change names 
 names(geo)[1:6] = 
   c("region", 
@@ -306,7 +303,7 @@ names(res) = c("lon", "lat", "address")
 
 # retrieve lat and long
 # my_iter = floor(sum(indNA_coord)/3)
-for (i in 1:2){
+for (i in 2040:sum(indNA_coord)){
 
   # city searched
   city_search[i] = paste(c(as.character(NA_coord$town_name[i]), as.character(NA_coord$postal_code[i]), as.character(NA_coord$department[i]), "France"), sep=" ", collapse = ", ")
@@ -320,13 +317,12 @@ for (i in 1:2){
     res[i,] = geocode(city_search[i], output = "latlona", source = c("google", "dsk"), messaging = FALSE)
     j = j + 1
   }
-  
 }
 
 # check the solution
 sol = cbind(searched = city_search, res)
 # save it as a csv file to save time
-write.csv(sol, file = "geo_NAcoordinates", row.names=FALSE)
+write.csv(sol, file = "geo_NAcoordinates2", row.names=FALSE)
 # read it
 # sol = ?read.csv("geo_NAcoordinates", header = TRUE)
 
@@ -541,20 +537,59 @@ population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
 population$sex <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
 
 # Take out rows with NB (number of people in this category) equal to 0
-population <- population[population$peopleCategNum != 0,]
+# population <- population[population$peopleCategNum != 0,]
 
 head(population)
 summary(population)
-
 
 
 ```
 
 ## EDA ##
 
+Compare age categories:
+```{r}
+require(ggplot2)
+#  number of units
+n_cat <- length(population$CODGEO)
+# extract unique categories
+uniq_cat <- unique(population$ageCateg5)
+# vector representing sex for each category
+Label <- c(rep(c('Male', 'Female'), n_cat))
+# vector representing the variable considered
+Variable <- rep(uniq_cat, n_cat/length(uniq_cat))
+# merge these data
+pop_categ = cbind.data.frame(Label = Label, 
+             value = population$peopleCategNum,
+             Variable = Variable)
+p <- ggplot(data = pop_categ, aes(x=Label, y=value)) 
+p <- p + geom_boxplot(aes(fill = Label))
+# if you want color for points replace group with colour=Label
+p <- p + geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75))
+p <- p + facet_wrap( ~ Variable, scales="free")
+p <- p + xlab("x-axis") + ylab("y-axis") + ggtitle("Category comparison")
+# p <- p + guides(fill=guide_legend(title="Legend"))
+p
+```
 
-# Merging the datasets #
 
+# Produce consistent datasets #
+
+
+```{r}
+# total ID in geo and not in pop
+sum(unique(geo$CODGEO)) - sum(unique(population$CODGEO))
+# total ID in pop that are and not in geo
+sum(unique(population$CODGEO) %in% unique(geo$CODGEO) == 0)
+# vice versa
+sum(unique(geo$CODGEO) %in% unique(population$CODGEO) == 0)
+
+# retain only complete units, i.e., losing ... obs
+ind_pop = population$CODGEO %in% geo$CODGEO
+population = population[ind_pop,]
+ind_geo = geo$CODGEO %in% population$CODGEO 
+geo = geo[ind_geo,]
+```
 
 # Analysis #
 
@@ -563,13 +598,5 @@ summary(population)
 ## Regression ##
 
 ## Clustering ##
-
-
-```{r}
-summary(firms)
-summary(geo)
-summary(population)
-summary(salary)
-```
 
 
