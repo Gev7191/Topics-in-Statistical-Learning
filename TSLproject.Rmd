@@ -129,7 +129,6 @@ names(population)[5:7] <-
 
 # Drop unnecessary columns (code/num and name represents same thing)
 geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
-
 # change names 
 names(geo)[1:6] = 
   c("region", 
@@ -284,18 +283,13 @@ geo$longitude[indNA_Long]
 # overwrite the longitude variable with the new one
 geo$longitude <- as.numeric(newLong)
 
-# compare numbers of NA in latitude and longitude 
-sum(is.na(geo$latitude)) - sum(is.na(geo$longitude))
-# check if they match or not
-sum(!is.na(geo$latitude[indNA_Long]))
-# 64 obs are missing in longitude but not in latitude, hence 88 vice versa
-
 # Check for duplicated data (e.g., cities with different postal codes, that we dropped):
   # es. to try on the initial dataset
   # sum(geo$nom_commune == "Paris")
   # ind_duplic <- geo$nom_commune == "Paris"
   # geo[ind_duplic,]
 sum(duplicated.data.frame(geo)) 
+# retaing unique postal cities
 geo <- unique(geo, by = "CODGEO")
 
 # check again
@@ -309,11 +303,15 @@ Assign lat and long values for NAs units:
 ```{r}
 require(ggmap)
 
+# # compare numbers of NA in latitude and longitude 
+# sum(is.na(geo$latitude)) - sum(is.na(geo$longitude))
+# # check if they match or not
+# sum(!is.na(geo$latitude[indNA_Long]))
+# # 64 obs are missing in longitude but not in latitude, hence 88 vice versa
+
 # index of NAs
 indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
 sum(indNA_coord)
-# indexing missing obs
-NA_coord = geo[indNA_coord,]
 
 # NO MORE NEEDED BECAUSE IS A CSV FILE
     # # initialize variables
@@ -354,7 +352,12 @@ geo$longitude[indNA_coord] = retrieved_geo_NA[,2]
 # there are 37 still missing units, which are towns located in old colonies far from Europe
 indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
 sum(indNA_coord)
-geo[indNA_coord,]
+# geo[indNA_coord,]
+
+# exclude those towns
+geo = geo[!indNA_coord,]
+
+summary(geo)
 
 ```
 
@@ -366,17 +369,21 @@ geo[indNA_coord,]
 require(ggplot2)
 require(ggmap)
 
-# plot france
+# plot france (center: 2.213749 46.227638)
 fra_center = as.numeric(geocode("France"))
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
 FraMap
 
-# plot available cities
+# plot all available cities
 geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
 geo_pos = geo_pos[complete.cases(geo_pos),]
 FraMap +
   geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.4) 
 
+# to delete non-European countries
+ind_nonEur = geo$latitude < 30 | geo$latitude > 70 |geo$longitude < -20 | geo$longitude > 20
+sum(ind_nonEur)
+geo = geo[!ind_nonEur,]
 
 ```
 
@@ -390,11 +397,14 @@ Solved:
 * There are some duplications.
 
 To do:
-* ...
+* What to do with non-Eropean towns?
 
 ## How to use these data ##
 
-* Compare data vs. old colonies?
+* Compare European towns vs. old colonies?
+* Useful for all datasets/analyses
+
+
 
 
 
@@ -421,20 +431,22 @@ salary$CODGEO <- as.numeric(as.character(salary$CODGEO))
 sum(duplicated.data.frame(salary))
 
 
-
 ```
 
 
 ## EDA ##
 
-Univariate analysis comparing genders:  [to be done on the same plot!]
+Univariate analysis comparing various job categories for both genders:  
 ```{r}
-# General:
+
 require(ggplot2)
+
 #  number of units
 n_sex <- length(salary$sal_Females)
+
 # vector representing males and females
 Label <- c(rep("M", n_sex*5), rep("F", n_sex*5))
+
 # vector representing the variable considered
 Variable <- c(rep("General", n_sex), 
              rep("Executive", n_sex),
@@ -446,11 +458,14 @@ Variable <- c(rep("General", n_sex),
              rep("MidManager", n_sex),
              rep("Employee", n_sex),
              rep("Worker",n_sex))
+
 # merge these data
 sal_sex = cbind.data.frame(Label = Label, 
              value = c(salary$sal_Males, salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
                        salary$sal_Females, salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker),
              Variable = Variable)
+
+# plotting phase
 p <- ggplot(data = sal_sex, aes(x=Label, y=value)) 
 p <- p + geom_boxplot(aes(fill = Label))
 # if you want color for points replace group with colour=Label
@@ -465,23 +480,48 @@ p
 
 Bivariate relations:
 ```{r}
+# most general pairs
 pairs(salary[c(3:8, 13, 18:20)])
+# pairs highlighting genders' differences
+pairs(salary[c(9:12, 14:17)])
 ```
 
 We fit a regression model to predict the salaries of people in age 26-50 using as regressor the ones for 51+ years:
+```{r, fig.keep='all'}
 
-```{r}
+# 
 plot(salary$sal_26_50 ~ salary$sal_51plus)
-fit_LM = lm(salary$sal_26_50 ~ salary$sal_51plus)
+fit_LM_26_50 = glm(salary$sal_26_50 ~ salary$sal_51plus, data = salary)
+abline(fit_LM_26_50, lwd=3, col="red")
+
+# gives error
+# cv.err = cv.glm(salary, fit_LM_26_50, K = 3)$delta
+
 summary(fit_LM)
 plot(fit_LM)
 ```
 
-Now we try to model salaries for younger people, which seems difficult to predict:
-```{r}
-fit_LM_2 = lm(salary$sal_M_18_25 ~ salary$sal_26_50 + salary$sal_51plus + salary$sal_general + salary$sal_executive + 
-                salary$sal_midManager + salary$sal_employee + salary$sal_worker)
-summary(fit_LM_2)
+Now we try to model salaries for younger people, which seems more difficult to predict:
+```{r, fig.keep='all'}
+
+plot(y = salary$sal_18_25, x = salary$sal_51plus)
+# there is a clear outlier
+ind_out = which(salary$sal_18_25 == max(salary$sal_18_25))
+# check if is so in all dimensions (apparently not)
+col_col <- rep("black", nrow(salary))
+col_col[ind_out] <- "red"
+pairs(salary[, c(3:8, 13, 18:20)], col = col_col)
+
+# evaluate an OLS fit
+fit_LM_18_25 = lm(salary$sal_18_25 ~ salary$sal_51plus)
+plot(y = salary$sal_18_25, x = salary$sal_51plus)
+abline(fit_LM_18_25, lwd=3, col="red")
+
+# # using more predictors
+# fit_LM_2 = lm(salary$sal_M_18_25 ~ salary$sal_26_50 + salary$sal_51plus + salary$sal_general + salary$sal_executive + 
+#                 salary$sal_midManager + salary$sal_employee + salary$sal_worker)
+# 
+# summary(fit_LM_2)
 ```
 
 PCA for salary:
@@ -507,7 +547,9 @@ cor(salary[, 3:26], salary2[,27:28])
 
 ## What we have learned ##
 
-* ... 
+* Check the outlier in sal_18_25: which city is it, etc.
+* evaluate possible multicollinearity
+* Try a regression with all predictors ans lasso
 
 ## How to use these data ##
 
