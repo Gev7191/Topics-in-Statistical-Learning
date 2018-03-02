@@ -56,7 +56,7 @@ Choose the working directory according to the user path: [NEEDED?]
 # Jisu
 # setwd("/Users/jisukim/Documents/TSL_INSEE data")
 # Luca
-setwd("D:/Docs_D/PhD SNS/Classes/Topics in Statistical Learning/Project/git_TSL")
+# setwd("D:/Docs_D/PhD SNS/Classes/Topics in Statistical Learning/Project/git_TSL")
 # Gevorg
 # setwd("C:/Users/Gevorg/Desktop/TSL")
 ```
@@ -128,7 +128,7 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
+geo <- subset(geo, select = -c(EU_circo, code_r?gion, num?ro_d?partement, pr?fecture, num?ro_circonscription, ?loignement))
 # change names 
 names(geo)[1:6] = 
   c("region", 
@@ -579,10 +579,10 @@ population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
                        "adults_living_in_couple_without_child", "adults_living_in_couple_with_children",
                        "adults_living_alone_with_children","persons not from family living in the home",
                        "persons_living_alone"))
-population$sex <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
-
+population$SEXE <- factor(population$SEXE, levels = c(1,2), labels = c("Male", "Female"))
+View(population)
 # Take out rows with NB (number of people in this category) equal to 0
-# population <- population[population$peopleCategNum != 0,]
+population <- population[population$NB != 0,]
 
 head(population)
 summary(population)
@@ -598,14 +598,15 @@ require(ggplot2)
 #  number of units
 n_cat <- length(population$CODGEO)
 # extract unique categories
-uniq_cat <- unique(population$ageCateg5)
+uniq_cat <- unique(population$AGEQ80_17!=5)
+uniq_cat
 # vector representing sex for each category
 Label <- c(rep(c('Male', 'Female'), n_cat))
 # vector representing the variable considered
 Variable <- rep(uniq_cat, n_cat/length(uniq_cat))
 # merge these data
 pop_categ = cbind.data.frame(Label = Label, 
-             value = population$peopleCategNum,
+             value = population$NB,
              Variable = Variable)
 p <- ggplot(data = pop_categ, aes(x=Label, y=value)) 
 p <- p + geom_boxplot(aes(fill = Label))
