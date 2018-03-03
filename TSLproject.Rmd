@@ -343,11 +343,11 @@ sum(indNA_coord)
     # sol = cbind(searched = city_search, res)
 
     # # save it as a csv file to save time
-    # write.csv(retrieved_geo_NA[,2:4], "geo_NA_Final.csv", quote =T, row.names=FALSE)
+    # write.table(retrieved_geo_NA, "geo_NA_Final.csv", quote = FALSE, row.names=FALSE, sep = ";")
     
 
 # read the created csv
-retrieved_geo_NA = read.csv("geo_NA_Final.csv", header = T)
+retrieved_geo_NA = read.table("geo_NA_Final.csv", header = T, sep = ";")
 # get only long and lat and assign to original NA 
 geo$latitude[indNA_coord] = retrieved_geo_NA[,2]
 geo$longitude[indNA_coord] = retrieved_geo_NA[,1]
