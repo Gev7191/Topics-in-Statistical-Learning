@@ -1,6 +1,6 @@
 ---
 title: "TSL Project"
-author: "L. Insolia, J. Kim and G. Yeghikyan"
+author: "L. Insolia, J. Kim and G. Yeghikyan"    
 date: "February 13, 2018"
 output:
   html_document:
@@ -130,7 +130,7 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_rÃ©gion, numÃ©ro_dÃ©partement, prÃ©fecture, numÃ©ro_circonscription, Ã©loignement))
+geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
 # change names 
 names(geo)[1:6] = 
   c("region", 
