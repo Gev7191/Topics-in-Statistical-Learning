@@ -341,15 +341,16 @@ sum(indNA_coord)
 
     # # check the solution
     # sol = cbind(searched = city_search, res)
+
     # # save it as a csv file to save time
-    # write.csv(sol, file = "geo_NA_Final.csv", row.names=FALSE)
+    # write.csv(retrieved_geo_NA[,2:4], "geo_NA_Final.csv", quote =T, row.names=FALSE)
+    
 
 # read the created csv
-retrieved_geo_NA = read.csv("geo_NA_Final.csv", header = TRUE)
-
+retrieved_geo_NA = read.csv("geo_NA_Final.csv", header = T)
 # get only long and lat and assign to original NA 
-geo$latitude[indNA_coord] = retrieved_geo_NA[,3]
-geo$longitude[indNA_coord] = retrieved_geo_NA[,2]
+geo$latitude[indNA_coord] = retrieved_geo_NA[,2]
+geo$longitude[indNA_coord] = retrieved_geo_NA[,1]
 
 # there are 37 still missing units, which are towns located in old colonies far from Europe
 indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
@@ -499,8 +500,8 @@ abline(fit_LM_26_50, lwd=3, col="red")
 # gives error
 # cv.err = cv.glm(salary, fit_LM_26_50, K = 3)$delta
 
-summary(fit_LM)
-plot(fit_LM)
+summary(fit_LM_26_50)
+plot(fit_LM_26_50)
 ```
 
 Now we try to model salaries for younger people, which seems more difficult to predict:
