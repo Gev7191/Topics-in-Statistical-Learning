@@ -2,17 +2,19 @@
 title: "TSL Project"
 author: "L. Insolia, J. Kim and G. Yeghikyan"
 date: "February 13, 2018"
-output: 
-  html_notebook:
+output:
+  html_document:
+    df_print: paged
     toc: yes
-    toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    toc_depth: '3'
+  html_notebook:
     highlight: tango
     keep_tex: yes
     number_sections: yes
-    # theme: united
-  # pdf document:
-editor_options: 
-  chunk_output_type: inline 
+    toc: yes
+    toc_depth: 3
+editor_options:
+  chunk_output_type: inline
 ---
 
 
@@ -54,7 +56,7 @@ In particular, we are interested in:
 Choose the working directory according to the user path: [NEEDED?]
 ```{r}
 # Jisu
-# setwd("/Users/jisukim/Documents/TSL_INSEE data")
+# setwd("/Users/jisukim/TSL")
 # Luca
 # setwd("D:/Docs_D/PhD SNS/Classes/Topics in Statistical Learning/Project/git_TSL")
 # Gevorg
@@ -364,8 +366,8 @@ summary(geo)
 ## EDA ##
 
 ```{r}
-# install.packages("ggplot2")
-# install.packages("ggmap")
+#install.packages("ggplot2")
+#install.packages("ggmap")
 require(ggplot2)
 require(ggmap)
 
@@ -624,25 +626,26 @@ p
 
 
 ```{r}
-# total ID in geo and not in pop
-sum(unique(geo$CODGEO)) - sum(unique(population$CODGEO))
+# total ID in geo and not in pop 
+# NO CODGEO IN GEO data
+#sum(unique(geo$CODGEO)) - sum(unique(population$CODGEO))
 # total ID in pop that are and not in geo
-sum(unique(population$CODGEO) %in% unique(geo$CODGEO) == 0)
+#sum(unique(population$CODGEO) %in% unique(geo$CODGEO) == 0)
 # vice versa
-sum(unique(geo$CODGEO) %in% unique(population$CODGEO) == 0)
+#sum(unique(geo$CODGEO) %in% unique(population$CODGEO) == 0)
 
 # retain only complete units, i.e., losing ... obs
-ind_pop = population$CODGEO %in% geo$CODGEO
-population = population[ind_pop,]
-ind_geo = geo$CODGEO %in% population$CODGEO 
-geo = geo[ind_geo,]
+#ind_pop = population$CODGEO %in% geo$CODGEO
+#population = population[ind_pop,]
+#ind_geo = geo$CODGEO %in% population$CODGEO 
+#geo = geo[ind_geo,]
 ```
 
 
 
 ```{r}
 # Restructure population data to produce the demographic profile per town
-install.packages("plyr")
+# install.packages("plyr")
 library(plyr)
 population_per_town_data <- ddply(population, .(CODGEO), function(population) {
   data.frame(total_population = sum(population$peopleCategNum),
@@ -660,20 +663,31 @@ population_per_town_data$aged_dependency_ratio <- ifelse(population_per_town_dat
 population_per_town_data$child_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$child / population_per_town_data$workforce)
 summary(population_per_town_data)
 ```
+
+```{r}
+# Scale population to log
+hist(population_per_town_data$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
+population_per_town_data$total_population_log <- log10(population_per_town_data$total_population)
+
+# Merge geo and pop
+geo_pop_by_town <- merge(geo, population_per_town_data)
+summary(geo_pop_by_town)
+```
+
 ```{r}
 # Plot "Distribution of Population for each Town"
-sc <- scale_colour_gradient(colours = myPalette(100), limits=c(min(merged_geo_pop_by_town_data$total_population_log), max(merged_geo_pop_by_town_data$total_population_log)))
-poppulation_distribution <- 
-  france_map + 
-  geom_point(aes(x=merged_geo_pop_by_town_data$longitude, y=merged_geo_pop_by_town_data$latitude, colour=merged_geo_pop_by_town_data$total_population_log), 
-             data=merged_geo_pop_by_town_data, alpha=0.8, size=0.6) + 
-  sc +
-  geom_text(aes(label = town_name, x = longitude, y = latitude), 
-            data = subset(merged_geo_pop_by_town_data, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)),
-            check_overlap = TRUE, size=7) +
-  labs(color='Total Population in Log') +
-  ggtitle("Distribution of Population for each Town") 
-poppulation_distribution
+#sc <- scale_colour_gradient(colours = myPalette(100), limits=c(min(merged_geo_pop_by_town_data$total_population_log), max(merged_geo_pop_by_town_data$total_population_log)))
+#poppulation_distribution <- 
+#  france_map + 
+#  geom_point(aes(x=merged_geo_pop_by_town_data$longitude, y=merged_geo_pop_by_town_data$latitude, colour=merged_geo_pop_by_town_data$total_population_log), 
+#             data=merged_geo_pop_by_town_data, alpha=0.8, size=0.6) + 
+#  sc +
+#  geom_text(aes(label = town_name, x = longitude, y = latitude), 
+#            data = subset(merged_geo_pop_by_town_data, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)),
+#            check_overlap = TRUE, size=7) +
+#  labs(color='Total Population in Log') +
+#  ggtitle("Distribution of Population for each Town") 
+#poppulation_distribution
 ```
 
 # Analysis #
