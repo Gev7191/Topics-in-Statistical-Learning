@@ -65,6 +65,7 @@ Choose the working directory according to the user path: [NEEDED?]
 
 Import data:
 ```{r warning=FALSE}
+options(encoding = "UTF-8")  # Mostly fo Jisu's Mac
 setwd("./data")
 firms       <- read.csv("base_etablissement_par_tranche_effectif.csv", encoding = "UTF-8")
 geo         <- read.csv("name_geographic_information.csv", encoding = "UTF-8")
@@ -343,11 +344,11 @@ sum(indNA_coord)
     # sol = cbind(searched = city_search, res)
 
     # # save it as a csv file to save time
-    # write.table(retrieved_geo_NA, "geo_NA_Final.csv", quote = FALSE, row.names=FALSE, sep = ";")
+    # write.csv(retrieved_geo_NA[,2:3], "geo_NA_Final.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
     
 
 # read the created csv
-retrieved_geo_NA = read.table("geo_NA_Final.csv", header = T, sep = ";")
+retrieved_geo_NA = read.csv("geo_NA_Final.csv", header = T, encoding = "UTF-8")
 # get only long and lat and assign to original NA 
 geo$latitude[indNA_coord] = retrieved_geo_NA[,2]
 geo$longitude[indNA_coord] = retrieved_geo_NA[,1]
