@@ -133,7 +133,7 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
+geo <- subset(geo, select = -c(EU_circo, code_r?gion, num?ro_d?partement, pr?fecture, num?ro_circonscription, ?loignement))
 # change names 
 names(geo)[1:6] = 
   c("region", 
@@ -695,7 +695,6 @@ cor(salary[, 3:26], salary2[,27:28])
 * ...
 
 
-
 # Analyze population data #
 
 ## Pre-processing ##
@@ -714,11 +713,11 @@ population$CODGEO <- as.numeric(population$CODGEO)
 
 # Refactor sex and MOCO
 population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
-            labels = c("children_living_with_two_parents", "children living with one parent",
-                       "adults_living_in_couple_without_child", "adults_living_in_couple_with_children",
-                       "adults_living_alone_with_children","persons not from family living in the home",
-                       "persons_living_alone"))
-population$SEXE <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
+                          labels = c("children_living_with_two_parents", "children living with one parent",
+                                     "adults_living_in_couple_without_child", "adults_living_in_couple_with_children",
+                                     "adults_living_alone_with_children","persons not from family living in the home",
+                                     "persons_living_alone"))
+population$sex <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
 View(population)
 # Take out rows with NB (number of people in this category) equal to 0
 population <- population[population$peopleCategNum != 0,]
@@ -730,10 +729,8 @@ summary(population)
 ```
 
 ## EDA ##
-
-Compare age categories:
 ```{r}
-require(ggplot2)
+#Compare age categories:
 library(ggplot2)
 #  number of units
 n_cat <- length(population$CODGEO)
@@ -745,17 +742,17 @@ Label <- c(rep(c('Male', 'Female'), n_cat))
 Variable <- rep(uniq_cat, n_cat/length(uniq_cat))
 Value=population$peopleCategNum
 # merge these data
-pop_categ = cbind.data.frame(Label = Label, 
-             value = Value,
-             Variable = Variable)
-p <- ggplot(data = pop_categ, aes(x=Label, y=value)) 
-p <- p + geom_boxplot(aes(fill = Label))
+#pop_categ = cbind.data.frame(Label = Label, 
+#             value = Value,
+#             Variable = Variable)
+#p <- ggplot(data = pop_categ, aes(x=Label, y=value)) 
+#p <- p + geom_boxplot(aes(fill = Label))
 # if you want color for points replace group with colour=Label
-p <- p + geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75))
-p <- p + facet_wrap( ~ Variable, scales="free")
-p <- p + xlab("x-axis") + ylab("y-axis") + ggtitle("Category comparison")
+#p <- p + geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75))
+#p <- p + facet_wrap( ~ Variable, scales="free")
+#p <- p + xlab("x-axis") + ylab("y-axis") + ggtitle("Category comparison")
 # p <- p + guides(fill=guide_legend(title="Legend"))
-p
+#p
 ```
 
 
@@ -764,18 +761,17 @@ p
 
 ```{r}
 # total ID in geo and not in pop 
-# NO CODGEO IN GEO data
-#sum(unique(geo$CODGEO)) - sum(unique(population$CODGEO))
+sum(unique(geo$CODGEO)) - sum(unique(population$CODGEO))
 # total ID in pop that are and not in geo
-#sum(unique(population$CODGEO) %in% unique(geo$CODGEO) == 0)
+sum(unique(population$CODGEO) %in% unique(geo$CODGEO) == 0)
 # vice versa
-#sum(unique(geo$CODGEO) %in% unique(population$CODGEO) == 0)
+sum(unique(geo$CODGEO) %in% unique(population$CODGEO) == 0)
 
 # retain only complete units, i.e., losing ... obs
-#ind_pop = population$CODGEO %in% geo$CODGEO
-#population = population[ind_pop,]
-#ind_geo = geo$CODGEO %in% population$CODGEO 
-#geo = geo[ind_geo,]
+ind_pop = population$CODGEO %in% geo$CODGEO
+population = population[ind_pop,]
+ind_geo = geo$CODGEO %in% population$CODGEO 
+geo = geo[ind_geo,]
 ```
 
 
@@ -791,7 +787,7 @@ population_per_town_data <- ddply(population, .(CODGEO), function(population) {
              child = sum(population[population$ageCateg5 %in% seq(0, 10, by=5),]$peopleCategNum),
              elderly = sum(population[population$ageCateg5 %in% seq(65, 80, by=5),]$peopleCategNum),
              workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
-             )})
+  )})
 
 population_per_town_data$dependent <- population_per_town_data$child + population_per_town_data$elderly
 population_per_town_data$sex_ratio <- ifelse(population_per_town_data$female==0, 0, population_per_town_data$male / population_per_town_data$female)
@@ -813,18 +809,64 @@ summary(geo_pop_by_town)
 
 ```{r}
 # Plot "Distribution of Population for each Town"
-#sc <- scale_colour_gradient(colours = myPalette(100), limits=c(min(merged_geo_pop_by_town_data$total_population_log), max(merged_geo_pop_by_town_data$total_population_log)))
-#poppulation_distribution <- 
-#  france_map + 
-#  geom_point(aes(x=merged_geo_pop_by_town_data$longitude, y=merged_geo_pop_by_town_data$latitude, colour=merged_geo_pop_by_town_data$total_population_log), 
-#             data=merged_geo_pop_by_town_data, alpha=0.8, size=0.6) + 
-#  sc +
-#  geom_text(aes(label = town_name, x = longitude, y = latitude), 
-#            data = subset(merged_geo_pop_by_town_data, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)),
-#            check_overlap = TRUE, size=7) +
-#  labs(color='Total Population in Log') +
-#  ggtitle("Distribution of Population for each Town") 
-#poppulation_distribution
+#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
+sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_town$total_population_log), max(geo_pop_by_town$total_population_log)))
+poppulation_distribution <- 
+  FraMap + 
+  geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$total_population_log), 
+             data=geo_pop_by_town, alpha=0.8, size=0.6) + 
+  sc +
+  geom_text(aes(label = town_name, x = longitude, y = latitude), 
+            data = subset(geo_pop_by_town, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)),
+            check_overlap = TRUE, size=7) +
+  labs(color='Total Population in Log') +
+  ggtitle("Distribution of Population for each Town") 
+poppulation_distribution
+```
+
+```{r}
+# Group population data by department because of small size of some towns and the given geojson file of department
+pop_by_department <- ddply(geo_pop_by_town, .(department), function(geo_pop_by_town) {
+  data.frame(total_population = sum(geo_pop_by_town$total_population),
+             male = sum(geo_pop_by_town$male),
+             female = sum(geo_pop_by_town$female),
+             child = sum(geo_pop_by_town$child),
+             elderly = sum(geo_pop_by_town$elderly),
+             dependent = sum(geo_pop_by_town$dependent),
+             workforce = sum(geo_pop_by_town$workforce) 
+  )})
+
+summary(pop_by_department)
+pop_by_department$dependency_ratio <- pop_by_department$dependent / pop_by_department$workforce
+pop_by_department$aged_dependency_ratio <- pop_by_department$elderly / pop_by_department$workforce
+pop_by_department$child_dependency_ratio <- pop_by_department$child / pop_by_department$workforce
+```
+
+```{r}
+# Scale population to log
+pop_by_department$total_population_log <- log10(pop_by_department$total_population)
+
+# Merge geo and pop
+geo_pop_by_department <- merge(geo, pop_by_department)
+summary(geo_pop_by_department)
+```
+
+
+```{r}
+# Plot "Distribution of Population for each department"
+#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
+sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_department$total_population_log), max(geo_pop_by_department$total_population_log)))
+pop_distribution_department <- 
+  FraMap + 
+  geom_point(aes(x=geo_pop_by_department$longitude, y=geo_pop_by_department$latitude, colour=geo_pop_by_department$total_population_log), 
+             data=geo_pop_by_department, alpha=0.8, size=0.6) + 
+  sc +
+  geom_text(aes(label = town_name, x = longitude, y = latitude), 
+            data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)),
+            check_overlap = TRUE, size=7) +
+  labs(color='Total Population in Log') +
+  ggtitle("Distribution of Population for each department") 
+pop_distribution_department
 ```
 
 # Analysis #
