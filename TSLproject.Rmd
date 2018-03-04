@@ -719,7 +719,7 @@ population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
                        "adults_living_alone_with_children","persons not from family living in the home",
                        "persons_living_alone"))
 population$SEXE <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
-View(population)
+head(population)
 # Take out rows with NB (number of people in this category) equal to 0
 population <- population[population$peopleCategNum != 0,]
 
@@ -758,25 +758,6 @@ p <- p + xlab("x-axis") + ylab("y-axis") + ggtitle("Category comparison")
 p
 ```
 
-
-# Produce consistent datasets #
-
-
-```{r}
-# total ID in geo and not in pop 
-# NO CODGEO IN GEO data
-#sum(unique(geo$CODGEO)) - sum(unique(population$CODGEO))
-# total ID in pop that are and not in geo
-#sum(unique(population$CODGEO) %in% unique(geo$CODGEO) == 0)
-# vice versa
-#sum(unique(geo$CODGEO) %in% unique(population$CODGEO) == 0)
-
-# retain only complete units, i.e., losing ... obs
-#ind_pop = population$CODGEO %in% geo$CODGEO
-#population = population[ind_pop,]
-#ind_geo = geo$CODGEO %in% population$CODGEO 
-#geo = geo[ind_geo,]
-```
 
 
 
@@ -825,6 +806,55 @@ summary(geo_pop_by_town)
 #  labs(color='Total Population in Log') +
 #  ggtitle("Distribution of Population for each Town") 
 #poppulation_distribution
+```
+
+
+# Produce consistent datasets #
+
+
+```{r}
+
+# use only integer values
+geo$CODGEO = as.integer(geo$CODGEO)  # already integer
+population$CODGEO = as.integer(population$CODGEO)
+firms$CODGEO = as.integer(firms$CODGEO)
+salary$CODGEO = as.integer(salary$CODGEO)
+
+# install.packages("dplyr")
+library(dplyr)
+dataset = c("population", "salary", "firms", "geo")
+
+# obtain sommon IDs for all datasets
+for (i in dataset){
+  # get i-th name and make a new variable adding NEW
+  nam <- paste(i, "NEW", sep = "")
+  # counter to identify the number of iteration in j
+  iter = 1
+  for (j in dataset){
+    if (j != i){
+      # datasets different from i-th
+      if (iter == 1){
+        # 1st iteration: use the original dataset (e.g., geo)
+        assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
+      } else{
+        # successive iteration: use the new dataset (e.g., geoNEW)
+        assign(nam, semi_join(get(nam), get(j), by = "CODGEO"))
+      }
+      iter = iter + 1
+    }
+  }
+}
+
+# check how many observation have been deleted
+for (i in dataset){
+  del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
+  del_prop = del_rows / nrow(get(paste(i, "NEW", sep = "")))
+  del_obs = paste("For", i, del_rows, "have been deleted.",
+                  "They were the", round(del_prop, digits=2), "% of the total.", sep = " ")
+  print(del_obs)
+}
+
+
 ```
 
 # Analysis #
