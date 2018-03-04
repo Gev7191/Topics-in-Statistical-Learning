@@ -372,7 +372,8 @@ require(ggplot2)
 require(ggmap)
 
 # plot france (center: 2.213749 46.227638)
-fra_center = as.numeric(geocode("France"))
+# fra_center = as.numeric(geocode("France"))
+fra_center = c(2.213749, 46.227638)
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
 FraMap
 
@@ -521,24 +522,122 @@ plot(fit_LM_26_50)
 
 Same as before but adding polynomials which are evauated using 10-folds cross validation:
 
-```{r}
-# fit and summary
+```{r, fig.keep='all'}
 
-fit_LM_26_50 = glm(salary$sal_26_50 ~ salary$sal_51plus, data = salary)
+require(boot)
+set.seed(1)
 
-# diagnostics
-summary(fit_LM_26_50)
-plot(fit_LM_26_50)
+# k-Fold Cross-Validation
+cv.err.K = rep(0, 5)
+cv.err.K = rbind(cv.err.K, cv.err.K)
+for (i in 1:5){
+  fit_LM_26_50.K = glm(sal_26_50 ~ poly(sal_51plus, i), data = salary)
+  cv.err.K[,i] = cv.glm(salary, fit_LM_26_50.K, K = 10)$delta[1]
+}
+
+# plotting results
+plot(cv.err.K[1,], type = 'l', col = 'red', xlab = "Polynomials' order", 
+     ylab = "10-folds CV", main = "CV and adjusted CV for different polynomials")
+lines(cv.err.K[2,], col = 'green')
+points(which.min(cv.err.K), cv.err.K[1, which.min(cv.err.K)], col = "red", cex=2, pch=20)
+legend('topright', legend = c('CV', 'Adj. CV'), col = c('red', 'green'), pch = 10)
+
 ```
 
 
-The same as before but using all variables and Lasso with 10-folds cross validation:
-```{r}
+Predicting sal_executive with 5 regressers using Lasso with CV and 10-folds CV:
+[ PROBLEM FOR COLLINEARITY? use ridge?] [ add polynomials? ]
+```{r, fig.keep='all'}
 
-# gives error
-# cv.err = cv.glm(salary, fit_LM_26_50, K = 3)$delta
+require(glmnet)
+set.seed(1)
+
+# crate an X matrix excluding intercept
+# x = cbind(salary$sal_midManager, salary$sal_employee, salary$sal_worker, salary$sal_18_25, salary$sal_51plus)
+# y = salary$sal_executive
+# probably for ridge
+names(salary)
+y = salary$sal_26_50
+x = as.matrix(cbind(salary[, c(4:8, 13, 18, 20)]))
+names(x)
+
+# grid for lambda values
+grid = 10^seq(1, -5, length = 100)
+lasso.mod = glmnet(x, y, alpha = 1, lambda = grid)
+dim(coef(lasso.mod))
+# the norms are increasing in value because of the shrinkage
+lasso.mod$lambda[1]                  # lambda value
+sqrt(sum(coef(lasso.mod)[-1,1]^2))   # L2 norm of its coeff
+lasso.mod$lambda[51]
+sqrt(sum(coef(lasso.mod)[-1,51]^2))
+lasso.mod$lambda[90]
+sqrt(sum(coef(lasso.mod)[-1,90]^2))
+# predict values for a new lambda, e.g. OLS
+OLS = predict(lasso.mod, s = 0, type = "coefficients")[1:nrow(coef(lasso.mod)),]
+
+# split the date leaving the 10% for CV
+train = sample(1:nrow(salary), floor(nrow(salary)*0.9))
+test = -train
+y.test = y[test]
+lasso.mod = glmnet(x[train,], y[train], alpha = 1, lambda = grid, thresh = 1e-12)
+err.i = rep("NA", length(grid))
+for (i in 1:length(grid)){
+  lasso.pred = predict(lasso.mod, s = grid[i], newx = x[test,])
+  err.i[i] = mean((lasso.pred - y.test)^2)
+}
+plot(log(grid), err.i, xlab = 'log Lambda', ylab = 'test set MSE', 
+     main = 'Test MSE among different Lambdas', ylim = c(0, 10))
+bestlam = grid[which.min(err.i)]
+points(log(grid)[bestlam], err.i[bestlam], col ="red", cex=2, pch=20)
+# high values of lambda are like fitting just the intercept
+
+# using 10 folds CV
+set.seed (1)
+cv.out = cv.glmnet(x[train ,], y[train], alpha = 1)
+plot(cv.out)
+bestlam = cv.out$lambda.min
+bestlam
+lasso.pred = predict(lasso.mod, s=bestlam, newx=x[test ,])
+mean((lasso.pred - y.test)^2)
+
+
+# using best subset
+require(leaps)
+dataBS = as.data.frame(cbind(y, x))
+best.sub = regsubsets(y ~ x, data = dataBS, nvmax = nrow(coef(lasso.mod)))
+best.sub.summary = summary(best.sub)
+names(best.sub.summary)
+# manual plotting
+par(mfrow =c(2,2))
+# rsq
+plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l")
+ind_Rsq = which.max(best.sub.summary$rsq)
+points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20)
+# adjRsq
+plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l")
+ind_adjRsq = which.max(best.sub.summary$adjr2)
+points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20)
+# Cp
+plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l")
+ind_Cp = which.min(best.sub.summary$cp)
+points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20)
+# bic
+plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
+ind_bic = which.min(best.sub.summary$bic)
+points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
+# built-in plots
+?plot.regsubsets
+par(mfrow=c(1,1))
+plot(best.sub, scale = "r2")
+plot(best.sub, scale = "adjr2")
+plot(best.sub, scale = "Cp")
+plot(best.sub, scale = "bic")
+# retrieve the model with min BIC
+coefficients(best.sub, which.min(best.sub.summary$bic))
 
 ```
+
+
 
 
 Model salaries for people aged 18-25, which seems more difficult to predict:
