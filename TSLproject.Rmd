@@ -12,10 +12,20 @@ output:
     number_sections: yes
     # theme: united
   # pdf document:
-  editor_options:
-    # toc: yes
-    # toc_depth: 3
-    chunk_output_type: inline
+  html_document:
+    theme: united
+    highlight: tango    
+    toc: yes
+    toc_depth: '3' 
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+    keep_tex: true
+    latex_engine: pdflatex
+editor_options:
+  # toc: yes
+  # toc_depth: 3
+  chunk_output_type: inline
 ---
 
 
@@ -35,7 +45,7 @@ Demographic information in France per town, age, sex and living mode
 can be found [here](https://www.insee.fr/fr/statistiques/2863607).
 
 Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire), 
-it allows to add catÃ©gorie socioprofessionnelle.
+it allows to add catégorie socioprofessionnelle.
 
 
 
@@ -53,16 +63,6 @@ In particular, we are interested in:
 
 
 # General pre-processing phase #
-
-Choose the working directory according to the user path: [NEEDED? probably not, delete it]
-```{r}
-# Jisu
-# setwd("/Users/jisukim/TSL")
-# Luca
-# setwd("D:/Docs_D/PhD SNS/Classes/Topics in Statistical Learning/Project/git_TSL")
-# Gevorg
-# setwd("C:/Users/Gevorg/Desktop/TSL")
-```
 
 Import data:
 ```{r warning=FALSE}
@@ -133,7 +133,7 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_r?gion, num?ro_d?partement, pr?fecture, num?ro_circonscription, ?loignement))
+geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
 # change names 
 names(geo)[1:6] = 
   c("region", 
@@ -144,6 +144,16 @@ names(geo)[1:6] =
     "CODGEO")
 ```
 
+Check variable names:
+```{r}
+names(firms) 
+names(population)
+names(salary)
+names(geo)
+```
+
+
+[[MOVE LATER]]
 According to the information provided, the CODGEO variable (in firms, salary and population) and code_insee (in geo) have to be merged.
 However, for different reasons already identified by a kaggle user on [his kernel](https://www.kaggle.com/anqitu/insights-on-business-demographic-inequality) they do not.
 To do so:
@@ -189,7 +199,8 @@ firms <- subset(firms, select = c(CODGEO, town, total, micro, small, medium, lar
 # check
 head(firms)
 summary(firms)
-
+str(firms)
+# deptNum has to be factor?
 ```
 
 ## EDA ##
@@ -222,6 +233,9 @@ hist(log(firms$medium))
 hist(firms$medium/firms$total)
 hist(log(firms$large))
 hist(firms$large/firms$total)
+
+# keep only logs?
+
 ```
 
 PCA on firms data:
@@ -406,7 +420,8 @@ Solved:
 * There are some duplications.
 
 To do:
-* What to do with non-Eropean towns?
+
+* What to do with non-European towns?
 
 
 
