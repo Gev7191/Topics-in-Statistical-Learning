@@ -1,20 +1,21 @@
 ---
 title: "TSL Project"
 author: "L. Insolia, J. Kim and G. Yeghikyan"    
-date: "February 13, 2018"
+date: "`r format(Sys.time(), '%d/%m/%Y')`"
 output:
-  html_document:
-    df_print: paged
-    toc: yes
-    toc_depth: '3'
   html_notebook:
+    # df_print: paged
+    toc: yes
+    toc_depth: '3' # up to three depths of headings (specified by #, ## and ###)
     highlight: tango
     keep_tex: yes
     number_sections: yes
-    toc: yes
-    toc_depth: 3
-editor_options:
-  chunk_output_type: inline
+    # theme: united
+  # pdf document:
+  editor_options:
+    # toc: yes
+    # toc_depth: 3
+    chunk_output_type: inline
 ---
 
 
@@ -53,7 +54,7 @@ In particular, we are interested in:
 
 # General pre-processing phase #
 
-Choose the working directory according to the user path: [NEEDED?]
+Choose the working directory according to the user path: [NEEDED? probably not, delete it]
 ```{r}
 # Jisu
 # setwd("/Users/jisukim/TSL")
@@ -65,7 +66,8 @@ Choose the working directory according to the user path: [NEEDED?]
 
 Import data:
 ```{r warning=FALSE}
-options(encoding = "UTF-8")  # Mostly fo Jisu's Mac
+# options(encoding = "UTF-8")  # for Mac [PROBABLY, to check]
+# options(encoding = "ISO-8859-1")  # for Windows [PROBABLY NOT WORKING]
 setwd("./data")
 firms       <- read.csv("base_etablissement_par_tranche_effectif.csv", encoding = "UTF-8")
 geo         <- read.csv("name_geographic_information.csv", encoding = "UTF-8")
@@ -191,7 +193,7 @@ summary(firms)
 ```
 
 ## EDA ##
-
+  
 ```{r}
 # there is an obs with more than 316K null data: we check if it is plausible
 # get the highest 20 null values
@@ -275,19 +277,16 @@ str(geo)
 summary(geo)
 
 # spot "," instead of "." in longitude
-newLong       <- as.character(geo$longitude)     # copy the vector
-sum(grep(",", newLong))                   # total commas
-ind_long_err  <- grep(",", newLong)       # indexing them
-newLong       <- gsub(",", ".", newLong)  # substituting them with dots
-# spot NA
-indNA_Long    <- is.na(as.numeric((newLong)))
-# verify that they were actually missing
-geo$longitude[indNA_Long]
-# overwrite the longitude variable with the new one
-geo$longitude <- as.numeric(newLong)
+newLong       <- as.character(geo$longitude)    # copy the vector
+sum(grep(",", newLong))                         # total commas
+ind_long_err  <- grep(",", newLong)             # indexing them
+newLong       <- gsub(",", ".", newLong)        # substituting them with dots
+indNA_Long    <- is.na(as.numeric((newLong)))   # spot NA
+geo$longitude[indNA_Long]                       # verify that they were actually missing
+geo$longitude <- as.numeric(newLong)            # overwrite the longitude variable with the new one
 
 # Check for duplicated data (e.g., cities with different postal codes, that we dropped):
-  # es. to try on the initial dataset
+  # es. to verify it:  try on the initial dataset
   # sum(geo$nom_commune == "Paris")
   # ind_duplic <- geo$nom_commune == "Paris"
   # geo[ind_duplic,]
@@ -306,13 +305,14 @@ Assign lat and long values for NAs units:
 ```{r}
 require(ggmap)
 
+# [ delete? ]
 # # compare numbers of NA in latitude and longitude 
 # sum(is.na(geo$latitude)) - sum(is.na(geo$longitude))
 # # check if they match or not
 # sum(!is.na(geo$latitude[indNA_Long]))
 # # 64 obs are missing in longitude but not in latitude, hence 88 vice versa
 
-# index of NAs
+# index of NAs and their total
 indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
 sum(indNA_coord)
 
@@ -356,8 +356,6 @@ geo$longitude[indNA_coord] = retrieved_geo_NA[,1]
 # there are 37 still missing units, which are towns located in old colonies far from Europe
 indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
 sum(indNA_coord)
-# geo[indNA_coord,]
-
 # exclude those towns
 geo = geo[!indNA_coord,]
 
@@ -378,16 +376,22 @@ fra_center = as.numeric(geocode("France"))
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
 FraMap
 
-# plot all available cities
+# plot all towns available
 geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
 geo_pos = geo_pos[complete.cases(geo_pos),]
 FraMap +
-  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.4) 
+  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.1) 
 
-# to delete non-European countries
+# delete non-European countries
 ind_nonEur = geo$latitude < 30 | geo$latitude > 70 |geo$longitude < -20 | geo$longitude > 20
 sum(ind_nonEur)
 geo = geo[!ind_nonEur,]
+
+# plot all European towns available
+geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
+geo_pos = geo_pos[complete.cases(geo_pos),]
+FraMap +
+  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.1) 
 
 ```
 
@@ -403,13 +407,12 @@ Solved:
 To do:
 * What to do with non-Eropean towns?
 
+
+
 ## How to use these data ##
 
 * Compare European towns vs. old colonies?
 * Useful for all datasets/analyses
-
-
-
 
 
 # Analyze salary data #
@@ -470,19 +473,32 @@ sal_sex = cbind.data.frame(Label = Label,
              Variable = Variable)
 
 # plotting phase
-p <- ggplot(data = sal_sex, aes(x=Label, y=value)) 
-p <- p + geom_boxplot(aes(fill = Label))
-# if you want color for points replace group with colour=Label
-p <- p + geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75))
-p <- p + facet_wrap( ~ Variable, scales="free")
-p <- p + xlab("x-axis") + ylab("y-axis") + ggtitle("Gender comparison")
-# p <- p + guides(fill=guide_legend(title="Legend"))
-p 
+p <-  ggplot(data = sal_sex, aes(x=Label, y=value)) +
+      geom_boxplot(aes(fill = Label)) +
+      # not color points replacing colour = group instead of colour=Label
+      geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+      facet_wrap( ~ Variable, scales="free") +
+      xlab("x-axis") + ylab("y-axis") + ggtitle("Gender comparison") +
+      stat_boxplot(geom = "errorbar", width = 0.5)
+      # p <- p + guides(fill=guide_legend(title="Legend"))
+p
+
+# excluding outliers
+p2 <- ggplot(data = sal_sex, aes(x=Label, y=value)) +
+      scale_y_continuous(limits = quantile(sal_sex$value, c(0, 0.9))) +
+      geom_boxplot(aes(fill = Label)) +
+      # not color points replacing colour = group instead of colour=Label
+      geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+      facet_wrap( ~ Variable, scales="free") +
+      xlab("x-axis") + ylab("y-axis") + ggtitle("Gender comparison excluding the last decile") +
+      # p <- p + guides(fill=guide_legend(title="Legend"))
+      stat_boxplot(geom = "errorbar", width = 0.5)
+p2
 ```
 
 
 
-Bivariate relations:
+Highlight bivariate relations using scatter matrices:
 ```{r}
 # most general pairs
 pairs(salary[c(3:8, 13, 18:20)])
@@ -490,22 +506,42 @@ pairs(salary[c(3:8, 13, 18:20)])
 pairs(salary[c(9:12, 14:17)])
 ```
 
-We fit a regression model to predict the salaries of people in age 26-50 using as regressor the ones for 51+ years:
+Fit a regression model to predict the salaries of people in age 26-50 using as regressor 51+ years:
 ```{r, fig.keep='all'}
 
-# 
+# fit and show OLS estimate
 plot(salary$sal_26_50 ~ salary$sal_51plus)
 fit_LM_26_50 = glm(salary$sal_26_50 ~ salary$sal_51plus, data = salary)
 abline(fit_LM_26_50, lwd=3, col="red")
 
-# gives error
-# cv.err = cv.glm(salary, fit_LM_26_50, K = 3)$delta
-
+# diagnostics
 summary(fit_LM_26_50)
 plot(fit_LM_26_50)
 ```
 
-Now we try to model salaries for younger people, which seems more difficult to predict:
+Same as before but adding polynomials which are evauated using 10-folds cross validation:
+
+```{r}
+# fit and summary
+
+fit_LM_26_50 = glm(salary$sal_26_50 ~ salary$sal_51plus, data = salary)
+
+# diagnostics
+summary(fit_LM_26_50)
+plot(fit_LM_26_50)
+```
+
+
+The same as before but using all variables and Lasso with 10-folds cross validation:
+```{r}
+
+# gives error
+# cv.err = cv.glm(salary, fit_LM_26_50, K = 3)$delta
+
+```
+
+
+Model salaries for people aged 18-25, which seems more difficult to predict:
 ```{r, fig.keep='all'}
 
 plot(y = salary$sal_18_25, x = salary$sal_51plus)
