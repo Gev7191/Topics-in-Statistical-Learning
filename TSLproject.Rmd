@@ -11,17 +11,16 @@ output:
     keep_tex: yes
     number_sections: yes
     # theme: united
-  # pdf document:
   html_document:
     theme: united
     highlight: tango    
     toc: yes
     toc_depth: '3' 
-  pdf_document:
-    toc: yes
-    toc_depth: '3'
-    keep_tex: true
-    latex_engine: pdflatex
+  # pdf_document:  
+    # toc: yes
+    # toc_depth: '3'
+    # keep_tex: true
+    # latex_engine: pdflatex
 editor_options:
   # toc: yes
   # toc_depth: 3
