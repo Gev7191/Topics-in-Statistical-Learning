@@ -44,7 +44,7 @@ Demographic information in France per town, age, sex and living mode
 can be found [here](https://www.insee.fr/fr/statistiques/2863607).
 
 Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire), 
-it allows to add catégorie socioprofessionnelle.
+it allows to add cat?gorie socioprofessionnelle.
 
 
 
@@ -132,7 +132,7 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))# change names 
+geo <- subset(geo, select = -c(EU_circo, code_r?gion, num?ro_d?partement, pr?fecture, num?ro_circonscription, ?loignement))# change names 
 names(geo)[1:6] = 
   c("region", 
     "region_capital", 
@@ -894,7 +894,7 @@ summary(population)
 ## EDA ##
 ```{r}
 #Compare age categories:
-library(ggplot2)
+#library(ggplot2)
 #  number of units
 n_cat <- length(population$CODGEO)
 # extract unique categories
@@ -1066,6 +1066,7 @@ population = populationNEW
 # Restructure population data to produce the demographic profile per town
 # install.packages("plyr")
 library(plyr)
+library(dplyr)
 population_per_town_data <- ddply(population, .(CODGEO), function(population) {
   data.frame(total_population = sum(population$peopleCategNum),
              male = sum(population[population$sex == "Male",]$peopleCategNum),
@@ -1167,7 +1168,8 @@ pop_pyramid <- ggplot(data = population_data2,
   scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) +
   labs(y = "Population") +
   coord_flip()
-print(pop_pyramid)
+pop_pyramid
+
 ```
 
 # Analysis #
@@ -1180,8 +1182,9 @@ print(pop_pyramid)
 ```
 ## Regression ##
 ```{r}
-
+```
 ## Clustering ##
 ```{r}
 
 
+```
