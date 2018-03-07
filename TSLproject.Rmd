@@ -17,7 +17,7 @@ output:
     highlight: tango    
     toc: yes
     toc_depth: '3' 
-  pdf_document:
+  pdf_document: 
     toc: yes
     toc_depth: '3'
     keep_tex: true
@@ -30,7 +30,7 @@ editor_options:
 
 
 # General information #
-
+aaaa
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
 We analyze a dataset published on [Kaggle](https://www.kaggle.com/etiennelq/french-employment-by-town).
