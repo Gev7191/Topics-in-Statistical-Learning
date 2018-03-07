@@ -11,17 +11,16 @@ output:
     keep_tex: yes
     number_sections: yes
     # theme: united
-  # pdf document:
   html_document:
     theme: united
     highlight: tango    
     toc: yes
     toc_depth: '3' 
-  pdf_document: 
-    toc: yes
-    toc_depth: '3'
-    keep_tex: true
-    latex_engine: pdflatex
+  # pdf_document:  
+    # toc: yes
+    # toc_depth: '3'
+    # keep_tex: true
+    # latex_engine: pdflatex
 editor_options:
   # toc: yes
   # toc_depth: 3
@@ -30,7 +29,7 @@ editor_options:
 
 
 # General information #
-aaaabbb
+aaa
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
 We analyze a dataset published on [Kaggle](https://www.kaggle.com/etiennelq/french-employment-by-town).
@@ -45,7 +44,7 @@ Demographic information in France per town, age, sex and living mode
 can be found [here](https://www.insee.fr/fr/statistiques/2863607).
 
 Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire), 
-it allows to add catégorie socioprofessionnelle.
+it allows to add cat?gorie socioprofessionnelle.
 
 
 
@@ -55,7 +54,7 @@ This project aims to explore existing patterns among French towns.
 
 In particular, we are interested in:
 
-* evaluating possible inequalities: per towns/region, sex, age, etc.;
+* evaluating possible ineqialities: per towns/region, sex, age, etc.;
 * predicting the ... using a regression model;
 * reduce the dimensionality of ... performing a PCA;
 * explore different algorithms to cluster male/females using ...
@@ -133,7 +132,7 @@ names(population)[5:7] <-
     "peopleCategNum")
 
 # Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
+geo <- subset(geo, select = -c(EU_circo, code_r?gion, num?ro_d?partement, pr?fecture, num?ro_circonscription, ?loignement))
 # change names 
 names(geo)[1:6] = 
   c("region", 
@@ -494,112 +493,24 @@ p <-  ggplot(data = sal_sex, aes(x=Label, y=value)) +
       # not color points replacing colour = group instead of colour=Label
       geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
       facet_wrap( ~ Variable, scales="free") +
-      xlab("Sex") + ylab("Mean net salary per hour") + ggtitle("Gender comparison for different job positions") +
-      theme(plot.title = element_text(hjust = 0.5)) +
+      xlab("x-axis") + ylab("y-axis") + ggtitle("Gender comparison") +
       stat_boxplot(geom = "errorbar", width = 0.5)
       # p <- p + guides(fill=guide_legend(title="Legend"))
 p
 
 # excluding outliers
-p <- ggplot(data = sal_sex, aes(x=Label, y=value)) +
+p2 <- ggplot(data = sal_sex, aes(x=Label, y=value)) +
       scale_y_continuous(limits = quantile(sal_sex$value, c(0, 0.9))) +
       geom_boxplot(aes(fill = Label)) +
       # not color points replacing colour = group instead of colour=Label
       geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
       facet_wrap( ~ Variable, scales="free") +
-      xlab("Sex") + ylab("Mean net salary per hour") + 
-      ggtitle("Gender comparison for different job positions excluding the last decile") +
-      theme(plot.title = element_text(hjust = 0.5)) +
+      xlab("x-axis") + ylab("y-axis") + ggtitle("Gender comparison excluding the last decile") +
       # p <- p + guides(fill=guide_legend(title="Legend"))
       stat_boxplot(geom = "errorbar", width = 0.5)
-p
-
-# vector representing males and females
-Label <- c(rep("M", n_sex*3), rep("F", n_sex*3))
-
-# vector representing the variable considered
-Variable <- c(rep("18-25", n_sex), 
-              rep("26-50", n_sex),
-              rep("51+", n_sex),
-              rep("18-25", n_sex), 
-              rep("26-50", n_sex),
-              rep("51+", n_sex))
-
-# merge these data
-sal_sex = cbind.data.frame(Label = Label, 
-                           value = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus, 
-                                     salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus),
-                           Variable = Variable)
-
-# plotting phase
-p <-  ggplot(data = sal_sex, aes(x=Label, y=value)) +
-  geom_boxplot(aes(fill = Label)) +
-  # not color points replacing colour = group instead of colour=Label
-  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
-  facet_wrap( ~ Variable, scales="free") +
-  xlab("Sex") + ylab("Mean net salary per hour") + ggtitle("Gender comparison for different ages") +
-  theme(plot.title = element_text(hjust = 0.5)) + ylim(c(5, 100)) +
-  stat_boxplot(geom = "errorbar", width = 0.5)
-# p <- p + guides(fill=guide_legend(title="Legend"))
-p
-
+p2
 ```
 
-[[[[TO modify]]]]
-Focusing on possible social inequalities:
-[[TAKEN from kernel of anqitu]]
-Overall, there is obvious income inequality between genders, age groups and working social classes. On the average basis, the mean income for each town shows an increasing trend when age increases, showing that the salary increases when people work for longer time and their experience are valued by industries. The income inequality between genders shows the sign of gender discrimination in the society. The mean income for women is lowers than that of men for all age groups. Besides, while the mean income increases by age, the income difference between men and women also increases by age, showing that the income inequality between genders is more outstanding for the older age group. Since people at the older age group are likely to richer than the youngsters, coupled with the previous observation of aging population, there is a huge market potential for silver industry. Businesses can grab the opportunity in an aging society by identifying new customer segments among seniors and developing novel products and services to help them. Figure 5.
-]]][[]]
-
-```{r}
-# Gender salary ratio and general level of income
-
-# Overall mean salary
-# The higher the net mean income, the more skewed the ratio of salary between female and male is.
-# only 2 towns have a ratio>1
-salary$salary_ratio_FvsM <- salary$sal_Females / salary$sal_Males
-hist(salary$salary_ratio_FvsM)
-ggplot(salary, aes(x= sal_general, y=salary_ratio_FvsM)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
-
-# Executives mean salary
-# a bit better and less skewed
-salary$salary_ratio_FvsM_Exec <- salary$sal_F_executive / salary$sal_M_executive
-hist(salary$salary_ratio_FvsM_Exec)
-ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_Exec)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
-
-# Middle managers mean salary
-# ..
-salary$salary_ratio_FvsM_midManag <- salary$sal_F_midManager / salary$sal_M_midManager
-hist(salary$salary_ratio_FvsM_midManag)
-ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_midManag)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
-
-# Middle managers mean salary
-# ..
-salary$salary_ratio_FvsM_worker <- salary$sal_F_worker / salary$sal_M_worker
-hist(salary$salary_ratio_FvsM_worker)
-ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_worker)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
-
-# Employee mean salary
-# ..
-salary$salary_ratio_FvsM_employee <- salary$sal_F_employee / salary$sal_M_employee
-hist(salary$salary_ratio_FvsM_employee)
-ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_employee)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
-
-
-```
-
-
-## Linear models ##
 
 
 Highlight bivariate relations using scatter matrices:
@@ -766,69 +677,6 @@ abline(fit_LM_18_25, lwd=3, col="red")
 # summary(fit_LM_2)
 ```
 
-ANOVA model for salary:
-```{r}
-
-# create response variable
-sal_y = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus,
-        salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
-        salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus,
-        salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker)
-
-hist(sal_y, 30)
-hist(log(sal_y), 30)
-hist(sal_y^-1, 30)
-sal_y = sal_y^-1  # also suggested by Box-Cox transformation
-
-n_sal_y = length(sal_y)             # length response variable
-n_cat = length(salary$sal_M_18_25)  # length of each category (i.e., original vectors)
-
-# create sex dummy variable, 1 for males and 0 for females
-sal_sex = rep(0, n_sal_y)   # full regressors
-sal_sex[1:n_sal_y/2] = 1    # assign males
-
-# create age dummy variables, 18-25 years old is the base case
-sal_age = cbind(rep(0, n_sal_y), rep(0, n_sal_y)) # full regressors
-# 26-50 y.o.
-sal_age[(n_cat+1):(n_cat*2), 1] = 1     # males
-sal_age[(n_cat*8+1):(n_cat*9), 1] = 1   # females
-# 51+ y.o.
-sal_age[(n_cat*2+1):(n_cat*3), 2] = 1   # males
-sal_age[(n_cat*9+1):(n_cat*10), 2] = 1  # females
-
-# create job type dummy variables, worker is the base case
-sal_job = cbind(rep(0, n_sal_y), rep(0, n_sal_y), rep(0, n_sal_y)) # full regressors
-# executives
-sal_job[(n_cat*3+1):(n_cat*4), 1] = 1     # males
-sal_job[(n_cat*10+1):(n_cat*11), 1] = 1   # females
-# middle managers
-sal_job[(n_cat*4+1):(n_cat*5), 2] = 1     # males
-sal_job[(n_cat*11+1):(n_cat*12), 2] = 1   # females
-# employee
-sal_job[(n_cat*5+1):(n_cat*6), 3] =   1   # males
-sal_job[(n_cat*12+1):(n_cat*13), 3] = 1   # females
-
-# final data set
-data_ANOVA = cbind.data.frame(response = sal_y, sex = sal_sex, age = sal_age, job = sal_job)
-names(data_ANOVA)
-# show regressors' shape
-if(!require(rafalib)){install.packages("rafalib")}
-imagemat(data_ANOVA[,-1])
-
-# ANOVA model
-sal_ANOVA = lm(sal_y ~ sal_sex + sal_age + sal_job + sal_sex:sal_age + sal_sex:sal_job)
-summary(sal_ANOVA)
-anova((sal_ANOVA))
-
-# box-cox transformation suggested to use y^-1
-if(!require(MASS)){install.packages("MASS")}
-boxcox(sal_ANOVA)
-
-# adding contrasts?
-# add CV and LASSO!
-```
-
-
 PCA for salary:
 ```{r}
 myPr <- prcomp(salary[, 3:26], scale = TRUE)
@@ -960,9 +808,8 @@ poppulation_distribution <-
   geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$total_population_log), 
              data=geo_pop_by_town, alpha=0.8, size=0.6) + 
   sc +
-  geom_text(aes(label = town_name, x = longitude, y = latitude), 
-            data = subset(geo_pop_by_town, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)),
-            check_overlap = TRUE, size=7) +
+  #geom_text(aes(label = town_name, x = longitude, y = latitude), 
+            #data = subset(geo_pop_by_town, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
   labs(color='Total Population in Log') +
   ggtitle("Distribution of Population for each Town") 
 poppulation_distribution
@@ -1005,9 +852,8 @@ pop_distribution_department <-
   geom_point(aes(x=geo_pop_by_department$longitude, y=geo_pop_by_department$latitude, colour=geo_pop_by_department$total_population_log), 
              data=geo_pop_by_department, alpha=0.8, size=0.6) + 
   sc +
-  geom_text(aes(label = town_name, x = longitude, y = latitude), 
-            data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)),
-            check_overlap = TRUE, size=7) +
+  #geom_text(aes(label = town_name, x = longitude, y = latitude), 
+            #data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
   labs(color='Total Population in Log') +
   ggtitle("Distribution of Population for each department") 
 pop_distribution_department
@@ -1062,12 +908,128 @@ for (i in dataset){
 
 ```
 
+```{r}
+#populationNEW
+summary(populationNEW)
+population = populationNEW
+
+# Restructure population data to produce the demographic profile per town
+# install.packages("plyr")
+library(plyr)
+population_per_town_data <- ddply(population, .(CODGEO), function(population) {
+  data.frame(total_population = sum(population$peopleCategNum),
+             male = sum(population[population$sex == "Male",]$peopleCategNum),
+             female = sum(population[population$sex == "Female",]$peopleCategNum),
+             child = sum(population[population$ageCateg5 %in% seq(0, 10, by=5),]$peopleCategNum),
+             elderly = sum(population[population$ageCateg5 %in% seq(65, 80, by=5),]$peopleCategNum),
+             workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
+  )})
+
+population_per_town_data$dependent <- population_per_town_data$child + population_per_town_data$elderly
+population_per_town_data$sex_ratio <- ifelse(population_per_town_data$female==0, 0, population_per_town_data$male / population_per_town_data$female)
+population_per_town_data$dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$dependent / population_per_town_data$workforce)
+population_per_town_data$aged_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$elderly / population_per_town_data$workforce)
+population_per_town_data$child_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$child / population_per_town_data$workforce)
+summary(population_per_town_data)
+```
+
+```{r}
+# Scale population to log
+hist(population_per_town_data$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
+population_per_town_data$total_population_log <- log10(population_per_town_data$total_population)
+
+# Merge geo and pop
+geo_pop_by_town <- merge(geo, population_per_town_data)
+summary(geo_pop_by_town) 
+```
+
+```{r}
+# Plot "Distribution of Population for each Town"
+#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
+sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_town$total_population_log), max(geo_pop_by_town$total_population_log)))
+population_distribution <- 
+  FraMap + 
+  geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$total_population_log), 
+             data=geo_pop_by_town, alpha=0.8, size=0.6) + 
+  sc +
+  #geom_text(aes(label = town_name, x = longitude, y = latitude), 
+            #data = subset(geo_pop_by_town, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
+  labs(color='Total Population in Log') +
+  ggtitle("Distribution of Population for each Town") 
+population_distribution
+summary(population_distribution)
+
+geo_pop_by_town[which.max(geo_pop_by_town$total_population_log),]
+```
+
+```{r}
+# Group population data by department because of small size of some towns and the given geojson file of department
+pop_by_department <- ddply(geo_pop_by_town, .(department), function(geo_pop_by_town) {
+  data.frame(total_population = sum(geo_pop_by_town$total_population),
+             male = sum(geo_pop_by_town$male),
+             female = sum(geo_pop_by_town$female),
+             child = sum(geo_pop_by_town$child),
+             elderly = sum(geo_pop_by_town$elderly),
+             dependent = sum(geo_pop_by_town$dependent),
+             workforce = sum(geo_pop_by_town$workforce) 
+  )})
+
+summary(pop_by_department)
+pop_by_department$dependency_ratio <- pop_by_department$dependent / pop_by_department$workforce
+pop_by_department$aged_dependency_ratio <- pop_by_department$elderly / pop_by_department$workforce
+pop_by_department$child_dependency_ratio <- pop_by_department$child / pop_by_department$workforce
+```
+
+```{r}
+# Scale population to log
+pop_by_department$total_population_log <- log10(pop_by_department$total_population)
+
+# Merge geo and pop
+geo_pop_by_department <- merge(geo, pop_by_department)
+summary(geo_pop_by_department)
+```
+
+```{r}
+# Plot "Distribution of Population for each department"
+#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
+sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_department$total_population_log), max(geo_pop_by_department$total_population_log)))
+pop_distribution_department <- 
+  FraMap + 
+  geom_point(aes(x=geo_pop_by_department$longitude, y=geo_pop_by_department$latitude, colour=geo_pop_by_department$total_population_log), 
+             data=geo_pop_by_department, alpha=0.8, size=0.6) + 
+  sc +
+  #geom_text(aes(label = town_name, x = longitude, y = latitude), 
+            #data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
+  labs(color='Total Population in Log') +
+  ggtitle("Distribution of Population for each department") 
+pop_distribution_department
+```
+
+```{r}
+population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
+  data.frame(total_population = sum(population$peopleCateNum))
+  })
+pop_pyramid <- ggplot(data = population_data2, 
+       mapping = aes(x = ageCateg5, fill = sex, 
+                     y = ifelse(test = sex == "Male", 
+                                yes = -total_population, no = total_population))) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) +
+  labs(y = "Population") +
+  coord_flip()
+print(pop_pyramid)
+```
+
 # Analysis #
+```{r}
 
+```
 ## PCA ##
+```{r}
 
+```
 ## Regression ##
-
+```{r}
 ## Clustering ##
-
+```{r}
 
