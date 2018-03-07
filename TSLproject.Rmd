@@ -30,7 +30,11 @@ editor_options:
 
 
 # General information #
+<<<<<<< HEAD
 bbbbbbbbbbbbbbbbbbbbbbbbbbb
+=======
+aaaabbb
+>>>>>>> 337c4d1a201428b0d6489838f5314c44a9287b20
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
 We analyze a dataset published on [Kaggle](https://www.kaggle.com/etiennelq/french-employment-by-town).
