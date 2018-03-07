@@ -266,7 +266,8 @@ cor(firms_clean[, 4:8], firms2[,9:10])
 ## Cluster Analysis ##
 
 ```{r}
-firms_sampled <- firms[1:1000, ] # subsampling
+set.seed(1000)
+firms_sampled <- firms[sample(nrow(firms), 1000), ] # subsampling
 head(firms_sampled)
 
 firms_scaled <- scale(firms_sampled[, 3:8]) #scaling the data
