@@ -266,22 +266,25 @@ cor(firms_clean[, 4:8], firms2[,9:10])
 ## Cluster Analysis ##
 
 ```{r}
-firms_scaled <- scale(firms[, 3:8])
+firms_sampled <- firms[1:1000, ] # subsampling
+head(firms_sampled)
+
+firms_scaled <- scale(firms_sampled[, 3:8]) #scaling the data
 head(firms_scaled)
 
-firms_truncated <- firms[, 4:8]
+firms_truncated <- firms_sampled[, 4:8]
 head(firms_truncated)
-plot(firms)
+plot(firms_sampled)
 
 # K-means clustering...
 
-fitK_scaled <- kmeans(firms_scaled, 4) #scaling the data
+fitK_scaled <- kmeans(firms_scaled, 4) 
 fitK_scaled
 
 fitK <- kmeans(firms_truncated, 5)
 fitK
 str(fitK)
-plot(firms, col = fitK$cluster) #plotting data colored according to cluster membership
+plot(firms_sampled, col = fitK$cluster) #plotting data colored according to cluster membership
 
 #choosing K---
 k <- list()
@@ -309,7 +312,7 @@ plot(fitH)
 rect.hclust(fitH, k = 5, border = "red") # visualising dendrogam cut at k =5
 clusters <- cutree(fitH, 5)  # vector with cluster membership for each observation
 clusters
-plot(firms, col = clusters) # as we can see, it performs quite similar to the K-means 
+plot(firms_sampled, col = clusters) # as we can see, it performs quite similar to the K-means 
 
 #Model-based clustering
 
