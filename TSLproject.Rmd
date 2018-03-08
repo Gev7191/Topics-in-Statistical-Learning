@@ -245,26 +245,41 @@ hist(log(firms$large))
 PCA on firms data:
 ```{r}
 # firms_clean <- firms[firms$micro < 20000 & firms$large < 200,]
-# myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
-# #plot(scale(firms_clean$micro), scale(firms_clean$large))
-# #mean(firms_clean$micro)
-# #mean(firms_clean$large)
-# myPr
-# summary(myPr)
-# plot(myPr, type = "l")
-# biplot(myPr, scale = 0)
-# #extract PC scores...
-# str(myPr)
-# #myPr$x #checking principal component scores
-# firms2 <- cbind(firms_clean, myPr$x[, 1:2])
-# head(firms2)
-# #plot with ggplot...
-# require(ggplot2)
-# ggplot(firms2, aes(PC1, PC2)) + 
-#   stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) + 
-#   geom_point(shape = 21, col = "black")
-# # correlations between variables and PCs...
-# cor(firms_clean[, 4:8], firms2[,9:10])
+firms_clean <- firms[firms$micro > 1 & firms$micro < 2500 & 
+                     firms$small > 1 & firms$small < 800 & 
+                     firms$medium > 1 & firms$medium < 500 & 
+                     firms$large > 1 & firms$large < 200 &
+                     firms$null > 1 & firms$null < 2000 ,]
+myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
+#plot(scale(firms_clean$micro), scale(firms_clean$large))
+#mean(firms_clean$micro)
+#mean(firms_clean$large)
+myPr
+summary(myPr)
+plot(myPr, type = "l")
+biplot(myPr, scale = 0)
+#extract PC scores...
+str(myPr)
+#myPr$x #checking principal component scores
+firms2 <- cbind(firms_clean, myPr$x[, 1:2])
+head(firms2)
+#plot with ggplot...
+require(ggplot2)
+ggplot(firms2, aes(PC1, PC2)) +
+  stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) +
+  geom_point(shape = 21, col = "black")
+# correlations between variables and PCs...
+cor(firms_clean[, 4:8], firms2[,9:10])
+
+# load package
+if(!require(ggbiplot)){
+  if(!require(devtools)){
+    install.packages("devtools")}
+  install_github("vqv/ggbiplot")
+  library(ggbiplot)}
+ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
+  ggtitle("Biplot for the firms's size") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ## Cluster Analysis ##
@@ -622,8 +637,16 @@ Overall, there is obvious income inequality between genders, age groups and work
 # Overall mean salary
 # The higher the net mean income, the more skewed the ratio of salary between female and male is.
 # only 2 towns have a ratio>1
+# create overall F vs M ratio
 salary$salary_ratio_FvsM <- salary$sal_Females / salary$sal_Males
 hist(salary$salary_ratio_FvsM)
+# histogram
+ggplot(data=salary, aes(salary$salary_ratio_FvsM)) +
+  geom_histogram(aes(y =..count..), col="black", fill="blue", alpha = .3, bins = 50) +
+  labs(x="Null firms/total firms", y="Count") +
+  ggtitle("Ratio between the number of null firms and total firms per town") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+# scatter plot
 ggplot(salary, aes(x= sal_general, y=salary_ratio_FvsM)) + 
   geom_point(size = 0.5, colour = "#0091ff")+
   geom_smooth()
@@ -632,7 +655,7 @@ ggplot(salary, aes(x= sal_general, y=salary_ratio_FvsM)) +
 # a bit better and less skewed
 salary$salary_ratio_FvsM_Exec <- salary$sal_F_executive / salary$sal_M_executive
 hist(salary$salary_ratio_FvsM_Exec)
-ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_Exec)) + 
+ggplot(salary, aes(x= sal_executive, y= salary_ratio_FvsM_Exec)) + 
   geom_point(size = 0.5, colour = "#0091ff")+
   geom_smooth()
 
@@ -640,7 +663,7 @@ ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_Exec)) +
 # ..
 salary$salary_ratio_FvsM_midManag <- salary$sal_F_midManager / salary$sal_M_midManager
 hist(salary$salary_ratio_FvsM_midManag)
-ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_midManag)) + 
+ggplot(salary, aes(x= sal_midManager, y= salary_ratio_FvsM_midManag)) + 
   geom_point(size = 0.5, colour = "#0091ff")+
   geom_smooth()
 
@@ -648,7 +671,7 @@ ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_midManag)) +
 # ..
 salary$salary_ratio_FvsM_worker <- salary$sal_F_worker / salary$sal_M_worker
 hist(salary$salary_ratio_FvsM_worker)
-ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_worker)) + 
+ggplot(salary, aes(x= sal_worker, y= salary_ratio_FvsM_worker)) + 
   geom_point(size = 0.5, colour = "#0091ff")+
   geom_smooth()
 
@@ -656,7 +679,7 @@ ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_worker)) +
 # ..
 salary$salary_ratio_FvsM_employee <- salary$sal_F_employee / salary$sal_M_employee
 hist(salary$salary_ratio_FvsM_employee)
-ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_employee)) + 
+ggplot(salary, aes(x= sal_employee, y= salary_ratio_FvsM_employee)) + 
   geom_point(size = 0.5, colour = "#0091ff")+
   geom_smooth()
 
