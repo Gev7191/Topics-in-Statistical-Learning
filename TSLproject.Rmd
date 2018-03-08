@@ -240,86 +240,87 @@ hist(firms$large/firms$total)
 
 PCA on firms data:
 ```{r}
-firms_clean <- firms[firms$micro < 20000 & firms$large < 200,]
-myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
-#plot(scale(firms_clean$micro), scale(firms_clean$large))
-#mean(firms_clean$micro)
-#mean(firms_clean$large)
-myPr
-summary(myPr)
-plot(myPr, type = "l")
-biplot(myPr, scale = 0)
-#extract PC scores...
-str(myPr)
-#myPr$x #checking principal component scores
-firms2 <- cbind(firms_clean, myPr$x[, 1:2])
-head(firms2)
-#plot with ggplot...
-require(ggplot2)
-ggplot(firms2, aes(PC1, PC2)) + 
-  stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) + 
-  geom_point(shape = 21, col = "black")
-# correlations between variables and PCs...
-cor(firms_clean[, 4:8], firms2[,9:10])
+# firms_clean <- firms[firms$micro < 20000 & firms$large < 200,]
+# myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
+# #plot(scale(firms_clean$micro), scale(firms_clean$large))
+# #mean(firms_clean$micro)
+# #mean(firms_clean$large)
+# myPr
+# summary(myPr)
+# plot(myPr, type = "l")
+# biplot(myPr, scale = 0)
+# #extract PC scores...
+# str(myPr)
+# #myPr$x #checking principal component scores
+# firms2 <- cbind(firms_clean, myPr$x[, 1:2])
+# head(firms2)
+# #plot with ggplot...
+# require(ggplot2)
+# ggplot(firms2, aes(PC1, PC2)) + 
+#   stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) + 
+#   geom_point(shape = 21, col = "black")
+# # correlations between variables and PCs...
+# cor(firms_clean[, 4:8], firms2[,9:10])
 ```
 
 ## Cluster Analysis ##
 
 ```{r}
-firms_sampled <- firms[1:1000, ] # subsampling
-head(firms_sampled)
-
-firms_scaled <- scale(firms_sampled[, 3:8]) #scaling the data
-head(firms_scaled)
-
-firms_truncated <- firms_sampled[, 4:8]
-head(firms_truncated)
-plot(firms_sampled)
-
-# K-means clustering...
-
-fitK_scaled <- kmeans(firms_scaled, 4) 
-fitK_scaled
-
-fitK <- kmeans(firms_truncated, 5)
-fitK
-str(fitK)
-plot(firms_sampled, col = fitK$cluster) #plotting data colored according to cluster membership
-
-#choosing K---
-k <- list()
-for(i in 1:10){
-  k[[i]] <- kmeans(firms_truncated, i)
-}
-k
-
-betweenss_totalss <- list()
-for(i in 1:10){
-  betweenss_totalss[[i]] <- k[[i]]$betweenss/k[[i]]$totss
-}
-plot(1:10, betweenss_totalss, type ="b",
-     ylab = "Between SS / Total SS", xlab = "Clusters (k)") #calculating and plotting between SS to total SS ratio against number of clusters
-
-for(i in 1:5) {
-  plot(firms, col = k[[i]]$cluster) #plotting data based on membership to clusters for k = 1 to 5 clusters
-}
-
-#Hierarchical clustering---
-
-d <- dist(firms_truncated)
-fitH <- hclust(d, "ward.D2")
-plot(fitH)
-rect.hclust(fitH, k = 5, border = "red") # visualising dendrogam cut at k =5
-clusters <- cutree(fitH, 5)  # vector with cluster membership for each observation
-clusters
-plot(firms_sampled, col = clusters) # as we can see, it performs quite similar to the K-means 
-
-#Model-based clustering
-
-library(mclust)
-fitM <- Mclust(firms_truncated)
-fitM
-plot(fitM)
+# firms_sampled <- firms[1:1000, ] # subsampling
+# head(firms_sampled)
+# 
+# firms_scaled <- scale(firms_sampled[, 3:8]) #scaling the data
+# head(firms_scaled)
+# 
+# firms_truncated <- firms_sampled[, 4:8]
+# head(firms_truncated)
+# plot(firms_sampled)
+# 
+# # K-means clustering...
+# 
+# fitK_scaled <- kmeans(firms_scaled, 4) 
+# head(fitK_scaled)
+# 
+# fitK <- kmeans(firms_truncated, 5)
+# head(fitK)
+# str(fitK)
+# plot(firms_sampled, col = fitK$cluster) #plotting data colored according to cluster membership
+# 
+# #choosing K---
+# k <- list()
+# for(i in 1:10){
+#   k[[i]] <- kmeans(firms_truncated, i)
+# }
+# head(k)
+# 
+# betweenss_totalss <- list()
+# for(i in 1:10){
+#   betweenss_totalss[[i]] <- k[[i]]$betweenss/k[[i]]$totss
+# }
+# plot(1:10, betweenss_totalss, type ="b",
+#      ylab = "Between SS / Total SS", xlab = "Clusters (k)") #calculating and plotting between SS to total SS ratio against number of clusters
+# 
+# for(i in 1:5) {
+#   plot(firms, col = k[[i]]$cluster) #plotting data based on membership to clusters for k = 1 to 5 clusters
+# }
+# 
+# #Hierarchical clustering---
+# 
+# d <- dist(firms_truncated)
+# fitH <- hclust(d, "ward.D2")
+# plot(fitH)
+# rect.hclust(fitH, k = 5, border = "red") # visualising dendrogam cut at k =5
+# clusters <- cutree(fitH, 5)  # vector with cluster membership for each observation
+# head(clusters)
+# plot(firms_sampled, col = clusters) # as we can see, it performs quite similar to the K-means 
+# 
+# #Model-based clustering
+# 
+# if(!require(mclust)){install.packages("mclust")}
+# library(mclust)
+# fitM <- Mclust(firms_truncated)
+# head(fitM)
+# plot(fitM)
 
 ```
 
