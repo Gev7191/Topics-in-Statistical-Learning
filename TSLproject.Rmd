@@ -453,7 +453,7 @@ FraMap
 geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
 geo_pos = geo_pos[complete.cases(geo_pos),]
 FraMap +
-  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.1) 
+  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.8, size=0.6) 
 
 # delete non-European countries
 ind_nonEur = geo$latitude < 30 | geo$latitude > 70 |geo$longitude < -20 | geo$longitude > 20
@@ -464,7 +464,7 @@ geo = geo[!ind_nonEur,]
 geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
 geo_pos = geo_pos[complete.cases(geo_pos),]
 FraMap +
-  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.1) 
+  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.8, size=0.6) 
 
 ```
 
@@ -1218,7 +1218,7 @@ pop_distribution_department
 
 ```{r}
 population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
-  data.frame(total_population = sum(population$peopleCateNum))
+  data.frame(total_population = sum(population$peopleCategNum))
   })
 pop_pyramid <- ggplot(data = population_data2, 
        mapping = aes(x = ageCateg5, fill = sex, 
@@ -1228,7 +1228,7 @@ pop_pyramid <- ggplot(data = population_data2,
   scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) +
   labs(y = "Population") +
   coord_flip()
-pop_pyramid
+print(pop_pyramid)
 
 ```
 
@@ -1245,6 +1245,5 @@ pop_pyramid
 ```
 ## Clustering ##
 ```{r}
-
 
 ```
