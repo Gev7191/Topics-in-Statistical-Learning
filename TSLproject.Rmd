@@ -218,22 +218,26 @@ summary(firms$null/firms$total)
 # a lot of information is missing
 # should we remove these data?
 hist(firms$null/firms$total)
+ggplot(data=firms, aes(firms$null/firms$total)) +
+  geom_histogram(aes(y =..count..), col="black", fill="blue", alpha = .3, bins = 50) +
+  labs(x="Null firms/total firms", y="Count") +
+  ggtitle("Ratio between the number of null firms and total firms per town") +
+  theme(plot.title = element_text(hjust = 0.5)) 
 
 # evaluate the distribution of all the sizes 
-# (log vs. ratio wrt total?)
-hist(log(firms$total))
+ggplot(data=firms, aes(log(firms$total))) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
+  geom_density(col="black") +
+  labs(x="Number of firms (log scale)", y="Density") +
+  ggtitle("Total number of firms per town") +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+# make the same kind of plot for them
 hist(log(firms$null))
 hist(log(firms$micro))
-hist(firms$micro/firms$total)
 hist(log(firms$small))
-hist(firms$small/firms$total)
 hist(log(firms$medium))
-hist(firms$medium/firms$total)
 hist(log(firms$large))
-hist(firms$large/firms$total)
-
-# keep only logs?
-
 ```
 
 ## PCA ##   
