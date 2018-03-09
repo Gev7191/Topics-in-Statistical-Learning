@@ -63,10 +63,20 @@ In particular, we are interested in:
 
 # General pre-processing phase #
 
-Import data:
+
+Loading all libraries needed throughout the notebook:
+```{r}
+if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
+
+```
+
+
+Import the four datasets:
 ```{r warning=FALSE}
-# options(encoding = "UTF-8")  # for Mac [PROBABLY, to check]
-# options(encoding = "ISO-8859-1")  # for Windows [PROBABLY NOT WORKING]
+# set the encoding used [to test]
+# options(encoding = "ISO-8859-1")  # default in Windows 
+
+# loading data
 setwd("./data")
 firms       <- read.csv("base_etablissement_par_tranche_effectif.csv", encoding = "UTF-8")
 geo         <- read.csv("name_geographic_information.csv", encoding = "UTF-8")
@@ -131,8 +141,10 @@ names(population)[5:7] <-
     "sex",
     "peopleCategNum")
 
-# Drop unnecessary columns (code/num and name represents same thing)
-geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))# change names 
+# Drop unnecessary columns (code/num and name represents same thing) 
+# [KEEP DEPT. NUM?]
+#  [éloignement is the distance from where?]
+geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
 names(geo)[1:6] = 
   c("region", 
     "region_capital", 
@@ -142,7 +154,7 @@ names(geo)[1:6] =
     "CODGEO")
 ```
 
-Check variable names:
+Check variable names again:
 ```{r}
 names(firms) 
 names(population)
@@ -151,18 +163,7 @@ names(geo)
 ```
 
 
-[[MOVE LATER]]
-According to the information provided, the CODGEO variable (in firms, salary and population) and code_insee (in geo) have to be merged.
-However, for different reasons already identified by a kaggle user on [his kernel](https://www.kaggle.com/anqitu/insights-on-business-demographic-inequality) they do not.
-To do so:
-```{r}
-firms$CODGEO <- sub("A", "0", firms$CODGEO)
-firms$CODGEO <- sub("B", "0", firms$CODGEO)
-salary$CODGEO <- sub("A", "0", salary$CODGEO)
-salary$CODGEO <- sub("B", "0", salary$CODGEO)
-population$CODGEO <- sub("A", "0", population$CODGEO)
-population$CODGEO <- sub("B", "0", population$CODGEO)
-```
+
 
 
 
@@ -1128,30 +1129,45 @@ dependency_ratio_plot<-
 dependency_ratio_plot
 ```
 
+
 # Produce consistent datasets #
 
- 
-```{r}
+The CODGEO variables (code_insee in the original geo data) have to be merged.
+However, for different reasons already identified by other kaggle users they need some pre-processing.
+To do so, some already known mistakes are corrected:
 
+```{r}
+firms$CODGEO      <- sub("A", "0", firms$CODGEO)
+firms$CODGEO      <- sub("B", "0", firms$CODGEO)
+salary$CODGEO     <- sub("A", "0", salary$CODGEO)
+salary$CODGEO     <- sub("B", "0", salary$CODGEO)
+population$CODGEO <- sub("A", "0", population$CODGEO)
+population$CODGEO <- sub("B", "0", population$CODGEO)
+
+# [Check if there are more]
+```
+
+
+Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
+```{r}
 # use only integer values
 geo$CODGEO = as.integer(geo$CODGEO)  # already integer
 population$CODGEO = as.integer(population$CODGEO)
 firms$CODGEO = as.integer(firms$CODGEO)
 salary$CODGEO = as.integer(salary$CODGEO)
 
-# install.packages("dplyr")
-library(dplyr)
+# store datasets' names to loop on them
 dataset = c("population", "salary", "firms", "geo")
 
 # obtain sommon IDs for all datasets
 for (i in dataset){
-  # get i-th name and make a new variable adding NEW
+  # get i-th name and create a new variable concateneting "NEW" at the end
   nam <- paste(i, "NEW", sep = "")
-  # counter to identify the number of iteration in j
+  # initialize counter to identify the number of iteration in j
   iter = 1
   for (j in dataset){
     if (j != i){
-      # datasets different from i-th
+      # for each dataset different from the i-th
       if (iter == 1){
         # 1st iteration: use the original dataset (e.g., geo)
         assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
@@ -1172,8 +1188,11 @@ for (i in dataset){
                   "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
   print(del_obs)
 }
-
 ```
+
+
+
+# Jisu's new population #
 
 ```{r}
 #populationNEW

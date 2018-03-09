@@ -1,5 +1,6 @@
 data/
 \.Rhistory
+*.html
 
 *.html
 ## Core latex/pdflatex auxiliary files:
