@@ -204,8 +204,6 @@ str(firms)
 ## EDA ##
   
 ```{r}
-require(ggplot2)
-
 # there is an obs with more than 316K null data: we check if it is plausible
 # get the highest 20 null values
 str_firms <- sort(firms$null, decreasing = T)[1:20]
@@ -277,9 +275,8 @@ cor(firms_clean[, 4:8], firms2[,9:10])
 if(!require(ggbiplot)){
   if(!require(devtools)){
     install.packages("devtools")}
-  install_github("vqv/ggbiplot")}
-library(ggbiplot)
-
+  install_github("vqv/ggbiplot")
+  library(ggbiplot)}
 ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
   ggtitle("Biplot for the firms's size") +
   theme(plot.title = element_text(hjust = 0.5))
@@ -642,40 +639,25 @@ Overall, there is obvious income inequality between genders, age groups and work
 # only 2 towns have a ratio>1
 # create overall F vs M ratio
 salary$salary_ratio_FvsM <- salary$sal_Females / salary$sal_Males
+hist(salary$salary_ratio_FvsM)
 # histogram
 ggplot(data=salary, aes(salary$salary_ratio_FvsM)) +
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
-  geom_density(col="black") +
-  labs(x="Overall salary ratio (females/males)", y="Density") +
-  labs(title = "Overall salary ratio between females and males") +
-  theme(plot.title = element_text(hjust = 0.5))
+  geom_histogram(aes(y =..count..), col="black", fill="blue", alpha = .3, bins = 50) +
+  labs(x="Null firms/total firms", y="Count") +
+  ggtitle("Ratio between the number of null firms and total firms per town") +
+  theme(plot.title = element_text(hjust = 0.5)) 
 # scatter plot
 ggplot(salary, aes(x= sal_general, y=salary_ratio_FvsM)) + 
   geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth() +
-  labs(x="Overall salary", y="Overall salary ratio(females/males)") +
-  labs(title = "Overall salary ratio between females and males vs. overall salary") +
-  theme(plot.title = element_text(hjust = 0.5))
+  geom_smooth()
 
 # Executives mean salary
 # a bit better and less skewed
 salary$salary_ratio_FvsM_Exec <- salary$sal_F_executive / salary$sal_M_executive
-# histogram
-ggplot(data=salary, aes(salary$salary_ratio_FvsM_Exec)) +
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
-  geom_density(col="black") +
-  labs(x="Executives salary ratio (females/males)", y="Density") +
-  labs(title = "Executives salary ratio between females and males") +
-  theme(plot.title = element_text(hjust = 0.5))
-# scatter plot
+hist(salary$salary_ratio_FvsM_Exec)
 ggplot(salary, aes(x= sal_executive, y= salary_ratio_FvsM_Exec)) + 
   geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth() +
-  labs(x="Executives salary", y="Executives salary ratio (females/males)") +
-  labs(title = "Executives salary ratio between females and males \n vs. overall executives salary") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-### create similar plots ###
+  geom_smooth()
 
 # Middle managers mean salary
 # ..
@@ -721,7 +703,7 @@ Fit a regression model to predict the salaries of people in age 26-50 using as r
 
 # fit and show OLS estimate
 plot(salary$sal_26_50 ~ salary$sal_51plus)
-fit_LM_26_50 = lm(salary$sal_26_50 ~ salary$sal_51plus, data = salary)
+fit_LM_26_50 = glm(salary$sal_26_50 ~ salary$sal_51plus, data = salary)
 abline(fit_LM_26_50, lwd=3, col="red")
 
 # diagnostics
@@ -766,30 +748,28 @@ set.seed(1)
 # y = salary$sal_executive
 # probably for ridge
 names(salary)
-y = salary$sal_18_25
-x = as.matrix(cbind(salary[, c(4:8, 13, 19:20, 27:31)]))
-x = as.matrix(cbind(x, x*x*x))
+y = salary$sal_26_50
+x = as.matrix(cbind(salary[, c(4:8, 13, 18, 20)]))
 names(x)
 
-# # grid for lambda values
-# grid = 10^seq(3, -2, length = 100)
-# lasso.mod = glmnet(x, y, alpha = 1, lambda = grid)
-# dim(coef(lasso.mod))
-# # the norms are increasing in value because of the shrinkage
-# lasso.mod$lambda[1]                  # lambda value
-# sqrt(sum(coef(lasso.mod)[-1,1]^2))   # L2 norm of its coeff
-# lasso.mod$lambda[51]
-# sqrt(sum(coef(lasso.mod)[-1,51]^2))
-# lasso.mod$lambda[90]
-# sqrt(sum(coef(lasso.mod)[-1,90]^2))
-# # predict values for a new lambda, e.g. OLS
-# OLS = predict(lasso.mod, s = 0, type = "coefficients")[1:nrow(coef(lasso.mod)),]
+# grid for lambda values
+grid = 10^seq(1, -5, length = 100)
+lasso.mod = glmnet(x, y, alpha = 1, lambda = grid)
+dim(coef(lasso.mod))
+# the norms are increasing in value because of the shrinkage
+lasso.mod$lambda[1]                  # lambda value
+sqrt(sum(coef(lasso.mod)[-1,1]^2))   # L2 norm of its coeff
+lasso.mod$lambda[51]
+sqrt(sum(coef(lasso.mod)[-1,51]^2))
+lasso.mod$lambda[90]
+sqrt(sum(coef(lasso.mod)[-1,90]^2))
+# predict values for a new lambda, e.g. OLS
+OLS = predict(lasso.mod, s = 0, type = "coefficients")[1:nrow(coef(lasso.mod)),]
 
 # split the date leaving the 10% for CV
 train = sample(1:nrow(salary), floor(nrow(salary)*0.9))
 test = -train
 y.test = y[test]
-grid = 10^seq(5, -5, length = 100)
 lasso.mod = glmnet(x[train,], y[train], alpha = 1, lambda = grid, thresh = 1e-12)
 err.i = rep("NA", length(grid))
 for (i in 1:length(grid)){
@@ -810,9 +790,6 @@ bestlam = cv.out$lambda.min
 bestlam
 lasso.pred = predict(lasso.mod, s=bestlam, newx=x[test ,])
 mean((lasso.pred - y.test)^2)
-
-lasso.coef = predict(lasso.mod, type = "coefficients", s=bestlam)[1:ncol(x),]
-lasso.coef[lasso.coef!=0]
 
 
 # using best subset
@@ -839,9 +816,6 @@ points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20)
 plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
 ind_bic = which.min(best.sub.summary$bic)
 points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
-# mtext("My 'Title' in a strange place", line=15)
-mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5)
-
 # built-in plots
 ?plot.regsubsets
 par(mfrow=c(1,1))
@@ -854,158 +828,6 @@ coefficients(best.sub, which.min(best.sub.summary$bic))
 
 ```
 
-
-BRUTTA COPIA PER PRESENTAZIONE
-```{r}
-plot.regsubsets2 <- 
-  function (x, labels = obj$xnames, main = NULL, scale = c("bic", 
-                                                           "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)), 
-            ...) 
-  {
-    obj <- x
-    lsum <- summary(obj)
-    par(mar = c(7, 5, 6, 3) + 0.1)
-    nmodels <- length(lsum$rsq)
-    np <- obj$np
-    propscale <- FALSE
-    sscale <- pmatch(scale[1], c("bic", "Cp", "adjr2", "r2"), 
-                     nomatch = 0)
-    if (sscale == 0) 
-      stop(paste("Unrecognised scale=", scale))
-    if (propscale) 
-      stop(paste("Proportional scaling only for probabilities"))
-    yscale <- switch(sscale, lsum$bic, lsum$cp, lsum$adjr2, lsum$rsq)
-    up <- switch(sscale, -1, -1, 1, 1)
-    index <- order(yscale * up)
-    colorscale <- switch(sscale, yscale, yscale, -log(pmax(yscale, 
-                                                           1e-04)), -log(pmax(yscale, 1e-04)))
-    image(z = t(ifelse(lsum$which[index, ], colorscale[index], 
-                       NA + max(colorscale) * 1.5)), xaxt = "n", yaxt = "n", 
-          x = (1:np), y = 1:nmodels, xlab = "", ylab = scale[1], 
-          col = col)
-    laspar <- par("las")
-    on.exit(par(las = laspar))
-    par(las = 2)
-    axis(1, at = 1:np, labels = labels, ...) # I modified this line
-    axis(2, at = 1:nmodels, labels = signif(yscale[index], 2))
-    if (!is.null(main)) 
-      title(main = main)
-    box()
-    invisible(NULL)
-  }
-
-
-require(glmnet)
-set.seed(1)
-
-# crate an X matrix excluding intercept
-# x = cbind(salary$sal_midManager, salary$sal_employee, salary$sal_worker, salary$sal_18_25, salary$sal_51plus)
-# y = salary$sal_executive
-# probably for ridge
-names(salary)
-y = salary$sal_18_25
-x = as.matrix(cbind(salary[, c(4:8, 13, 19:20, 27:31)]))
-x = as.matrix(cbind(x, x*x, x*x*x))
-names(x)
-
-# # grid for lambda values
-# grid = 10^seq(3, -2, length = 100)
-# lasso.mod = glmnet(x, y, alpha = 1, lambda = grid)
-# dim(coef(lasso.mod))
-# # the norms are increasing in value because of the shrinkage
-# lasso.mod$lambda[1]                  # lambda value
-# sqrt(sum(coef(lasso.mod)[-1,1]^2))   # L2 norm of its coeff
-# lasso.mod$lambda[51]
-# sqrt(sum(coef(lasso.mod)[-1,51]^2))
-# lasso.mod$lambda[90]
-# sqrt(sum(coef(lasso.mod)[-1,90]^2))
-# # predict values for a new lambda, e.g. OLS
-# OLS = predict(lasso.mod, s = 0, type = "coefficients")[1:nrow(coef(lasso.mod)),]
-
-# split the date leaving the 10% for CV
-train = sample(1:nrow(salary), floor(nrow(salary)*0.9))
-test = -train
-y.test = y[test]
-grid = 10^seq(3, -2, length = 100)
-lasso.mod = glmnet(x[train,], y[train], alpha = 0.5, lambda = grid, thresh = 1e-12)
-err.i = rep("NA", length(grid))
-for (i in 1:length(grid)){
-  lasso.pred = predict(lasso.mod, s = grid[i], newx = x[test,])
-  err.i[i] = mean((lasso.pred - y.test)^2)
-}
-plot(log(grid), err.i, xlab = 'log Lambda', ylab = 'test set MSE', 
-     main = 'Test MSE among different Lambdas', ylim = c(0, 2))
-bestlam = grid[which.min(err.i)]
-points(log(grid)[bestlam], err.i[bestlam], col ="red", cex=2, pch=20)
-# high values of lambda are like fitting just the intercept
-
-# using 10 folds CV
-set.seed (1)
-cv.out = cv.glmnet(x[train ,], y[train], alpha = 0.5)
-plot(cv.out) #, cex.names=0.5)
-# mtext("My 'Title' in a strange place", line=15)
-mtext(expression("Best lambda for salary 18-25 using elastic net \n           with alpha=0.5 and 10-folds CV"), outer=TRUE,  cex=1.2, line=-3)
-bestlam = cv.out$lambda.min
-bestlam
-lasso.pred = predict(lasso.mod, s=bestlam, newx=x[test ,])
-mean((lasso.pred - y.test)^2)
-
-lasso.coef = predict(lasso.mod, type = "coefficients", s=bestlam)[1:ncol(x),]
-lasso.coef[lasso.coef!=0]
-
-
-# using best subset
-require(leaps)
-dataBS = as.data.frame(cbind(y, x))
-# salary[, c(4:8, 13, 19:20, 27:31)])
-# assign names
-namesdataBS =names(dataBS)
-lll = ((dim(dataBS)[2]-1)/3)
-for (i in 1:lll+1){
-  str = namesdataBS[i]
-  namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1]
-}
-namesdataBS[(lll+2):(lll*2+1)] = paste(namesdataBS[1:lll+1], rep("^2", lll))
-namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll))
-
-names(dataBS) = namesdataBS
-
-best.sub = regsubsets(y ~ ., data = dataBS, nvmax = nrow(coef(lasso.mod)))
-best.sub.summary = summary(best.sub)
-names(best.sub.summary)
-# manual plotting
-par(mfrow =c(2,2))
-# rsq
-plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l")
-ind_Rsq = which.max(best.sub.summary$rsq)
-points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20)
-# adjRsq
-plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l")
-ind_adjRsq = which.max(best.sub.summary$adjr2)
-points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20)
-# Cp
-plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l")
-ind_Cp = which.min(best.sub.summary$cp)
-points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20)
-# bic
-plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
-ind_bic = which.min(best.sub.summary$bic)
-points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
-# mtext("My 'Title' in a strange place", line=15)
-mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5)
-
-# built-in plots
-?plot.regsubsets
-par(mfrow=c(1,1))
-plot(best.sub, scale = "r2")
-plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.7)
-mtext("Best subset selection for salary 18-25 using BIC", outer=TRUE,  cex=1.2, line=-3.5)
-plot(best.sub, scale = "Cp")
-plot(best.sub, scale = "adjr2")
-# retrieve the model with min BIC
-coefficients(best.sub, which.min(best.sub.summary$bic))
-
-```
 
 
 
@@ -1022,7 +844,6 @@ pairs(salary[, c(3:8, 13, 18:20)], col = col_col)
 
 # evaluate an OLS fit
 fit_LM_18_25 = lm(salary$sal_18_25 ~ salary$sal_51plus)
-summary(fit_LM_18_25)
 plot(y = salary$sal_18_25, x = salary$sal_51plus)
 abline(fit_LM_18_25, lwd=3, col="red")
 
@@ -1046,13 +867,6 @@ hist(sal_y, 30)
 hist(log(sal_y), 30)
 hist(sal_y^-1, 30)
 sal_y = sal_y^-1  # also suggested by Box-Cox transformation
-ggplot(data=data.frame(sal_y), aes(sal_y^-1)) +
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 60) +
-  geom_density(col="black") +
-  labs(x="salary^-1", y="Density") +
-  ggtitle("Transformation of salary found using Box-Cox transformation") +
-  theme(plot.title = element_text(hjust = 0.5)) 
-
 
 n_sal_y = length(sal_y)             # length response variable
 n_cat = length(salary$sal_M_18_25)  # length of each category (i.e., original vectors)
@@ -1087,9 +901,7 @@ data_ANOVA = cbind.data.frame(response = sal_y, sex = sal_sex, age = sal_age, jo
 names(data_ANOVA)
 # show regressors' shape
 if(!require(rafalib)){install.packages("rafalib")}
-library(rafalib)
-imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA") 
-axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl."))
+imagemat(data_ANOVA[,-1])
 
 # ANOVA model
 sal_ANOVA = lm(sal_y ~ sal_sex + sal_age + sal_job + sal_sex:sal_age + sal_sex:sal_job)
@@ -1098,7 +910,6 @@ anova((sal_ANOVA))
 
 # box-cox transformation suggested to use y^-1
 if(!require(MASS)){install.packages("MASS")}
-library(MASS)
 boxcox(sal_ANOVA)
 
 # adding contrasts?
@@ -1124,12 +935,6 @@ ggplot(salary2, aes(PC1, PC2)) +
   geom_point(shape = 21, col = "black")
 # correlations between variables and PCs...
 cor(salary[, 3:26], salary2[,27:28])
-
-ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 1) +
-  ggtitle("Biplot for the firms's size") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-
 ```
 
 
@@ -1305,8 +1110,7 @@ pop_pyramid <- ggplot(data = population_data2,
                      y = ifelse(test = sex == "Male", 
                                 yes = -total_population, no = total_population))) +
   geom_bar(stat = "identity") +
-  scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) + ggtitle("Pyramid of population") + theme(plot.title = element_text(hjust = 0.5)) + labs(y = "Population") + 
-  coord_flip()
+  scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) + ggtitle("Pyramid of Population") + theme(plot.title = element_text(hjust = 0.5)) + labs(x= "Age")+ labs(y = "Population") + coord_flip()
 print(pop_pyramid)
 ```
 
