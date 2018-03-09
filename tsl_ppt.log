@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (MiKTeX 2.9.6500 64-bit) (preloaded format=pdflatex 2018.1.26)  8 MAR 2018 15:07
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (MiKTeX 2.9.6500 64-bit) (preloaded format=pdflatex 2018.1.26)  9 MAR 2018 13:16
 entering extended mode
 **./tsl_ppt.tex
 (tsl_ppt.tex
@@ -205,7 +205,10 @@ Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1368.
 Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1369.
 Package xcolor Info: Model `Gray' substituted by `gray' on input line 1370.
 Package xcolor Info: Model `wave' substituted by `hsb' on input line 1371.
-)
+
+("C:\Program Files\MiKTeX 2.9\tex\latex\graphics\dvipsnam.def"
+File: dvipsnam.def 2016/06/17 v3.0m Driver-dependent file (DPC,SPQR)
+))
 ("C:\Program Files\MiKTeX 2.9\tex\generic\pgf\basiclayer\pgfcore.code.tex"
 Package: pgfcore 2010/04/11 v3.0.1a (rcs-revision 1.7)
 
@@ -701,23 +704,78 @@ File: uni-global.def 2013/05/13 UCS: Unicode global data
 \uc@combtoks=\toks45
 \uc@combtoksb=\toks46
 \uc@temptokena=\toks47
+)
+("C:\Program Files\MiKTeX 2.9\tex\latex\caption\caption.sty"
+Package: caption 2016/02/21 v3.3-144 Customizing captions (AR)
+
+("C:\Program Files\MiKTeX 2.9\tex\latex\caption\caption3.sty"
+Package: caption3 2016/05/22 v1.7-166 caption3 kernel (AR)
+Package caption3 Info: TeX engine: e-TeX on input line 67.
+\captionmargin=\dimen191
+\captionmargin@=\dimen192
+\captionwidth=\dimen193
+\caption@tempdima=\dimen194
+\caption@indent=\dimen195
+\caption@parindent=\dimen196
+\caption@hangindent=\dimen197
+)
+\c@ContinuedFloat=\count157
+Package caption Info: beamer document class.
+Package caption Info: hyperref package is loaded.
+Package caption Info: Hyperref support is turned off
+(caption)             because hyperref has stopped early.
+)
+("C:\Program Files\MiKTeX 2.9\tex\latex\oberdiek\epstopdf.sty"
+Package: epstopdf 2016/05/15 v2.6 Conversion with epstopdf on the fly (HO)
+
+("C:\Program Files\MiKTeX 2.9\tex\latex\oberdiek\epstopdf-base.sty"
+Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
+
+("C:\Program Files\MiKTeX 2.9\tex\latex\oberdiek\grfext.sty"
+Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
+)
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+38.
+Package grfext Info: Graphics extension search list:
+(grfext)             [.pdf,.png,.jpg,.mps,.jpeg,.jbig2,.jb2,.PDF,.PNG,.JPG,.JPE
+G,.JBIG2,.JB2,.eps]
+(grfext)             \AppendGraphicsExtensions on input line 456.
+))
+("C:\Program Files\MiKTeX 2.9\tex\latex\subfig\subfig.sty"
+Package: subfig 2005/06/28 ver: 1.3 subfig package
+\c@KVtest=\count158
+\sf@farskip=\skip57
+\sf@captopadj=\dimen198
+\sf@capskip=\skip58
+\sf@nearskip=\skip59
+\c@subfigure=\count159
+\c@subfigure@save=\count160
+\c@depth=\count161
+\c@subtable=\count162
+\c@subtable@save=\count163
+\sf@top=\skip60
+\sf@bottom=\skip61
+)
+("C:\Program Files\MiKTeX 2.9\tex\latex\eurosym\eurosym.sty"
+Package: eurosym 1998/08/06 v1.1 European currency symbol ``Euro''
+\@eurobox=\box53
 ) (tsl_ppt.aux)
 \openout1 = `tsl_ppt.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 29.
-LaTeX Font Info:    ... okay on input line 29.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 37.
+LaTeX Font Info:    ... okay on input line 37.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -755,33 +813,20 @@ LaTeX Font Info:    ... okay on input line 29.
 
 ("C:\Program Files\MiKTeX 2.9\tex\context\base\supp-pdf.mkii"
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count157
-\scratchdimen=\dimen191
-\scratchbox=\box53
-\nofMPsegments=\count158
-\nofMParguments=\count159
+\scratchcounter=\count164
+\scratchdimen=\dimen199
+\scratchbox=\box54
+\nofMPsegments=\count165
+\nofMParguments=\count166
 \everyMPshowfont=\toks48
-\MPscratchCnt=\count160
-\MPscratchDim=\dimen192
-\MPnumerator=\count161
-\makeMPintoPDFobject=\count162
+\MPscratchCnt=\count167
+\MPscratchDim=\dimen256
+\MPnumerator=\count168
+\makeMPintoPDFobject=\count169
 \everyMPtoPDFconversion=\toks49
-) ("C:\Program Files\MiKTeX 2.9\tex\latex\oberdiek\epstopdf-base.sty"
-Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
-
-("C:\Program Files\MiKTeX 2.9\tex\latex\oberdiek\grfext.sty"
-Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
-)
-Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
-38.
-Package grfext Info: Graphics extension search list:
-(grfext)             [.pdf,.png,.jpg,.mps,.jpeg,.jbig2,.jb2,.PDF,.PNG,.JPG,.JPE
-G,.JBIG2,.JB2,.eps]
-(grfext)             \AppendGraphicsExtensions on input line 456.
-)
-ABD: EveryShipout initializing macros
-\AtBeginShipoutBox=\box54
-Package hyperref Info: Link coloring OFF on input line 29.
+) ABD: EveryShipout initializing macros
+\AtBeginShipoutBox=\box55
+Package hyperref Info: Link coloring OFF on input line 37.
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\hyperref\nameref.sty"
 Package: nameref 2016/05/21 v2.44 Cross-referencing by name of section
@@ -789,68 +834,68 @@ Package: nameref 2016/05/21 v2.44 Cross-referencing by name of section
 ("C:\Program Files\MiKTeX 2.9\tex\generic\oberdiek\gettitlestring.sty"
 Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
 )
-\c@section@level=\count163
+\c@section@level=\count170
 )
-LaTeX Info: Redefining \ref on input line 29.
-LaTeX Info: Redefining \pageref on input line 29.
-LaTeX Info: Redefining \nameref on input line 29.
+LaTeX Info: Redefining \ref on input line 37.
+LaTeX Info: Redefining \pageref on input line 37.
+LaTeX Info: Redefining \nameref on input line 37.
 
 (tsl_ppt.out) (tsl_ppt.out)
 \@outlinefile=\write5
 \openout5 = `tsl_ppt.out'.
 
 LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
-(Font)                  OT1/cmr/m/n --> OT1/cmss/m/n on input line 29.
+(Font)                  OT1/cmr/m/n --> OT1/cmss/m/n on input line 37.
 LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
-(Font)                  OT1/cmr/bx/n --> OT1/cmss/bx/n on input line 29.
+(Font)                  OT1/cmr/bx/n --> OT1/cmss/bx/n on input line 37.
 \symnumbers=\mathgroup6
 \sympureletters=\mathgroup7
 LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `normal'
-(Font)                  OT1/cmss/m/n --> OT1/cmr/m/n on input line 29.
-LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 29.
+(Font)                  OT1/cmss/m/n --> OT1/cmr/m/n on input line 37.
+LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
-(Font)                  OT1/cmr/bx/n --> OT1/cmss/bx/n on input line 29.
+(Font)                  OT1/cmr/bx/n --> OT1/cmss/bx/n on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
-(Font)                  OT1/cmr/bx/n --> OT1/cmss/bx/n on input line 29.
-LaTeX Font Info:    Redeclaring math alphabet \mathsf on input line 29.
+(Font)                  OT1/cmr/bx/n --> OT1/cmss/bx/n on input line 37.
+LaTeX Font Info:    Redeclaring math alphabet \mathsf on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
-(Font)                  OT1/cmss/m/n --> OT1/cmss/m/n on input line 29.
+(Font)                  OT1/cmss/m/n --> OT1/cmss/m/n on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
-(Font)                  OT1/cmss/bx/n --> OT1/cmss/m/n on input line 29.
-LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 29.
+(Font)                  OT1/cmss/bx/n --> OT1/cmss/m/n on input line 37.
+LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
-(Font)                  OT1/cmr/m/it --> OT1/cmss/m/it on input line 29.
+(Font)                  OT1/cmr/m/it --> OT1/cmss/m/it on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
-(Font)                  OT1/cmr/bx/it --> OT1/cmss/m/it on input line 29.
-LaTeX Font Info:    Redeclaring math alphabet \mathtt on input line 29.
+(Font)                  OT1/cmr/bx/it --> OT1/cmss/m/it on input line 37.
+LaTeX Font Info:    Redeclaring math alphabet \mathtt on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
-(Font)                  OT1/cmtt/m/n --> OT1/cmtt/m/n on input line 29.
+(Font)                  OT1/cmtt/m/n --> OT1/cmtt/m/n on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
-(Font)                  OT1/cmtt/m/n --> OT1/cmtt/m/n on input line 29.
+(Font)                  OT1/cmtt/m/n --> OT1/cmtt/m/n on input line 37.
 LaTeX Font Info:    Overwriting symbol font `numbers' in version `bold'
-(Font)                  OT1/cmss/m/n --> OT1/cmss/bx/n on input line 29.
+(Font)                  OT1/cmss/m/n --> OT1/cmss/bx/n on input line 37.
 LaTeX Font Info:    Overwriting symbol font `pureletters' in version `bold'
-(Font)                  OT1/cmss/m/it --> OT1/cmss/bx/it on input line 29.
+(Font)                  OT1/cmss/m/it --> OT1/cmss/bx/it on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `bold'
-(Font)                  OT1/cmss/bx/n --> OT1/cmr/bx/n on input line 29.
+(Font)                  OT1/cmss/bx/n --> OT1/cmr/bx/n on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
-(Font)                  OT1/cmss/bx/n --> OT1/cmss/bx/n on input line 29.
+(Font)                  OT1/cmss/bx/n --> OT1/cmss/bx/n on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
-(Font)                  OT1/cmss/m/n --> OT1/cmss/bx/n on input line 29.
+(Font)                  OT1/cmss/m/n --> OT1/cmss/bx/n on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
-(Font)                  OT1/cmss/m/it --> OT1/cmss/bx/it on input line 29.
+(Font)                  OT1/cmss/m/it --> OT1/cmss/bx/it on input line 37.
 LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
-(Font)                  OT1/cmtt/m/n --> OT1/cmtt/bx/n on input line 29.
-LaTeX Font Info:    Redeclaring symbol font `pureletters' on input line 29.
+(Font)                  OT1/cmtt/m/n --> OT1/cmtt/bx/n on input line 37.
+LaTeX Font Info:    Redeclaring symbol font `pureletters' on input line 37.
 LaTeX Font Info:    Overwriting symbol font `pureletters' in version `normal'
-(Font)                  OT1/cmss/m/it --> OT1/mathkerncmss/m/sl on input line 2
-9.
+(Font)                  OT1/cmss/m/it --> OT1/mathkerncmss/m/sl on input line 3
+7.
 LaTeX Font Info:    Overwriting symbol font `pureletters' in version `bold'
 (Font)                  OT1/cmss/bx/it --> OT1/mathkerncmss/m/sl on input line 
-29.
+37.
 LaTeX Font Info:    Overwriting symbol font `pureletters' in version `bold'
 (Font)                  OT1/mathkerncmss/m/sl --> OT1/mathkerncmss/bx/sl on inp
-ut line 29.
+ut line 37.
 
 ("C:\Program Files\MiKTeX 2.9\tex\latex\translator\translator-basic-dictionary-
 English.dict"
@@ -878,21 +923,245 @@ Dictionary: translator-theorem-dictionary, Language: English
 ) ("C:\Program Files\MiKTeX 2.9\tex\latex\ucs\ucsencs.def"
 File: ucsencs.def 2011/01/21 Fixes to fontencodings LGR, T3
 )
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: subfig package v1.3 is loaded.
+Package caption Info: End \AtBeginDocument code.
+
 (tsl_ppt.nav) [1
 
-{C:/Users/Luca/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}] ("C:\Program
- Files\MiKTeX 2.9\tex\latex\ucs\uni-32.def"
-File: uni-32.def 2013/05/13 UCS: Unicode data U+2000..U+20FF
-) [2
+{C:/Users/Luca/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}]
+LaTeX Font Info:    Try loading font information for U+msa on input line 69.
+ ("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\umsa.fd"
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 69.
+
+("C:\Program Files\MiKTeX 2.9\tex\latex\amsfonts\umsb.fd"
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+LaTeX Font Info:    Try loading font information for OT1+mathkerncmss on input 
+line 69.
+
+("C:\Program Files\MiKTeX 2.9\tex\latex\sansmathaccent\ot1mathkerncmss.fd"
+File: ot1mathkerncmss.fd 2013/03/27 Fontinst v1.933 font definitions for OT1/ma
+thkerncmss.
+)
+[2
 
 ] [3
 
 ] [4
 
 ]
+<Presentation_images/dis_pop_dep.jpeg, id=91, 510.90875pt x 372.39125pt>
+File: Presentation_images/dis_pop_dep.jpeg Graphic file (type jpg)
+<use Presentation_images/dis_pop_dep.jpeg>
+Package pdftex.def Info: Presentation_images/dis_pop_dep.jpeg  used on input li
+ne 117.
+(pdftex.def)             Requested size: 156.49014pt x 114.05931pt.
+<Presentation_images/pyramid_pop.jpeg, id=92, 510.90875pt x 372.39125pt>
+File: Presentation_images/pyramid_pop.jpeg Graphic file (type jpg)
+<use Presentation_images/pyramid_pop.jpeg>
+Package pdftex.def Info: Presentation_images/pyramid_pop.jpeg  used on input li
+ne 117.
+(pdftex.def)             Requested size: 156.49014pt x 114.05931pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 117--117
+ []|[]|  
+ []
+
 [5
 
-] [6
+ <./Presentation_images/dis_pop_dep.jpeg> <./Presentation_images/pyramid_pop.jp
+eg>]
+<Presentation_images/boxplot_sex_age.jpeg, id=99, 417.81094pt x 340.27126pt>
+File: Presentation_images/boxplot_sex_age.jpeg Graphic file (type jpg)
+<use Presentation_images/boxplot_sex_age.jpeg>
+Package pdftex.def Info: Presentation_images/boxplot_sex_age.jpeg  used on inpu
+t line 150.
+(pdftex.def)             Requested size: 171.14764pt x 139.3875pt.
+<Presentation_images/boxplot_sex_job.jpeg, id=100, 417.81094pt x 340.27126pt>
+File: Presentation_images/boxplot_sex_job.jpeg Graphic file (type jpg)
+<use Presentation_images/boxplot_sex_job.jpeg>
+Package pdftex.def Info: Presentation_images/boxplot_sex_job.jpeg  used on inpu
+t line 150.
+(pdftex.def)             Requested size: 171.14764pt x 139.3875pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 150--150
+ []|[]|  
+ []
+
+[6
+
+ <./Presentation_images/boxplot_sex_age.jpeg> <./Presentation_images/boxplot_se
+x_job.jpeg>]
+<Presentation_images/hist_salary_ratio_general.jpeg, id=107, 417.81094pt x 340.
+27126pt>
+File: Presentation_images/hist_salary_ratio_general.jpeg Graphic file (type jpg
+)
+<use Presentation_images/hist_salary_ratio_general.jpeg>
+Package pdftex.def Info: Presentation_images/hist_salary_ratio_general.jpeg  us
+ed on input line 163.
+(pdftex.def)             Requested size: 171.14764pt x 139.3875pt.
+<Presentation_images/scatter_salary_ratio_vs_general.jpeg, id=108, 417.81094pt 
+x 340.27126pt>
+File: Presentation_images/scatter_salary_ratio_vs_general.jpeg Graphic file (ty
+pe jpg)
+<use Presentation_images/scatter_salary_ratio_vs_general.jpeg>
+Package pdftex.def Info: Presentation_images/scatter_salary_ratio_vs_general.jp
+eg  used on input line 163.
+(pdftex.def)             Requested size: 171.14764pt x 139.3875pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 163--163
+ []|[]|  
+ []
+
+[7
+
+ <./Presentation_images/hist_salary_ratio_general.jpeg> <./Presentation_images/
+scatter_salary_ratio_vs_general.jpeg>]
+<Presentation_images/hist_salary_ratio_executives.jpeg, id=116, 417.81094pt x 3
+40.27126pt>
+File: Presentation_images/hist_salary_ratio_executives.jpeg Graphic file (type 
+jpg)
+<use Presentation_images/hist_salary_ratio_executives.jpeg>
+Package pdftex.def Info: Presentation_images/hist_salary_ratio_executives.jpeg 
+ used on input line 176.
+(pdftex.def)             Requested size: 171.14764pt x 139.3875pt.
+<Presentation_images/hist_salary_ratioExec_vs_executives.jpeg, id=117, 417.8109
+4pt x 340.27126pt>
+File: Presentation_images/hist_salary_ratioExec_vs_executives.jpeg Graphic file
+ (type jpg)
+<use Presentation_images/hist_salary_ratioExec_vs_executives.jpeg>
+Package pdftex.def Info: Presentation_images/hist_salary_ratioExec_vs_executive
+s.jpeg  used on input line 176.
+(pdftex.def)             Requested size: 171.14764pt x 139.3875pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 176--176
+ []|[]|  
+ []
+
+[8
+
+ <./Presentation_images/hist_salary_ratio_executives.jpeg> <./Presentation_imag
+es/hist_salary_ratioExec_vs_executives.jpeg>]
+<Presentation_images/ANOVA_factors.jpeg, id=124, 453.94594pt x 340.27126pt>
+File: Presentation_images/ANOVA_factors.jpeg Graphic file (type jpg)
+<use Presentation_images/ANOVA_factors.jpeg>
+Package pdftex.def Info: Presentation_images/ANOVA_factors.jpeg  used on input 
+line 191.
+(pdftex.def)             Requested size: 171.14764pt x 128.28676pt.
+<Presentation_images/ANOVA_model.jpeg, id=125, 531.48563pt x 417.05812pt>
+File: Presentation_images/ANOVA_model.jpeg Graphic file (type jpg)
+<use Presentation_images/ANOVA_model.jpeg>
+Package pdftex.def Info: Presentation_images/ANOVA_model.jpeg  used on input li
+ne 191.
+(pdftex.def)             Requested size: 171.14764pt x 134.30135pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 191--191
+ []|[]|  
+ []
+
+[9
+
+ <./Presentation_images/ANOVA_factors.jpeg> <./Presentation_images/ANOVA_model.
+jpeg>]
+<Presentation_images/ANOVA_dataY.jpeg, id=132, 453.94594pt x 340.27126pt>
+File: Presentation_images/ANOVA_dataY.jpeg Graphic file (type jpg)
+<use Presentation_images/ANOVA_dataY.jpeg>
+Package pdftex.def Info: Presentation_images/ANOVA_dataY.jpeg  used on input li
+ne 200.
+(pdftex.def)             Requested size: 256.72147pt x 192.43533pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 200--200
+ []|[]|  
+ []
+
+[10
+
+ <./Presentation_images/ANOVA_dataY.jpeg>]
+<Presentation_images/bestsubsel_18_25.jpeg, id=139, 893.58844pt x 474.27188pt>
+File: Presentation_images/bestsubsel_18_25.jpeg Graphic file (type jpg)
+<use Presentation_images/bestsubsel_18_25.jpeg>
+Package pdftex.def Info: Presentation_images/bestsubsel_18_25.jpeg  used on inp
+ut line 216.
+(pdftex.def)             Requested size: 205.37926pt x 109.00063pt.
+<Presentation_images/bestsubsel_18_25_BIC.jpeg, id=140, 1005.00468pt x 474.2718
+8pt>
+File: Presentation_images/bestsubsel_18_25_BIC.jpeg Graphic file (type jpg)
+<use Presentation_images/bestsubsel_18_25_BIC.jpeg>
+Package pdftex.def Info: Presentation_images/bestsubsel_18_25_BIC.jpeg  used on
+ input line 216.
+(pdftex.def)             Requested size: 171.14764pt x 80.76265pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 216--216
+ []|[]|  
+ []
+
+[11
+
+ <./Presentation_images/bestsubsel_18_25.jpeg> <./Presentation_images/bestsubse
+l_18_25_BIC.jpeg>]
+<Presentation_images/elasticNet_10foldsCV.jpeg, id=147, 822.07124pt x 474.27188
+pt>
+File: Presentation_images/elasticNet_10foldsCV.jpeg Graphic file (type jpg)
+<use Presentation_images/elasticNet_10foldsCV.jpeg>
+Package pdftex.def Info: Presentation_images/elasticNet_10foldsCV.jpeg  used on
+ input line 231.
+(pdftex.def)             Requested size: 308.06367pt x 177.72849pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 231--231
+ []|[]|  
+ []
+
+[12
+
+ <./Presentation_images/elasticNet_10foldsCV.jpeg>]
+<Presentation_images/hist_firms_total.jpeg, id=154, 417.81094pt x 340.27126pt>
+File: Presentation_images/hist_firms_total.jpeg Graphic file (type jpg)
+<use Presentation_images/hist_firms_total.jpeg>
+Package pdftex.def Info: Presentation_images/hist_firms_total.jpeg  used on inp
+ut line 260.
+(pdftex.def)             Requested size: 171.14764pt x 139.3875pt.
+<Presentation_images/hist_firms_ratio_null_total.jpeg, id=155, 417.81094pt x 34
+0.27126pt>
+File: Presentation_images/hist_firms_ratio_null_total.jpeg Graphic file (type j
+pg)
+<use Presentation_images/hist_firms_ratio_null_total.jpeg>
+Package pdftex.def Info: Presentation_images/hist_firms_ratio_null_total.jpeg  
+used on input line 260.
+(pdftex.def)             Requested size: 171.14764pt x 139.3875pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 260--260
+ []|[]|  
+ []
+
+[13
+
+ <./Presentation_images/hist_firms_total.jpeg> <./Presentation_images/hist_firm
+s_ratio_null_total.jpeg>]
+<Presentation_images/biplot_firms.jpeg, id=163, 417.81094pt x 340.27126pt>
+File: Presentation_images/biplot_firms.jpeg Graphic file (type jpg)
+<use Presentation_images/biplot_firms.jpeg>
+Package pdftex.def Info: Presentation_images/biplot_firms.jpeg  used on input l
+ine 277.
+(pdftex.def)             Requested size: 239.60567pt x 195.14043pt.
+
+Overfull \hbox (17.07181pt too wide) in paragraph at lines 277--277
+ []|[]|  
+ []
+
+
+Overfull \vbox (1.2631pt too high) detected at line 277
+ []
+
+[14
+
+ <./Presentation_images/biplot_firms.jpeg>] [15
+
+] [16
+
+] [17
 
 ]
 \tf@nav=\write6
@@ -904,31 +1173,32 @@ File: uni-32.def 2013/05/13 UCS: Unicode data U+2000..U+20FF
 \tf@snm=\write8
 \openout8 = `tsl_ppt.snm'.
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 80.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 80.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 325.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 325.
  (tsl_ppt.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 80.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 80.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 325.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 325.
 Package rerunfilecheck Info: File `tsl_ppt.out' has not changed.
-(rerunfilecheck)             Checksum: 5B9BFC7C86953BF231E083A0A75D0245;241.
+(rerunfilecheck)             Checksum: 2419E698F7CC09C7ED3362B71C58A4DE;525.
  ) 
 Here is how much of TeX's memory you used:
- 17863 strings out of 493307
- 335574 string characters out of 3138825
- 423808 words of memory out of 3000000
- 20992 multiletter control sequences out of 15000+200000
- 6777 words of font info for 24 fonts, out of 3000000 for 9000
+ 19189 strings out of 493307
+ 363069 string characters out of 3138825
+ 453400 words of memory out of 3000000
+ 22231 multiletter control sequences out of 15000+200000
+ 13478 words of font info for 49 fonts, out of 3000000 for 9000
  1141 hyphenation exceptions out of 8191
- 56i,15n,57p,776b,451s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 56i,15n,57p,776b,470s stack positions out of 5000i,500n,10000p,200000b,50000s
 <C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmss10.pfb><C:/Pr
-ogram Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmss12.pfb><C:/Program Fi
-les/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmss17.pfb><C:/Program Files/MiKT
-eX 2.9/fonts/type1/public/amsfonts/cm/cmss8.pfb><C:/Program Files/MiKTeX 2.9/fo
-nts/type1/public/amsfonts/cm/cmssi10.pfb><C:/Program Files/MiKTeX 2.9/fonts/typ
-e1/public/amsfonts/cm/cmssi17.pfb>
-Output written on tsl_ppt.pdf (6 pages, 73856 bytes).
+ogram Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmss17.pfb><C:/Program Fi
+les/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmss8.pfb><C:/Program Files/MiKTe
+X 2.9/fonts/type1/public/amsfonts/cm/cmssi10.pfb><C:/Program Files/MiKTeX 2.9/f
+onts/type1/public/amsfonts/cm/cmssi17.pfb><C:/Program Files/MiKTeX 2.9/fonts/ty
+pe1/public/eurosym/feymr10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/
+amsfonts/symbols/msam7.pfb>
+Output written on tsl_ppt.pdf (17 pages, 1711538 bytes).
 PDF statistics:
- 103 PDF objects out of 1000 (max. 8388607)
- 18 named destinations out of 1000 (max. 500000)
- 89 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 224 PDF objects out of 1000 (max. 8388607)
+ 46 named destinations out of 1000 (max. 500000)
+ 222 words of extra memory for PDF output out of 10000 (max. 10000000)
 
