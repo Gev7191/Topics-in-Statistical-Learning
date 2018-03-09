@@ -1263,10 +1263,10 @@ pop_by_department <- ddply(geo_pop_by_town, .(department), function(geo_pop_by_t
              workforce = sum(geo_pop_by_town$workforce) 
   )})
 
-summary(pop_by_department)
 pop_by_department$dependency_ratio <- pop_by_department$dependent / pop_by_department$workforce
 pop_by_department$aged_dependency_ratio <- pop_by_department$elderly / pop_by_department$workforce
 pop_by_department$child_dependency_ratio <- pop_by_department$child / pop_by_department$workforce
+summary(pop_by_department)
 ```
 
 ```{r}
@@ -1290,12 +1290,39 @@ pop_distribution_department <-
   sc +
   #geom_text(aes(label = town_name, x = longitude, y = latitude), 
             #data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
-  labs(color='Total Population in Log') +
+  labs(color='Total Population in Log') + 
   ggtitle("Distribution of Population for each department") 
 pop_distribution_department
 ```
 
 
+```{r}
+population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
+  data.frame(total_population = sum(population$peopleCategNum))
+  })
+pop_pyramid <- ggplot(data = population_data2, 
+       mapping = aes(x = ageCateg5, fill = sex, 
+                     y = ifelse(test = sex == "Male", 
+                                yes = -total_population, no = total_population))) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) + ggtitle("Pyramid of population") + theme(plot.title = element_text(hjust = 0.5)) + labs(y = "Population") + 
+  coord_flip()
+print(pop_pyramid)
+```
+
+
+```{r}
+#Plot dependency ratio
+sc <- scale_colour_gradientn(colours =palette(rainbow(5)), limits=c(min(geo_pop_by_town$dependency_ratio), max(geo_pop_by_town$dependency_ratio)))
+dependency_ratio_plot<- 
+  FraMap + 
+  geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$dependency_ratio),
+             data=geo_pop_by_town, alpha=0.8, size=0.6) + 
+  sc +
+  labs(color='dependency ratio') +
+  ggtitle("Dependency ratio of each town") 
+dependency_ratio_plot
+```
 
 # Produce consistent datasets #
 
@@ -1336,9 +1363,9 @@ for (i in dataset){
 # check how many observation have been deleted
 for (i in dataset){
   del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
-  del_prop = del_rows / nrow(get(paste(i, "NEW", sep = "")))
+  del_prop = del_rows / nrow(get(i))
   del_obs = paste("For", i, del_rows, "have been deleted.",
-                  "They were the", round(del_prop, digits=2), "% of the total.", sep = " ")
+                  "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
   print(del_obs)
 }
 
@@ -1453,10 +1480,14 @@ pop_pyramid <- ggplot(data = population_data2,
   geom_bar(stat = "identity") +
   scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) +
   labs(y = "Population") +
+  ggtitle("Population pyramid")
   coord_flip()
 print(pop_pyramid)
 
 ```
+
+
+
 
 # Analysis #
 ```{r}
