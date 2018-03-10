@@ -66,7 +66,18 @@ In particular, we are interested in:
 
 Loading all libraries needed throughout the notebook:
 ```{r}
+if(!require(plyr)){install.packages("dplyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
+if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
+if(!require(ggpmap)){install.packages("ggpmap"); library(ggpmap)}
+if(!require(ggbiplot)){
+  if(!require(devtools)){
+    install.packages("devtools")}
+  install_github("vqv/ggbiplot")
+  library(ggbiplot)}
+if(!require(mclust)){install.packages("mclust"); library(mclust)} 
+if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
+if(!require(MASS)){install.packages("MASS")}
 
 ```
 
@@ -202,7 +213,7 @@ str(firms)
 # deptNum has to be factor?
 ```
 
-## EDA ##
+## Descriptive statistics ##
   
 ```{r}
 # there is an obs with more than 316K null data: we check if it is plausible
@@ -265,19 +276,13 @@ str(myPr)
 firms2 <- cbind(firms_clean, myPr$x[, 1:2])
 head(firms2)
 #plot with ggplot...
-require(ggplot2)
 ggplot(firms2, aes(PC1, PC2)) +
   stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) +
   geom_point(shape = 21, col = "black")
 # correlations between variables and PCs...
 cor(firms_clean[, 4:8], firms2[,9:10])
 
-# load package
-if(!require(ggbiplot)){
-  if(!require(devtools)){
-    install.packages("devtools")}
-  install_github("vqv/ggbiplot")
-  library(ggbiplot)}
+# using ggbiplot
 ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
   ggtitle("Biplot for the firms's size") +
   theme(plot.title = element_text(hjust = 0.5))
@@ -334,10 +339,7 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust 
 # head(clusters)
 # plot(firms_sampled, col = clusters) # as we can see, it performs quite similar to the K-means 
 # 
-# #Model-based clustering
-# 
-# if(!require(mclust)){install.packages("mclust")}
-# library(mclust)
+# #Model-based clustering using mclust
 # fitM <- Mclust(firms_truncated)
 # head(fitM)
 # plot(fitM)
@@ -399,14 +401,6 @@ summary(geo)
 
 Assign lat and long values for NAs units:
 ```{r}
-require(ggmap)
-
-# [ delete? ]
-# # compare numbers of NA in latitude and longitude 
-# sum(is.na(geo$latitude)) - sum(is.na(geo$longitude))
-# # check if they match or not
-# sum(!is.na(geo$latitude[indNA_Long]))
-# # 64 obs are missing in longitude but not in latitude, hence 88 vice versa
 
 # index of NAs and their total
 indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
@@ -459,18 +453,14 @@ summary(geo)
 
 ```
 
-## EDA ##
+## Descriptive statistics ##
 
 ```{r}
-#install.packages("ggplot2")
-#install.packages("ggmap")
-require(ggplot2)
-require(ggmap)
 
 # plot france (center: 2.213749 46.227638)
 # fra_center = as.numeric(geocode("France"))
 fra_center = c(2.213749, 46.227638)
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=1), extent="normal")
 FraMap
 
 # plot all towns available
@@ -487,7 +477,7 @@ geo = geo[!ind_nonEur,]
 # plot all European towns available
 geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
 geo_pos = geo_pos[complete.cases(geo_pos),]
-FraMap +
+ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
   geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.8, size=0.6) 
 
 ```
@@ -518,6 +508,7 @@ To do:
 ## Pre-processing ##
 
 ```{r}
+
 # preliminary checks
 dim(salary)
 names(salary)
@@ -535,16 +526,14 @@ salary$CODGEO <- as.numeric(as.character(salary$CODGEO))
 # Check for duplicated data
 sum(duplicated.data.frame(salary))
 
-
 ```
 
 
-## EDA ##
+## Descriptive statistics ##
 
-Univariate analysis comparing various job categories for both genders:  
+Univariate analysis comparing salaries for both genders among various job categories:
+
 ```{r}
-
-require(ggplot2)
 
 #  number of units
 n_sex <- length(salary$sal_Females)
@@ -571,30 +560,31 @@ sal_sex = cbind.data.frame(Label = Label,
              Variable = Variable)
 
 # plotting phase
-p <-  ggplot(data = sal_sex, aes(x=Label, y=value)) +
-      geom_boxplot(aes(fill = Label)) +
-      # not color points replacing colour = group instead of colour=Label
-      geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
-      facet_wrap( ~ Variable, scales="free") +
-      xlab("Sex") + ylab("Mean net salary per hour") + ggtitle("Gender comparison for different job positions") +
-      theme(plot.title = element_text(hjust = 0.5)) +      stat_boxplot(geom = "errorbar", width = 0.5)
-      # p <- p + guides(fill=guide_legend(title="Legend"))
-p
+ggplot(data = sal_sex, aes(x=Label, y=value)) +
+  geom_boxplot(aes(fill = Label)) +
+  # not color points replacing colour = group instead of colour=Label
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Sex") + ylab("Mean net salary per hour") + ggtitle("Gender comparison for different job positions") +
+  theme(plot.title = element_text(hjust = 0.5)) +      stat_boxplot(geom = "errorbar", width = 0.5)
+  # + guides(fill=guide_legend(title="Legend"))
 
-# excluding outliers
-p <- ggplot(data = sal_sex, aes(x=Label, y=value)) +
-      scale_y_continuous(limits = quantile(sal_sex$value, c(0, 0.9))) +
-      geom_boxplot(aes(fill = Label)) +
-      # not color points replacing colour = group instead of colour=Label
-      geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
-      facet_wrap( ~ Variable, scales="free") +
-      xlab("Sex") + ylab("Mean net salary per hour") + 
-      ggtitle("Gender comparison for different job positions excluding the last decile") +
-      theme(plot.title = element_text(hjust = 0.5)) +
-      # p <- p + guides(fill=guide_legend(title="Legend"))
-      stat_boxplot(geom = "errorbar", width = 0.5)
-p
+# the same but excluding outliers
+ggplot(data = sal_sex, aes(x=Label, y=value)) +
+  scale_y_continuous(limits = quantile(sal_sex$value, c(0, 0.9))) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Sex") + ylab("Mean net salary per hour") + 
+  ggtitle("Gender comparison for different job positions excluding the last decile") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
 
+```
+
+Univariate analysis comparing salaries for both genders among various ages:
+
+```{r}
 # vector representing males and females
 Label <- c(rep("M", n_sex*3), rep("F", n_sex*3))
 
@@ -607,96 +597,213 @@ Variable <- c(rep("18-25", n_sex),
               rep("51+", n_sex))
 
 # merge these data
-sal_sex = cbind.data.frame(Label = Label, 
+sal_sex <- cbind.data.frame(Label = Label, 
                            value = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus, 
                                      salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus),
                            Variable = Variable)
 
 # plotting phase
-p <-  ggplot(data = sal_sex, aes(x=Label, y=value)) +
+ggplot(data = sal_sex, aes(x=Label, y=value)) +
   geom_boxplot(aes(fill = Label)) +
-  # not color points replacing colour = group instead of colour=Label
   geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
   facet_wrap( ~ Variable, scales="free") +
   xlab("Sex") + ylab("Mean net salary per hour") + ggtitle("Gender comparison for different ages") +
   theme(plot.title = element_text(hjust = 0.5)) + ylim(c(5, 100)) +
   stat_boxplot(geom = "errorbar", width = 0.5)
-# p <- p + guides(fill=guide_legend(title="Legend"))
-p
 
 ```
 
-[[[[TO modify]]]]
-Focusing on possible social inequalities:
-[[TAKEN from kernel of anqitu]]
-Overall, there is obvious income inequality between genders, age groups and working social classes. On the average basis, the mean income for each town shows an increasing trend when age increases, showing that the salary increases when people work for longer time and their experience are valued by industries. The income inequality between genders shows the sign of gender discrimination in the society. The mean income for women is lowers than that of men for all age groups. Besides, while the mean income increases by age, the income difference between men and women also increases by age, showing that the income inequality between genders is more outstanding for the older age group. Since people at the older age group are likely to richer than the youngsters, coupled with the previous observation of aging population, there is a huge market potential for silver industry. Businesses can grab the opportunity in an aging society by identifying new customer segments among seniors and developing novel products and services to help them. Figure 5.
-]]][[]]
 
-```{r}
+The income inequality between genders, age groups and working positions is clear.
+In the following analyses the focus is on the salary ratio between womand and man among different
+job positions:
+
+```{r ratio F vs M accross jobs}
 # Gender salary ratio and general level of income
 
-# Overall mean salary
-# The higher the net mean income, the more skewed the ratio of salary between female and male is.
-# only 2 towns have a ratio>1
+# Overall mean salary: The higher the net mean income, the more skewed the ratio of salary between female and male is. only 2 towns have a ratio>1
 # create overall F vs M ratio
 salary$salary_ratio_FvsM <- salary$sal_Females / salary$sal_Males
-hist(salary$salary_ratio_FvsM)
 # histogram
-ggplot(data=salary, aes(salary$salary_ratio_FvsM)) +
-  geom_histogram(aes(y =..count..), col="black", fill="blue", alpha = .3, bins = 50) +
-  labs(x="Null firms/total firms", y="Count") +
-  ggtitle("Ratio between the number of null firms and total firms per town") +
+ggplot(data=salary, aes(salary$salary_ratio_FvsM)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) + 
+  geom_density(col="black") + 
+  labs(x="Overall salary ratio (females/males)", y="Density") + 
+  labs(title = "Overall salary ratio between females and males") + 
   theme(plot.title = element_text(hjust = 0.5)) 
-# scatter plot
-ggplot(salary, aes(x= sal_general, y=salary_ratio_FvsM)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
+# scatter plot vs overall mean salary
+ggplot(salary, aes(x= sal_general, y=salary_ratio_FvsM)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="Overall salary", y="Overall salary ratio(females/males)") + 
+  labs(title = "Overall salary ratio between females and males vs. overall salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm") 
 
-# Executives mean salary
-# a bit better and less skewed
+
+# Executives mean salary: a bit better for females and less skewed
+# create Executives F vs M ratio
 salary$salary_ratio_FvsM_Exec <- salary$sal_F_executive / salary$sal_M_executive
-hist(salary$salary_ratio_FvsM_Exec)
-ggplot(salary, aes(x= sal_executive, y= salary_ratio_FvsM_Exec)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
+# histogram
+ggplot(data=salary, aes(salary$salary_ratio_FvsM_Exec)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) + 
+  geom_density(col="black") + 
+  labs(x="Executives salary ratio (females/males)", y="Density") + 
+  labs(title = "Executives salary ratio between females and males") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+# scatter plot vs executives mean salary
+ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_Exec)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="Overall salary", y="Executives salary ratio (females/males)") + 
+  labs(title = "Executives salary ratio between females and males \n vs. overall salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm")
 
-# Middle managers mean salary
-# ..
+
+# Middle managers mean salary: ...
+# create Middle managers F vs M ratio
 salary$salary_ratio_FvsM_midManag <- salary$sal_F_midManager / salary$sal_M_midManager
-hist(salary$salary_ratio_FvsM_midManag)
-ggplot(salary, aes(x= sal_midManager, y= salary_ratio_FvsM_midManag)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
+# histogram
+ggplot(data=salary, aes(salary$salary_ratio_FvsM_Exec)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) + 
+  geom_density(col="black") + 
+  labs(x="Middle managers salary ratio (females/males)", y="Density") + 
+  labs(title = "Middle managers salary ratio between females and males") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+# scatter plot vs executives mean salary
+ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_midManag)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="Overall salary", y="Middle managers salary ratio (females/males)") + 
+  labs(title = "Middle managers salary ratio between females and males \n vs. overall salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm")
 
-# Middle managers mean salary
-# ..
+
+# Workers mean salary: ...
+# create workers F vs M ratio
 salary$salary_ratio_FvsM_worker <- salary$sal_F_worker / salary$sal_M_worker
-hist(salary$salary_ratio_FvsM_worker)
-ggplot(salary, aes(x= sal_worker, y= salary_ratio_FvsM_worker)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
+# histogram
+ggplot(data=salary, aes(salary$salary_ratio_FvsM_worker)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) + 
+  geom_density(col="black") + 
+  labs(x="Workers salary ratio (females/males)", y="Density") + 
+  labs(title = "Workers salary ratio between females and males") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+# scatter plot vs workers mean salary
+ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_worker)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="Overall salary", y="Workers salary ratio (females/males)") + 
+  labs(title = "Workers salary ratio between females and males \n vs. overall salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm")
 
-# Employee mean salary
-# ..
+
+# Employee mean salary: ...
+# create Employee F vs M ratio
 salary$salary_ratio_FvsM_employee <- salary$sal_F_employee / salary$sal_M_employee
-hist(salary$salary_ratio_FvsM_employee)
-ggplot(salary, aes(x= sal_employee, y= salary_ratio_FvsM_employee)) + 
-  geom_point(size = 0.5, colour = "#0091ff")+
-  geom_smooth()
-
+# histogram
+ggplot(data=salary, aes(salary$salary_ratio_FvsM_employee)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) + 
+  geom_density(col="black") + 
+  labs(x="Employee salary ratio (females/males)", y="Density") + 
+  labs(title = "Employee salary ratio between females and males") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+# scatter plot vs Employee mean salary
+ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_employee)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="Overall salary", y="Employee salary ratio (females/males)") + 
+  labs(title = "Employee salary ratio between females and males \n vs. overall salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm")
 
 ```
+
+Now we perform the same analysis for different age groups:
+
+```{r ratio F vs M accross ages}
+
+# 18-25 mean salary: are quite equal apart from some outliers and a quadratic trend
+# create 18-25 F vs M ratio
+salary$salary_ratio_FvsM_18_25 <- salary$sal_F_18_25 / salary$sal_M_18_25
+# histogram
+ggplot(data=salary, aes(salary$salary_ratio_FvsM_18_25)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) + 
+  geom_density(col="black") + 
+  labs(x="18-25 salary ratio (females/males)", y="Density") + 
+  labs(title = "18-25 salary ratio between females and males") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+# scatter plot vs 18-25 mean salary
+ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_18_25)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="Overall salary", y="18-25 salary ratio (females/males)") + 
+  labs(title = "18-25 salary ratio between females and males \n vs. overall salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm")
+# scatter plot vs 18-25 mean salary for them
+ggplot(salary, aes(x= sal_18_25, y= salary_ratio_FvsM_18_25)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="18-25 salary", y="18-25 salary ratio (females/males)") + 
+  labs(title = "18-25 salary ratio between females and males \n vs. overall 18-25 salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm")
+# [whic is better? themselve or general salary as predictor?]
+
+
+# 26-50 mean salary: ...
+# create 26-50 F vs M ratio
+salary$salary_ratio_FvsM_26_50 <- salary$sal_F_26_50 / salary$sal_M_26_50
+# histogram
+ggplot(data=salary, aes(salary$salary_ratio_FvsM_26_50)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) + 
+  geom_density(col="black") + 
+  labs(x="26-50 salary ratio (females/males)", y="Density") + 
+  labs(title = "26-50 salary ratio between females and males") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+# scatter plot vs 26-50 mean salary
+ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_26_50)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="Overall salary", y="26-50 salary ratio (females/males)") + 
+  labs(title = "26-50 salary ratio between females and males \n vs. overall salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm")
+
+
+# 51+ mean salary: ...
+# create 51+ F vs M ratio
+salary$salary_ratio_FvsM_51plus <- salary$sal_F_51plus / salary$sal_M_51plus
+# histogram
+ggplot(data=salary, aes(salary$salary_ratio_FvsM_51plus)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) + 
+  geom_density(col="black") + 
+  labs(x="51+ salary ratio (females/males)", y="Density") + 
+  labs(title = "51+ salary ratio between females and males") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+# scatter plot vs 26-50 mean salary
+ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_51plus)) +  
+  geom_point(size = 0.5, colour = "#0091ff")+ 
+  labs(x="Overall salary", y="51+ salary ratio (females/males)") + 
+  labs(title = "51+ salary ratio between females and males \n vs. overall salary") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_smooth(method = "lm")
+
+```
+
 
 
 ## Linear models ##
 
-
 Highlight bivariate relations using scatter matrices:
-```{r}
+```{r bivariate plots}
+# correlation matrix
+salary_NEW = salary[, 3:ncol(salary)]
+colnames(salary_NEW) = 1:32
+corrplot(cor(salary_NEW), method = "circle", title = "Correlation matrix for salary", 
+         diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+         tl.col = "black", mar=c(0,0,1,0)) 
+
 # most general pairs
-pairs(salary[c(3:8, 13, 18:20)])
+pairs(salary[c(3:8, 13, 18:20)], gap=0)
 # pairs highlighting genders' differences
-pairs(salary[c(9:12, 14:17)])
+pairs(salary[c(9:12, 14:17)], gap=0)
 ```
 
 Fit a regression model to predict the salaries of people in age 26-50 using as regressor 51+ years:
@@ -704,7 +811,7 @@ Fit a regression model to predict the salaries of people in age 26-50 using as r
 
 # fit and show OLS estimate
 plot(salary$sal_26_50 ~ salary$sal_51plus)
-fit_LM_26_50 = glm(salary$sal_26_50 ~ salary$sal_51plus, data = salary)
+fit_LM_26_50 = lm(salary$sal_26_50 ~ salary$sal_51plus, data = salary) 
 abline(fit_LM_26_50, lwd=3, col="red")
 
 # diagnostics
@@ -749,28 +856,30 @@ set.seed(1)
 # y = salary$sal_executive
 # probably for ridge
 names(salary)
-y = salary$sal_26_50
-x = as.matrix(cbind(salary[, c(4:8, 13, 18, 20)]))
+y = salary$sal_18_25 
+x = as.matrix(cbind(salary[, c(4:8, 13, 19:20, 27:31)])) 
+x = as.matrix(cbind(x, x*x*x))
 names(x)
 
 # grid for lambda values
-grid = 10^seq(1, -5, length = 100)
-lasso.mod = glmnet(x, y, alpha = 1, lambda = grid)
-dim(coef(lasso.mod))
-# the norms are increasing in value because of the shrinkage
-lasso.mod$lambda[1]                  # lambda value
-sqrt(sum(coef(lasso.mod)[-1,1]^2))   # L2 norm of its coeff
-lasso.mod$lambda[51]
-sqrt(sum(coef(lasso.mod)[-1,51]^2))
-lasso.mod$lambda[90]
-sqrt(sum(coef(lasso.mod)[-1,90]^2))
-# predict values for a new lambda, e.g. OLS
-OLS = predict(lasso.mod, s = 0, type = "coefficients")[1:nrow(coef(lasso.mod)),]
+# grid = 10^seq(1, -5, length = 100)
+# lasso.mod = glmnet(x, y, alpha = 1, lambda = grid)
+# dim(coef(lasso.mod))
+# # the norms are increasing in value because of the shrinkage
+# lasso.mod$lambda[1]                  # lambda value
+# sqrt(sum(coef(lasso.mod)[-1,1]^2))   # L2 norm of its coeff
+# lasso.mod$lambda[51]
+# sqrt(sum(coef(lasso.mod)[-1,51]^2))
+# lasso.mod$lambda[90]
+# sqrt(sum(coef(lasso.mod)[-1,90]^2))
+# # predict values for a new lambda, e.g. OLS
+# OLS = predict(lasso.mod, s = 0, type = "coefficients")[1:nrow(coef(lasso.mod)),]
 
 # split the date leaving the 10% for CV
 train = sample(1:nrow(salary), floor(nrow(salary)*0.9))
 test = -train
 y.test = y[test]
+grid = 10^seq(5, -5, length = 100) 
 lasso.mod = glmnet(x[train,], y[train], alpha = 1, lambda = grid, thresh = 1e-12)
 err.i = rep("NA", length(grid))
 for (i in 1:length(grid)){
@@ -792,6 +901,8 @@ bestlam
 lasso.pred = predict(lasso.mod, s=bestlam, newx=x[test ,])
 mean((lasso.pred - y.test)^2)
 
+lasso.coef = predict(lasso.mod, type = "coefficients", s=bestlam)[1:ncol(x),] 
+lasso.coef[lasso.coef!=0] 
 
 # using best subset
 require(leaps)
@@ -817,6 +928,7 @@ points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20)
 plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
 ind_bic = which.min(best.sub.summary$bic)
 points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
+mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5) 
 # built-in plots
 ?plot.regsubsets
 par(mfrow=c(1,1))
@@ -829,6 +941,163 @@ coefficients(best.sub, which.min(best.sub.summary$bic))
 
 ```
 
+
+Code for the presentation
+
+```{r}
+BRUTTA COPIA PER PRESENTAZIONE 
+```{r} 
+plot.regsubsets2 <-  
+  function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
+                                                           "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)),  
+            ...)  
+  { 
+    obj <- x 
+    lsum <- summary(obj) 
+    par(mar = c(7, 5, 6, 3) + 0.1) 
+    nmodels <- length(lsum$rsq) 
+    np <- obj$np 
+    propscale <- FALSE 
+    sscale <- pmatch(scale[1], c("bic", "Cp", "adjr2", "r2"),  
+                     nomatch = 0) 
+    if (sscale == 0)  
+      stop(paste("Unrecognised scale=", scale)) 
+    if (propscale)  
+      stop(paste("Proportional scaling only for probabilities")) 
+    yscale <- switch(sscale, lsum$bic, lsum$cp, lsum$adjr2, lsum$rsq) 
+    up <- switch(sscale, -1, -1, 1, 1) 
+    index <- order(yscale * up) 
+    colorscale <- switch(sscale, yscale, yscale, -log(pmax(yscale,  
+                                                           1e-04)), -log(pmax(yscale, 1e-04))) 
+    image(z = t(ifelse(lsum$which[index, ], colorscale[index],  
+                       NA + max(colorscale) * 1.5)), xaxt = "n", yaxt = "n",  
+          x = (1:np), y = 1:nmodels, xlab = "", ylab = scale[1],  
+          col = col) 
+    laspar <- par("las") 
+    on.exit(par(las = laspar)) 
+    par(las = 2) 
+    axis(1, at = 1:np, labels = labels, ...) # I modified this line 
+    axis(2, at = 1:nmodels, labels = signif(yscale[index], 2)) 
+    if (!is.null(main))  
+      title(main = main) 
+    box() 
+    invisible(NULL) 
+  } 
+ 
+ 
+require(glmnet) 
+set.seed(1) 
+ 
+# crate an X matrix excluding intercept 
+# x = cbind(salary$sal_midManager, salary$sal_employee, salary$sal_worker, salary$sal_18_25, salary$sal_51plus) 
+# y = salary$sal_executive 
+# probably for ridge 
+names(salary) 
+y = salary$sal_18_25 
+x = as.matrix(cbind(salary[, c(4:8, 13, 19:20, 27:31)])) 
+x = as.matrix(cbind(x, x*x, x*x*x)) 
+names(x) 
+ 
+# # grid for lambda values 
+# grid = 10^seq(3, -2, length = 100) 
+# lasso.mod = glmnet(x, y, alpha = 1, lambda = grid) 
+# dim(coef(lasso.mod)) 
+# # the norms are increasing in value because of the shrinkage 
+# lasso.mod$lambda[1]                  # lambda value 
+# sqrt(sum(coef(lasso.mod)[-1,1]^2))   # L2 norm of its coeff 
+# lasso.mod$lambda[51] 
+# sqrt(sum(coef(lasso.mod)[-1,51]^2)) 
+# lasso.mod$lambda[90] 
+# sqrt(sum(coef(lasso.mod)[-1,90]^2)) 
+# # predict values for a new lambda, e.g. OLS 
+# OLS = predict(lasso.mod, s = 0, type = "coefficients")[1:nrow(coef(lasso.mod)),] 
+ 
+# split the date leaving the 10% for CV 
+train = sample(1:nrow(salary), floor(nrow(salary)*0.9)) 
+test = -train 
+y.test = y[test] 
+grid = 10^seq(3, -2, length = 100) 
+lasso.mod = glmnet(x[train,], y[train], alpha = 0.5, lambda = grid, thresh = 1e-12) 
+err.i = rep("NA", length(grid)) 
+for (i in 1:length(grid)){ 
+  lasso.pred = predict(lasso.mod, s = grid[i], newx = x[test,]) 
+  err.i[i] = mean((lasso.pred - y.test)^2) 
+} 
+plot(log(grid), err.i, xlab = 'log Lambda', ylab = 'test set MSE',  
+     main = 'Test MSE among different Lambdas', ylim = c(0, 2)) 
+bestlam = grid[which.min(err.i)] 
+points(log(grid)[bestlam], err.i[bestlam], col ="red", cex=2, pch=20) 
+# high values of lambda are like fitting just the intercept 
+ 
+# using 10 folds CV 
+set.seed (1) 
+cv.out = cv.glmnet(x[train ,], y[train], alpha = 0.5) 
+plot(cv.out) #, cex.names=0.5) 
+# mtext("My 'Title' in a strange place", line=15) 
+mtext(expression("Best lambda for salary 18-25 using elastic net \n           with alpha=0.5 and 10-folds CV"), outer=TRUE,  cex=1.2, line=-3) 
+bestlam = cv.out$lambda.min 
+bestlam 
+lasso.pred = predict(lasso.mod, s=bestlam, newx=x[test ,]) 
+mean((lasso.pred - y.test)^2) 
+ 
+lasso.coef = predict(lasso.mod, type = "coefficients", s=bestlam)[1:ncol(x),] 
+lasso.coef[lasso.coef!=0] 
+ 
+ 
+# using best subset 
+require(leaps) 
+dataBS = as.data.frame(cbind(y, x)) 
+# salary[, c(4:8, 13, 19:20, 27:31)]) 
+# assign names 
+namesdataBS =names(dataBS) 
+lll = ((dim(dataBS)[2]-1)/3) 
+for (i in 1:lll+1){ 
+  str = namesdataBS[i] 
+  namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1] 
+} 
+namesdataBS[(lll+2):(lll*2+1)] = paste(namesdataBS[1:lll+1], rep("^2", lll)) 
+namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll)) 
+ 
+names(dataBS) = namesdataBS 
+ 
+best.sub = regsubsets(y ~ ., data = dataBS, nvmax = nrow(coef(lasso.mod))) 
+best.sub.summary = summary(best.sub) 
+names(best.sub.summary) 
+# manual plotting 
+par(mfrow =c(2,2)) 
+# rsq 
+plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l") 
+ind_Rsq = which.max(best.sub.summary$rsq) 
+points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20) 
+# adjRsq 
+plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l") 
+ind_adjRsq = which.max(best.sub.summary$adjr2) 
+points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20) 
+# Cp 
+plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l") 
+ind_Cp = which.min(best.sub.summary$cp) 
+points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20) 
+# bic 
+plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l") 
+ind_bic = which.min(best.sub.summary$bic) 
+points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20) 
+# mtext("My 'Title' in a strange place", line=15) 
+mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5) 
+ 
+# built-in plots 
+?plot.regsubsets 
+par(mfrow=c(1,1)) 
+plot(best.sub, scale = "r2") 
+plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.7) 
+mtext("Best subset selection for salary 18-25 using BIC", outer=TRUE,  cex=1.2, line=-3.5) 
+plot(best.sub, scale = "Cp") 
+plot(best.sub, scale = "adjr2") 
+# retrieve the model with min BIC 
+coefficients(best.sub, which.min(best.sub.summary$bic)) 
+ 
+``` 
+ 
+```
 
 
 
@@ -845,6 +1114,7 @@ pairs(salary[, c(3:8, 13, 18:20)], col = col_col)
 
 # evaluate an OLS fit
 fit_LM_18_25 = lm(salary$sal_18_25 ~ salary$sal_51plus)
+summary(fit_LM_18_25) 
 plot(y = salary$sal_18_25, x = salary$sal_51plus)
 abline(fit_LM_18_25, lwd=3, col="red")
 
@@ -868,6 +1138,12 @@ hist(sal_y, 30)
 hist(log(sal_y), 30)
 hist(sal_y^-1, 30)
 sal_y = sal_y^-1  # also suggested by Box-Cox transformation
+ggplot(data=data.frame(sal_y), aes(sal_y^-1)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 60) + 
+  geom_density(col="black") + 
+  labs(x="salary^-1", y="Density") + 
+  ggtitle("Transformation of salary found using Box-Cox transformation") + 
+  theme(plot.title = element_text(hjust = 0.5))  
 
 n_sal_y = length(sal_y)             # length response variable
 n_cat = length(salary$sal_M_18_25)  # length of each category (i.e., original vectors)
@@ -901,8 +1177,8 @@ sal_job[(n_cat*12+1):(n_cat*13), 3] = 1   # females
 data_ANOVA = cbind.data.frame(response = sal_y, sex = sal_sex, age = sal_age, job = sal_job)
 names(data_ANOVA)
 # show regressors' shape
-if(!require(rafalib)){install.packages("rafalib")}
-imagemat(data_ANOVA[,-1])
+imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
+axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
 
 # ANOVA model
 sal_ANOVA = lm(sal_y ~ sal_sex + sal_age + sal_job + sal_sex:sal_age + sal_sex:sal_job)
@@ -910,7 +1186,6 @@ summary(sal_ANOVA)
 anova((sal_ANOVA))
 
 # box-cox transformation suggested to use y^-1
-if(!require(MASS)){install.packages("MASS")}
 boxcox(sal_ANOVA)
 
 # adding contrasts?
@@ -936,6 +1211,11 @@ ggplot(salary2, aes(PC1, PC2)) +
   geom_point(shape = 21, col = "black")
 # correlations between variables and PCs...
 cor(salary[, 3:26], salary2[,27:28])
+
+ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 1) + 
+  ggtitle("Biplot for the firms's size") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+  
 ```
 
 
@@ -983,7 +1263,7 @@ summary(population)
 
 ```
 
-## EDA ##
+## Descriptive statistics ##
 ```{r}
 #Compare age categories:
 #library(ggplot2)
