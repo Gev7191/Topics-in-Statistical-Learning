@@ -1130,6 +1130,27 @@ dependency_ratio_plot
 ```
 
 
+## 
+```{r}
+# PCA trial 1
+# create a clean dataset with only necessary variables inside.
+pca_pop_town <- ddply(geo_pop_by_town, .(town_name), function(geo_pop_by_town) {
+  data.frame(geo_pop_by_town$CODGEO,  geo_pop_by_town$sex_ratio, geo_pop_by_town$dependency_ratio, geo_pop_by_town$aged_dependency_ratio, geo_pop_by_town$child_dependency_ratio, geo_pop_by_town$total_population_log)})
+
+# rename the variables 
+names(pca_pop_town)[2:ncol(pca_pop)] <-
+  c("CODGEO",
+    "sex_ratio",
+    "dependency_ratio",
+    "aged_dep_ratio",
+    "child_dep_ratio",
+    "tot_pop_log")
+
+names(pca_pop_town)
+```
+
+
+
 # Produce consistent datasets #
 
 The CODGEO variables (code_insee in the original geo data) have to be merged.
@@ -1189,8 +1210,6 @@ for (i in dataset){
   print(del_obs)
 }
 ```
-
-
 
 # Jisu's new population #
 
