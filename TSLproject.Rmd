@@ -69,7 +69,7 @@ Loading all libraries needed throughout the notebook:
 if(!require(plyr)){install.packages("dplyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
 if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
-if(!require(ggmap)){install.packages("ggpmap"); library(ggpmap)}
+if(!require(ggmap)){install.packages("ggmap"); library(ggmap)}
 if(!require(ggbiplot)){
   if(!require(devtools)){
     install.packages("devtools")}
@@ -78,8 +78,9 @@ if(!require(ggbiplot)){
 if(!require(mclust)){install.packages("mclust"); library(mclust)} 
 if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
 if(!require(MASS)){install.packages("MASS")}
+if(!require(factoextra)){install.packages("factoextra")}
 if(!require(rafalib)){install.packages("rafalib")}
-
+if(!require(boot)){install.packages("boot")}
 ```
 
 
@@ -153,17 +154,25 @@ names(population)[5:7] <-
     "sex",
     "peopleCategNum")
 
-# Drop unnecessary columns (code/num and name represents same thing) 
 # [KEEP DEPT. NUM?]
-#  [éloignement is the distance from where?]
-geo <- subset(geo, select = -c(EU_circo, code_région, numéro_département, préfecture, numéro_circonscription, éloignement))
-names(geo)[1:6] = 
-  c("region", 
-    "region_capital", 
+# [?loignement is the distance from where?]
+names(geo)[2:11] =
+  c("code_region",
+    "region", 
+    "region_capital",
+    "number_depart",
     "department", 
+    "prefecture",
+    "circons",
     "town_name", 
     "postal_code", 
     "CODGEO")
+
+names(geo)[14] =
+  c("eloignement")
+
+# Drop unnecessary columns (code/num and name represents same thing) 
+geo <- subset(geo, select = -c(EU_circo, code_region, number_depart, prefecture, circons, eloignement))
 ```
 
 Check variable names again:
@@ -945,10 +954,10 @@ coefficients(best.sub, which.min(best.sub.summary$bic))
 
 Code for the presentation
 
+
 ```{r}
 
 # BRUTTA COPIA PER PRESENTAZIONE 
-
 plot.regsubsets2 <-  
   function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
      "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)), ...)  
@@ -1243,7 +1252,8 @@ summary(population)
 population <- subset(population, select = -c(NIVGEO, LIBGEO))
 
 # converting CODGEO to numeric
-population$CODGEO <- as.numeric(population$CODGEO)
+population$CODGEO <- as.numeric(as.character(population$CODGEO))
+
 
 # Refactor sex and MOCO
 population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
@@ -1254,7 +1264,7 @@ population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
 population$sex <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
 head(population)
 # Take out rows with NB (number of people in this category) equal to 0
-population <- population[population$peopleCategNum != 0,]
+# population <- population[population$peopleCategNum != 0,]
 
 head(population)
 summary(population)
@@ -1263,18 +1273,19 @@ summary(population)
 ```
 
 ## Descriptive statistics ##
+
 ```{r}
-#Compare age categories:
-#library(ggplot2)
-#  number of units
-n_cat <- length(population$CODGEO)
-# extract unique categories
-uniq_cat <- unique(population$ageCateg5!=5)
-# vector representing sex for each category
-Label <- c(rep(c('Male', 'Female'), n_cat))
-# vector representing the variable considered
-Variable <- rep(uniq_cat, n_cat/length(uniq_cat))
-Value=population$peopleCategNum
+# #Compare age categories:
+# #library(ggplot2)
+# #  number of units
+# n_cat <- length(population$CODGEO)
+# # extract unique categories
+# uniq_cat <- unique(population$ageCateg5!=5)
+# # vector representing sex for each category
+# Label <- c(rep(c('Male', 'Female'), n_cat))
+# # vector representing the variable considered
+# Variable <- rep(uniq_cat, n_cat/length(uniq_cat))
+# Value=population$peopleCategNum
 # merge these data
 #pop_categ = cbind.data.frame(Label = Label, 
 #             value = Value,
@@ -1288,6 +1299,7 @@ Value=population$peopleCategNum
 # p <- p + guides(fill=guide_legend(title="Legend"))
 #p
 ```
+
 
 ```{r}
 # Restructure population data to produce the demographic profile per town
@@ -1307,6 +1319,7 @@ population_per_town_data$sex_ratio <- ifelse(population_per_town_data$female==0,
 population_per_town_data$dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$dependent / population_per_town_data$workforce)
 population_per_town_data$aged_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$elderly / population_per_town_data$workforce)
 population_per_town_data$child_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$child / population_per_town_data$workforce)
+
 summary(population_per_town_data)
 ```
 
@@ -1316,68 +1329,68 @@ hist(population_per_town_data$total_population, ylim=c(0,40000), breaks = seq(0,
 population_per_town_data$total_population_log <- log10(population_per_town_data$total_population)
 
 # Merge geo and pop
-geo_pop_by_town <- merge(geo, population_per_town_data)
-summary(geo_pop_by_town)
+# geo_pop_by_town <- merge(geo, population_per_town_data)
+# summary(geo_pop_by_town)
 
 
 # Plot "Distribution of Population for each Town"
 #myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_town$total_population_log), max(geo_pop_by_town$total_population_log)))
-poppulation_distribution <- 
-  FraMap + 
-  geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$total_population_log), 
-             data=geo_pop_by_town, alpha=0.8, size=0.6) + 
-  sc +
-  #geom_text(aes(label = town_name, x = longitude, y = latitude), 
-            #data = subset(geo_pop_by_town, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
-
-  labs(color='Total Population in Log') +
-  ggtitle("Distribution of Population for each Town") 
-poppulation_distribution
+# sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_town$total_population_log), max(geo_pop_by_town$total_population_log)))
+# poppulation_distribution <- 
+#   FraMap + 
+#   geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$total_population_log), 
+#              data=geo_pop_by_town, alpha=0.8, size=0.6) + 
+#   sc +
+#   #geom_text(aes(label = town_name, x = longitude, y = latitude), 
+#             #data = subset(geo_pop_by_town, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
+# 
+#   labs(color='Total Population in Log') +
+#   ggtitle("Distribution of Population for each Town") 
+# poppulation_distribution
 ```
 
 ```{r}
 # Group population data by department because of small size of some towns and the given geojson file of department
-pop_by_department <- ddply(geo_pop_by_town, .(department), function(geo_pop_by_town) {
-  data.frame(total_population = sum(geo_pop_by_town$total_population),
-             male = sum(geo_pop_by_town$male),
-             female = sum(geo_pop_by_town$female),
-             child = sum(geo_pop_by_town$child),
-             elderly = sum(geo_pop_by_town$elderly),
-             dependent = sum(geo_pop_by_town$dependent),
-             workforce = sum(geo_pop_by_town$workforce) 
-  )})
-
-pop_by_department$dependency_ratio <- pop_by_department$dependent / pop_by_department$workforce
-pop_by_department$aged_dependency_ratio <- pop_by_department$elderly / pop_by_department$workforce
-pop_by_department$child_dependency_ratio <- pop_by_department$child / pop_by_department$workforce
-summary(pop_by_department)
+# pop_by_department <- ddply(geo_pop_by_town, .(department), function(geo_pop_by_town) {
+#   data.frame(total_population = sum(geo_pop_by_town$total_population),
+#              male = sum(geo_pop_by_town$male),
+#              female = sum(geo_pop_by_town$female),
+#              child = sum(geo_pop_by_town$child),
+#              elderly = sum(geo_pop_by_town$elderly),
+#              dependent = sum(geo_pop_by_town$dependent),
+#              workforce = sum(geo_pop_by_town$workforce) 
+#   )})
+# 
+# pop_by_department$dependency_ratio <- pop_by_department$dependent / pop_by_department$workforce
+# pop_by_department$aged_dependency_ratio <- pop_by_department$elderly / pop_by_department$workforce
+# pop_by_department$child_dependency_ratio <- pop_by_department$child / pop_by_department$workforce
+# summary(pop_by_department)
 ```
 
 ```{r}
 # Scale population to log
-pop_by_department$total_population_log <- log10(pop_by_department$total_population)
-
-# Merge geo and pop
-geo_pop_by_department <- merge(geo, pop_by_department)
-summary(geo_pop_by_department)
+# pop_by_department$total_population_log <- log10(pop_by_department$total_population)
+# 
+# # Merge geo and pop
+# geo_pop_by_department <- merge(geo, pop_by_department)
+# summary(geo_pop_by_department)
 ```
 
 
 ```{r}
 # Plot "Distribution of Population for each department"
 #myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_department$total_population_log), max(geo_pop_by_department$total_population_log)))
-pop_distribution_department <- 
-  FraMap + 
-  geom_point(aes(x=geo_pop_by_department$longitude, y=geo_pop_by_department$latitude, colour=geo_pop_by_department$total_population_log), 
-             data=geo_pop_by_department, alpha=0.8, size=0.6) + 
-  sc +
-  #geom_text(aes(label = town_name, x = longitude, y = latitude), 
-            #data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
-  labs(color='Total Population in Log') + 
-  ggtitle("Distribution of Population for each department") 
-pop_distribution_department
+# sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_department$total_population_log), max(geo_pop_by_department$total_population_log)))
+# pop_distribution_department <- 
+#   FraMap + 
+#   geom_point(aes(x=geo_pop_by_department$longitude, y=geo_pop_by_department$latitude, colour=geo_pop_by_department$total_population_log), 
+#              data=geo_pop_by_department, alpha=0.8, size=0.6) + 
+#   sc +
+#   #geom_text(aes(label = town_name, x = longitude, y = latitude), 
+#             #data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
+#   labs(color='Total Population in Log') + 
+#   ggtitle("Distribution of Population for each department") 
+# pop_distribution_department
 ```
 
 
@@ -1397,36 +1410,20 @@ print(pop_pyramid)
 
 ```{r}
 #Plot dependency ratio
-sc <- scale_colour_gradientn(colours =palette(rainbow(5)), limits=c(min(geo_pop_by_town$dependency_ratio), max(geo_pop_by_town$dependency_ratio)))
-dependency_ratio_plot<- 
-  FraMap + 
-  geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$dependency_ratio),
-             data=geo_pop_by_town, alpha=0.8, size=0.6) + 
-  sc +
-  labs(color='dependency ratio') +
-  ggtitle("Dependency ratio of each town") 
-dependency_ratio_plot
+# sc <- scale_colour_gradientn(colours =palette(rainbow(5)), limits=c(min(geo_pop_by_town$dependency_ratio), max(geo_pop_by_town$dependency_ratio)))
+# dependency_ratio_plot<- 
+#   FraMap + 
+#   geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$dependency_ratio),
+#              data=geo_pop_by_town, alpha=0.8, size=0.6) + 
+#   sc +
+#   labs(color='dependency ratio') +
+#   ggtitle("Dependency ratio of each town") 
+# dependency_ratio_plot
 ```
 
 
-## 
-```{r}
-# PCA trial 1
-# create a clean dataset with only necessary variables inside.
-pca_pop_town <- ddply(geo_pop_by_town, .(town_name), function(geo_pop_by_town) {
-  data.frame(geo_pop_by_town$CODGEO,  geo_pop_by_town$sex_ratio, geo_pop_by_town$dependency_ratio, geo_pop_by_town$aged_dependency_ratio, geo_pop_by_town$child_dependency_ratio, geo_pop_by_town$total_population_log)})
+## PCA ##
 
-# rename the variables 
-names(pca_pop_town)[2:ncol(pca_pop_town)] <-
-  c("CODGEO",
-    "sex_ratio",
-    "dependency_ratio",
-    "aged_dep_ratio",
-    "child_dep_ratio",
-    "tot_pop_log")
-
-names(pca_pop_town)
-```
 
 
 
@@ -1494,125 +1491,6 @@ for (i in dataset){
 print(paste("The new dataset have", nrow(salaryNEW), "units and", 
       ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
 ```
-
-# Jisu's new population #
-
-```{r}
-#populationNEW
-summary(populationNEW)
-population = populationNEW
-
-# Restructure population data to produce the demographic profile per town
-# install.packages("plyr")
-library(plyr)
-library(dplyr)
-population_per_town_data <- ddply(population, .(CODGEO), function(population) {
-  data.frame(total_population = sum(population$peopleCategNum),
-             male = sum(population[population$sex == "Male",]$peopleCategNum),
-             female = sum(population[population$sex == "Female",]$peopleCategNum),
-             child = sum(population[population$ageCateg5 %in% seq(0, 10, by=5),]$peopleCategNum),
-             elderly = sum(population[population$ageCateg5 %in% seq(65, 80, by=5),]$peopleCategNum),
-             workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
-  )})
-
-population_per_town_data$dependent <- population_per_town_data$child + population_per_town_data$elderly
-population_per_town_data$sex_ratio <- ifelse(population_per_town_data$female==0, 0, population_per_town_data$male / population_per_town_data$female)
-population_per_town_data$dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$dependent / population_per_town_data$workforce)
-population_per_town_data$aged_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$elderly / population_per_town_data$workforce)
-population_per_town_data$child_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$child / population_per_town_data$workforce)
-summary(population_per_town_data)
-```
-
-```{r}
-# Scale population to log
-hist(population_per_town_data$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
-population_per_town_data$total_population_log <- log10(population_per_town_data$total_population)
-
-# Merge geo and pop
-geo_pop_by_town <- merge(geo, population_per_town_data)
-summary(geo_pop_by_town) 
-```
-
-```{r}
-# Plot "Distribution of Population for each Town"
-#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_town$total_population_log), max(geo_pop_by_town$total_population_log)))
-population_distribution <- 
-  FraMap + 
-  geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$total_population_log), 
-             data=geo_pop_by_town, alpha=0.8, size=0.6) + 
-  sc +
-  #geom_text(aes(label = town_name, x = longitude, y = latitude), 
-            #data = subset(geo_pop_by_town, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
-  labs(color='Total Population in Log') +
-  ggtitle("Distribution of Population for each Town") 
-population_distribution
-summary(population_distribution)
-
-geo_pop_by_town[which.max(geo_pop_by_town$total_population_log),]
-```
-
-```{r}
-# Group population data by department because of small size of some towns and the given geojson file of department
-pop_by_department <- ddply(geo_pop_by_town, .(department), function(geo_pop_by_town) {
-  data.frame(total_population = sum(geo_pop_by_town$total_population),
-             male = sum(geo_pop_by_town$male),
-             female = sum(geo_pop_by_town$female),
-             child = sum(geo_pop_by_town$child),
-             elderly = sum(geo_pop_by_town$elderly),
-             dependent = sum(geo_pop_by_town$dependent),
-             workforce = sum(geo_pop_by_town$workforce) 
-  )})
-
-summary(pop_by_department)
-pop_by_department$dependency_ratio <- pop_by_department$dependent / pop_by_department$workforce
-pop_by_department$aged_dependency_ratio <- pop_by_department$elderly / pop_by_department$workforce
-pop_by_department$child_dependency_ratio <- pop_by_department$child / pop_by_department$workforce
-```
-
-```{r}
-# Scale population to log
-pop_by_department$total_population_log <- log10(pop_by_department$total_population)
-
-# Merge geo and pop
-geo_pop_by_department <- merge(geo, pop_by_department)
-summary(geo_pop_by_department)
-```
-
-```{r}
-# Plot "Distribution of Population for each department"
-#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_department$total_population_log), max(geo_pop_by_department$total_population_log)))
-pop_distribution_department <- 
-  FraMap + 
-  geom_point(aes(x=geo_pop_by_department$longitude, y=geo_pop_by_department$latitude, colour=geo_pop_by_department$total_population_log), 
-             data=geo_pop_by_department, alpha=0.8, size=0.6) + 
-  sc +
-  #geom_text(aes(label = town_name, x = longitude, y = latitude), 
-            #data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
-  labs(color='Total Population in Log') +
-  ggtitle("Distribution of Population for each department") 
-pop_distribution_department
-```
-
-```{r}
-population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
-  data.frame(total_population = sum(population$peopleCategNum))
-  })
-pop_pyramid <- ggplot(data = population_data2, 
-       mapping = aes(x = ageCateg5, fill = sex, 
-                     y = ifelse(test = sex == "Male", 
-                                yes = -total_population, no = total_population))) +
-  geom_bar(stat = "identity") +
-  scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) +
-  labs(y = "Population") +
-  ggtitle("Population pyramid")
-  coord_flip()
-print(pop_pyramid)
-
-```
-
-
 
 
 # Analysis #
