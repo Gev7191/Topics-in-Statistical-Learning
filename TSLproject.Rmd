@@ -77,10 +77,10 @@ if(!require(ggbiplot)){
   library(ggbiplot)}
 if(!require(mclust)){install.packages("mclust"); library(mclust)} 
 if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
-if(!require(MASS)){install.packages("MASS")}
-if(!require(factoextra)){install.packages("factoextra")}
-if(!require(rafalib)){install.packages("rafalib")}
-if(!require(boot)){install.packages("boot")}
+if(!require(MASS)){install.packages("MASS"); library(MASS)}
+if(!require(factoextra)){install.packages("factoextra"); library(factoextra)}
+if(!require(rafalib)){install.packages("rafalib"); library(rafalib)}
+if(!require(boot)){install.packages("boot"); library(boot)}
 ```
 
 
@@ -1488,7 +1488,7 @@ for (i in dataset){
   print(paste(del_obs))
 }
 
-print(paste("The new dataset have", nrow(salaryNEW), "units and", 
+print(paste("The new dataset has", nrow(salaryNEW), "units and", 
       ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
 ```
 
