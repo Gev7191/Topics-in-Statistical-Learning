@@ -69,7 +69,7 @@ Loading all libraries needed throughout the notebook:
 if(!require(plyr)){install.packages("dplyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
 if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
-if(!require(ggpmap)){install.packages("ggpmap"); library(ggpmap)}
+if(!require(ggmap)){install.packages("ggpmap"); library(ggpmap)}
 if(!require(ggbiplot)){
   if(!require(devtools)){
     install.packages("devtools")}
@@ -78,6 +78,7 @@ if(!require(ggbiplot)){
 if(!require(mclust)){install.packages("mclust"); library(mclust)} 
 if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
 if(!require(MASS)){install.packages("MASS")}
+if(!require(rafalib)){install.packages("rafalib")}
 
 ```
 
@@ -191,7 +192,7 @@ str(firms)
 summary(firms)
 
 # converting CODGEO format
-firms$CODGEO <- as.numeric(firms$CODGEO)
+# firms$CODGEO <- as.numeric(firms$CODGEO)
 
 # Check for duplicated data
 sum(duplicated.data.frame(firms))
@@ -460,7 +461,7 @@ summary(geo)
 # plot france (center: 2.213749 46.227638)
 # fra_center = as.numeric(geocode("France"))
 fra_center = c(2.213749, 46.227638)
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=1), extent="normal")
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
 FraMap
 
 # plot all towns available
@@ -945,12 +946,12 @@ coefficients(best.sub, which.min(best.sub.summary$bic))
 Code for the presentation
 
 ```{r}
-BRUTTA COPIA PER PRESENTAZIONE 
-```{r} 
+
+# BRUTTA COPIA PER PRESENTAZIONE 
+
 plot.regsubsets2 <-  
   function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
-                                                           "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)),  
-            ...)  
+     "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)), ...)  
   { 
     obj <- x 
     lsum <- summary(obj) 
@@ -1093,9 +1094,7 @@ mtext("Best subset selection for salary 18-25 using BIC", outer=TRUE,  cex=1.2, 
 plot(best.sub, scale = "Cp") 
 plot(best.sub, scale = "adjr2") 
 # retrieve the model with min BIC 
-coefficients(best.sub, which.min(best.sub.summary$bic)) 
- 
-``` 
+coefficients(best.sub, which.min(best.sub.summary$bic))
  
 ```
 
@@ -1418,7 +1417,7 @@ pca_pop_town <- ddply(geo_pop_by_town, .(town_name), function(geo_pop_by_town) {
   data.frame(geo_pop_by_town$CODGEO,  geo_pop_by_town$sex_ratio, geo_pop_by_town$dependency_ratio, geo_pop_by_town$aged_dependency_ratio, geo_pop_by_town$child_dependency_ratio, geo_pop_by_town$total_population_log)})
 
 # rename the variables 
-names(pca_pop_town)[2:ncol(pca_pop)] <-
+names(pca_pop_town)[2:ncol(pca_pop_town)] <-
   c("CODGEO",
     "sex_ratio",
     "dependency_ratio",
@@ -1444,6 +1443,8 @@ salary$CODGEO     <- sub("A", "0", salary$CODGEO)
 salary$CODGEO     <- sub("B", "0", salary$CODGEO)
 population$CODGEO <- sub("A", "0", population$CODGEO)
 population$CODGEO <- sub("B", "0", population$CODGEO)
+geo$CODGEO        <- sub("A", "0", geo$CODGEO)
+geo$CODGEO        <- sub("B", "0", geo$CODGEO)
 
 # [Check if there are more]
 ```
@@ -1485,10 +1486,13 @@ for (i in dataset){
 for (i in dataset){
   del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
   del_prop = del_rows / nrow(get(i))
-  del_obs = paste("For", i, del_rows, "have been deleted.",
+  del_obs = paste("For", i, del_rows, "units have been deleted.",
                   "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
-  print(del_obs)
+  print(paste(del_obs))
 }
+
+print(paste("The new dataset have", nrow(salaryNEW), "units and", 
+      ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
 ```
 
 # Jisu's new population #
