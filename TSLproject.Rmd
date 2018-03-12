@@ -1340,7 +1340,7 @@ summary(geo_pop_by_codgeo)
 ```{r}
 # Plot "Distribution of Population for each CODGEO"
 #myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_codgeo$total_population_log), max(geo_pop_by_codgeo$total_population_log)))
+sc <- scale_colour_gradientn(colours =palette(rainbow(6)), limits=c(min(geo_pop_by_codgeo$total_population_log), max(geo_pop_by_codgeo$total_population_log)))
 poppulation_distribution <-
   FraMap +
   geom_point(aes(x=geo_pop_by_codgeo$longitude, y=geo_pop_by_codgeo$latitude, colour=geo_pop_by_codgeo$total_population_log),
@@ -1385,7 +1385,7 @@ names(pca_pop_town)[1:ncol(pca_pop_town)] <-
     "aged_dep_ratio",
     "child_dep_ratio")
 
-names(pca_pop_town)
+summary(pca_pop_town)
 ```
 
 
@@ -1393,11 +1393,14 @@ names(pca_pop_town)
 # PCA population
 apply(pca_pop_town, 2, mean)
 apply(pca_pop_town, 2, var)
-pcapop <- prcomp(pca_pop_town[, 2:5], scale=TRUE)
+pcapop <- prcomp(pca_pop_town[, 2:5])
 pcapop$rotation
 
 plot(pcapop, type = "l")
 biplot(pcapop, scale = 0, cex = 0.5)
+# fviz_pca_ind(pcapop) + labs(title="PCA", x="PC1", y="PC2")
+# scale_color_gradient2(low="blue", mid="white",high="red", midpoint=4)
+# fviz_pca_ind(pcapop, col.ind="contrib") + scale_color_gradient2(low="blue", mid="white", high="red", midpoint=4) + theme_minimal()
 str(pcapop)
 
 ggbiplot(pcapop, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
