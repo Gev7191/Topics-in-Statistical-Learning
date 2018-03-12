@@ -66,7 +66,7 @@ In particular, we are interested in:
 
 Loading all libraries needed throughout the notebook:
 ```{r}
-if(!require(plyr)){install.packages("plyr"); library(plyr)}
+if(!require(plyr)){install.packages("dplyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
 if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
 if(!require(ggmap)){install.packages("ggmap"); library(ggmap)}
@@ -156,7 +156,7 @@ names(population)[5:7] <-
 
 # [KEEP DEPT. NUM?]
 # [?loignement is the distance from where?]
-names(geo)[c(2:11, 14)] =
+names(geo)[2:11] =
   c("code_region",
     "region", 
     "region_capital",
@@ -166,8 +166,10 @@ names(geo)[c(2:11, 14)] =
     "circons",
     "town_name", 
     "postal_code", 
-    "CODGEO",
-    "eloignement")
+    "CODGEO")
+
+names(geo)[14] =
+  c("eloignement")
 
 # Drop unnecessary columns (code/num and name represents same thing) 
 geo <- subset(geo, select = -c(EU_circo, code_region, number_depart, prefecture, circons, eloignement))
@@ -239,9 +241,8 @@ summary(firms$null/firms$total)
 # should we remove these data?
 hist(firms$null/firms$total)
 ggplot(data=firms, aes(firms$null/firms$total)) +
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
-  geom_density(col="black") +
-  labs(x="Null firms/total firms", y="Density") +
+  geom_histogram(aes(y =..count..), col="black", fill="blue", alpha = .3, bins = 50) +
+  labs(x="Null firms/total firms", y="Count") +
   ggtitle("Ratio between the number of null firms and total firms per town") +
   theme(plot.title = element_text(hjust = 0.5)) 
 
@@ -259,107 +260,42 @@ hist(log(firms$micro))
 hist(log(firms$small))
 hist(log(firms$medium))
 hist(log(firms$large))
-
 ```
 
 ## PCA ##   
 
 PCA on firms data:
 ```{r}
-
-# pairs(firms[, 3:8])
-# 
-# salary_NEW = salary[, 3:ncol(salary)]
-# # colnames(salary_NEW) = 1:32
-# corrplot(cor(salary_NEW), method = "circle", title = "Correlation matrix for salary", 
-#          diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
-#          tl.col = "black", mar=c(0,0,1,0)) 
-# 
-# 
-# # firms_clean <- firms[firms$micro < 20000 & firms$large < 200,]
-# firms_clean <- firms[firms$micro > 1 & firms$micro < 2500 & 
-#                      firms$small > 1 & firms$small < 800 & 
-#                      firms$medium > 1 & firms$medium < 500 & 
-#                      firms$large > 1 & firms$large < 200 &
-#                      firms$null > 1 & firms$null < 2000 ,]
-# myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
-# #plot(scale(firms_clean$micro), scale(firms_clean$large))
-# #mean(firms_clean$micro)
-# #mean(firms_clean$large)
-# myPr
-# summary(myPr)
-# plot(myPr, type = "l")
-# # biplot(myPr, scale = 0)
-# #extract PC scores...
-# str(myPr)
-# #myPr$x #checking principal component scores
-# firms2 <- cbind(firms_clean, myPr$x[, 1:2])
-# head(firms2)
-# #plot with ggplot...
-# ggplot(firms2, aes(PC1, PC2)) +
-#   stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) +
-#   geom_point(shape = 21, col = "black")
-# # correlations between variables and PCs...
-# cor(firms_clean[, 4:8], firms2[,9:10])
-# 
-# # using ggbiplot
-# ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
-#   ggtitle("Biplot for the firms's size") +
-#   theme(plot.title = element_text(hjust = 0.5))
-```
-
-```{r}
-
-
-# get Paris in order to exclude it in the following
-Paris = which.max(firms$total)
-
-# Original scale
-# Scatter matrix
-pairs(firms[-Paris, 3:8], gap=0, main = "Scatter matrix for firms")
-# Correlation matrix
-corrplot(cor(firms[-Paris, 3:8]), method = "number", title = "Correlation matrix for firms", 
-         diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
-         tl.col = "black", mar=c(0,0,1.5,0))
-
-# Log scale
-# Scatter matrix
-pairs(firms[-Paris, 3:8], log = "xy", gap=0, main = "Scatter matrix for firms in log scale")
-# Correlation matrix
-firmsLog = log(firms[, 3:8]) 
-firmsLog[firmsLog == -Inf] = 0
-corrplot(cor(firmsLog), method = "number", title = "Correlation matrix for firms  in log scale", 
-          diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
-          tl.col = "black", mar=c(0,0,1.5,0))
-
-# PCA
-myPr <- prcomp(firms[-which.max(firms$total), 3:8], scale = TRUE)
+# firms_clean <- firms[firms$micro < 20000 & firms$large < 200,]
+firms_clean <- firms[firms$micro > 1 & firms$micro < 2500 & 
+                     firms$small > 1 & firms$small < 800 & 
+                     firms$medium > 1 & firms$medium < 500 & 
+                     firms$large > 1 & firms$large < 200 &
+                     firms$null > 1 & firms$null < 2000 ,]
+myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
+#plot(scale(firms_clean$micro), scale(firms_clean$large))
+#mean(firms_clean$micro)
+#mean(firms_clean$large)
+myPr
 summary(myPr)
 plot(myPr, type = "l")
-# PCA
-# myPr <- pca(firms[-which.max(firms$total), 3:8], nPcs = 6, scale = "uv") # cv = ..
-# summary(myPr)
-# plot(myPr, type = "l")
-# source("https://bioconductor.org/biocLite.R")
-# biocLite("pcaMethods")
-# library(pcaMethods)
-# slplot(myPr, scoresLoadings = c(T,T))
+biplot(myPr, scale = 0)
+#extract PC scores...
+str(myPr)
+#myPr$x #checking principal component scores
+firms2 <- cbind(firms_clean, myPr$x[, 1:2])
+head(firms2)
+#plot with ggplot...
+ggplot(firms2, aes(PC1, PC2)) +
+  stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) +
+  geom_point(shape = 21, col = "black")
+# correlations between variables and PCs...
+cor(firms_clean[, 4:8], firms2[,9:10])
 
 # using ggbiplot
 ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
   ggtitle("Biplot for the firms's size") +
   theme(plot.title = element_text(hjust = 0.5))
-
-# classic vs robust PC
-# par(mfrow=c(2,1))
-# require(graphics)
-# library(rrcov)
-# myPr<-PcaClassic(firms[-which.max(firms$total), 3:8], scale = TRUE, k = 6)
-# biplot(myPr)
-# v1 <- PcaHubert(firms[-which.max(firms$total), 3:8], scale = TRUE, mcd = T, k = 6)
-# biplot(v1)
-# plot(v1) # distance plot
-# screeplot(v1)
 ```
 
 ## Cluster Analysis ##
@@ -430,7 +366,7 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust 
 
 We plan to use these for the following tasks:
 
-* predict the salaries using such informsation as proxy for the competition in the job market;
+* predict the salaries using such information as proxy for the competition in the job market;
 * predict the total number of firms, using salary data;
 * geo-spatial plot for firms' size 
 * ... 
@@ -1365,11 +1301,14 @@ summary(population)
 ```
 
 
+## RUN THE NEW POP FIRST AND THEN RUN THE CHUNKS BELOW
+
 ```{r}
 # Restructure population data to produce the demographic profile per town
 # install.packages("plyr")
 library(plyr)
-population_per_town_data <- ddply(population, .(CODGEO), function(population) {
+population=populationNEW
+pop_by_codgeo <- ddply(population, .(CODGEO), function(population) {
   data.frame(total_population = sum(population$peopleCategNum),
              male = sum(population[population$sex == "Male",]$peopleCategNum),
              female = sum(population[population$sex == "Female",]$peopleCategNum),
@@ -1378,87 +1317,45 @@ population_per_town_data <- ddply(population, .(CODGEO), function(population) {
              workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
   )})
 
-population_per_town_data$dependent <- population_per_town_data$child + population_per_town_data$elderly
-population_per_town_data$sex_ratio <- ifelse(population_per_town_data$female==0, 0, population_per_town_data$male / population_per_town_data$female)
-population_per_town_data$dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$dependent / population_per_town_data$workforce)
-population_per_town_data$aged_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$elderly / population_per_town_data$workforce)
-population_per_town_data$child_dependency_ratio <- ifelse(population_per_town_data$workforce==0, 0, population_per_town_data$child / population_per_town_data$workforce)
+pop_by_codgeo$dependent <- pop_by_codgeo$child + pop_by_codgeo$elderly
+pop_by_codgeo$sex_ratio <- ifelse(pop_by_codgeo$female==0, 0, pop_by_codgeo$male / pop_by_codgeo$female)
+pop_by_codgeo$dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$dependent / pop_by_codgeo$workforce)
+pop_by_codgeo$aged_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$elderly / pop_by_codgeo$workforce)
+pop_by_codgeo$child_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$child / pop_by_codgeo$workforce)
 
-summary(population_per_town_data)
+summary(pop_by_codgeo)
 ```
 
 ```{r}
 # Scale population to log
-hist(population_per_town_data$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
-population_per_town_data$total_population_log <- log10(population_per_town_data$total_population)
-
-# Merge geo and pop
-# geo_pop_by_town <- merge(geo, population_per_town_data)
-# summary(geo_pop_by_town)
-
-
-# Plot "Distribution of Population for each Town"
-#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-# sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_town$total_population_log), max(geo_pop_by_town$total_population_log)))
-# poppulation_distribution <- 
-#   FraMap + 
-#   geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$total_population_log), 
-#              data=geo_pop_by_town, alpha=0.8, size=0.6) + 
-#   sc +
-#   #geom_text(aes(label = town_name, x = longitude, y = latitude), 
-#             #data = subset(geo_pop_by_town, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
-# 
-#   labs(color='Total Population in Log') +
-#   ggtitle("Distribution of Population for each Town") 
-# poppulation_distribution
+hist(pop_by_codgeo$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
+pop_by_codgeo$total_population_log <- log10(pop_by_codgeo$total_population)
 ```
-
 ```{r}
-# Group population data by department because of small size of some towns and the given geojson file of department
-# pop_by_department <- ddply(geo_pop_by_town, .(department), function(geo_pop_by_town) {
-#   data.frame(total_population = sum(geo_pop_by_town$total_population),
-#              male = sum(geo_pop_by_town$male),
-#              female = sum(geo_pop_by_town$female),
-#              child = sum(geo_pop_by_town$child),
-#              elderly = sum(geo_pop_by_town$elderly),
-#              dependent = sum(geo_pop_by_town$dependent),
-#              workforce = sum(geo_pop_by_town$workforce) 
-#   )})
-# 
-# pop_by_department$dependency_ratio <- pop_by_department$dependent / pop_by_department$workforce
-# pop_by_department$aged_dependency_ratio <- pop_by_department$elderly / pop_by_department$workforce
-# pop_by_department$child_dependency_ratio <- pop_by_department$child / pop_by_department$workforce
-# summary(pop_by_department)
-```
-
-```{r}
-# Scale population to log
-# pop_by_department$total_population_log <- log10(pop_by_department$total_population)
-# 
 # # Merge geo and pop
-# geo_pop_by_department <- merge(geo, pop_by_department)
-# summary(geo_pop_by_department)
+geo_pop_by_codgeo <- merge(geoNEW, pop_by_codgeo)
+summary(geo_pop_by_codgeo)
 ```
 
-
 ```{r}
-# Plot "Distribution of Population for each department"
+# Plot "Distribution of Population for each CODGEO"
 #myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-# sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_department$total_population_log), max(geo_pop_by_department$total_population_log)))
-# pop_distribution_department <- 
-#   FraMap + 
-#   geom_point(aes(x=geo_pop_by_department$longitude, y=geo_pop_by_department$latitude, colour=geo_pop_by_department$total_population_log), 
-#              data=geo_pop_by_department, alpha=0.8, size=0.6) + 
-#   sc +
-#   #geom_text(aes(label = town_name, x = longitude, y = latitude), 
-#             #data = subset(geo_pop_by_department, total_population_log %in% head(sort(total_population_log, decreasing=TRUE), 3)), check_overlap = TRUE, size=7) +
-#   labs(color='Total Population in Log') + 
-#   ggtitle("Distribution of Population for each department") 
-# pop_distribution_department
+sc <- scale_colour_gradientn(colours =palette(rainbow(8)), limits=c(min(geo_pop_by_codgeo$total_population_log), max(geo_pop_by_codgeo$total_population_log)))
+poppulation_distribution <-
+  FraMap +
+  geom_point(aes(x=geo_pop_by_codgeo$longitude, y=geo_pop_by_codgeo$latitude, colour=geo_pop_by_codgeo$total_population_log),
+             data=geo_pop_by_codgeo, alpha=0.8, size=0.6) +
+  sc +
+  labs(color='Total Population in Log') +
+  ggtitle("Distribution of Population for each town")
+poppulation_distribution
 ```
 
 
+
+
 ```{r}
+# Population pyramide
 population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
   data.frame(total_population = sum(population$peopleCategNum))
   })
@@ -1472,23 +1369,80 @@ print(pop_pyramid)
 ```
 
 
+
+## PCA ##
 ```{r}
-#Plot dependency ratio
-# sc <- scale_colour_gradientn(colours =palette(rainbow(5)), limits=c(min(geo_pop_by_town$dependency_ratio), max(geo_pop_by_town$dependency_ratio)))
-# dependency_ratio_plot<- 
-#   FraMap + 
-#   geom_point(aes(x=geo_pop_by_town$longitude, y=geo_pop_by_town$latitude, colour=geo_pop_by_town$dependency_ratio),
-#              data=geo_pop_by_town, alpha=0.8, size=0.6) + 
-#   sc +
-#   labs(color='dependency ratio') +
-#   ggtitle("Dependency ratio of each town") 
-# dependency_ratio_plot
+# PCA trial 
+# create a clean dataset with only necessary variables inside.
+pca_pop_town <- ddply(pop_by_codgeo, .(CODGEO), function(pop_by_codgeo) {
+  data.frame(pop_by_codgeo$sex_ratio, pop_by_codgeo$dependency_ratio, pop_by_codgeo$aged_dependency_ratio, pop_by_codgeo$child_dependency_ratio)})
+
+# rename the variables 
+names(pca_pop_town)[1:ncol(pca_pop_town)] <-
+  c("CODGEO",
+    "sex_ratio",
+    "dependency_ratio",
+    "aged_dep_ratio",
+    "child_dep_ratio")
+
+names(pca_pop_town)
 ```
 
 
-## PCA ##
+```{r}
+# PCA population
+apply(pca_pop_town, 2, mean)
+apply(pca_pop_town, 2, var)
+pcapop <- prcomp(pca_pop_town[, 2:5], scale=TRUE)
+pcapop$rotation
 
+plot(pcapop, type = "l")
+biplot(pcapop, scale = 0, cex = 0.5)
+str(pcapop)
 
+ggbiplot(pcapop, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
+  ggtitle("Biplot for dependency ratios") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#pcapop$x #checking principal component scores
+pca_pop_town2 <- cbind(pca_pop_town, pcapop$x[, 1:2])
+head(pca_pop_town2)
+```
+
+```{r}
+#plot with ggplot...
+ggplot(pca_pop_town2, aes(PC1, PC2)) + 
+  stat_ellipse(geom = "polygon", col = "gray", alpha = 0.5) + 
+  geom_point(shape = 21, col = "black")
+```
+
+```{r}
+# Proportion of variance explained & cumulative PVE
+pcapop$sdev
+pr.var=pcapop$sdev^2 
+pve=pr.var/sum(pr.var)
+pve
+
+plot(pve, xlab="PCA", ylab="PVE", ylim=c(0,1), type='b')
+plot(cumsum(pve), xlab="PCA", ylab="Cumulative PVE", ylim=c(0,1), type='b')
+```
+
+```{r}
+# kmean trial
+km.out=kmeans(pca_pop_town[,2:5], 5, nstart=50)
+plot(pca_pop_town[,2:5], col=(km.out$cluster), pch=20, cex=1)
+```
+
+```{r}
+#hierarchical clustering
+sd.data=scale(pca_pop_town)
+par(mfrow=c(1,3))
+data.dist=dist(sd.data)
+plot(hclust(data.dist), labels=pca_pop_town$CODGEO, main="complete", xlab="", sub="", ylab="")
+
+# hc_pop=hclust(dist(pca_pop_town), method="complete")
+# plot(hc_pop, labels=pca_pop_town$CODGEO, main="Complete Linkage", xlab="", ylab="", sub="", cex =.9)
+```
 
 
 # Produce consistent datasets #
@@ -1558,44 +1512,8 @@ print(paste("The new dataset has", nrow(salaryNEW), "units and",
 
 
 # Analysis #
-
-Firms and geo:
 ```{r}
-#grouping Regions according to CODGEO
-geoNEW_sub <- geoNEW[, c("region", "CODGEO")] 
-firms_regions <- merge(geoNEW_sub, firmsNEW, by = "CODGEO") #merging firms and geo datasets
-firms_regions_total <- aggregate(firms_regions$total, by = list(region = firms_regions$region), FUN = sum) #total number of firms per region
-firms_regions_micro <- aggregate(firms_regions$micro, by = list(region = firms_regions$region), FUN = sum) #number of micro firms per region
-firms_regions_small <- aggregate(firms_regions$small, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
-firms_regions_medium <- aggregate(firms_regions$medium, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
-firms_regions_large <- aggregate(firms_regions$large, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
 
-colnames(firms_regions_total) <- c("regions", "Total")
-colnames(firms_regions_micro) <- c("regions", "Micro")
-colnames(firms_regions_small) <- c("regions", "Small")
-colnames(firms_regions_medium) <- c("regions", "Medium")
-colnames(firms_regions_large) <- c("regions", "Large")
-
-firms_regions_total$Percentage_total <- (firms_regions_total$Total/sum(firms_regions_total$Total))*100 #adding percentage column
-firms_regions_micro$Percentage_micro <- (firms_regions_micro$Micro/sum(firms_regions_micro$Micro))*100
-firms_regions_small$Percentage_small <- (firms_regions_small$Small/sum(firms_regions_small$Small))*100
-firms_regions_medium$Percentage_medium <- (firms_regions_medium$Medium/sum(firms_regions_medium$Medium))*100
-firms_regions_large$Percentage_large <- (firms_regions_large$Large/sum(firms_regions_large$Large))*100
-
-ggplot(firms_regions_total, aes(x=regions,y = Percentage_total)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity") 
-  
-ggplot(firms_regions_micro, aes(x=regions,y = Percentage_micro)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity") 
-  
-ggplot(firms_regions_small, aes(x=regions,y = Percentage_small)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")
-
-ggplot(firms_regions_medium, aes(x=regions,y = Percentage_medium)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")
-
-ggplot(firms_regions_large, aes(x=regions,y = Percentage_large)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")
 ```
 ## PCA ##
 ```{r}
