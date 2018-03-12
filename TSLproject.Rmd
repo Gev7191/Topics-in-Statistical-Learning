@@ -259,6 +259,43 @@ hist(log(firms$micro))
 hist(log(firms$small))
 hist(log(firms$medium))
 hist(log(firms$large))
+
+#grouping Regions according to CODGEO
+geoNEW_sub <- geoNEW[, c("region", "CODGEO")] 
+firms_regions <- merge(geoNEW_sub, firmsNEW, by = "CODGEO") #merging firms and geo datasets
+firms_regions_total <- aggregate(firms_regions$total, by = list(region = firms_regions$region), FUN = sum) #total number of firms per region
+firms_regions_micro <- aggregate(firms_regions$micro, by = list(region = firms_regions$region), FUN = sum) #number of micro firms per region
+firms_regions_small <- aggregate(firms_regions$small, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
+firms_regions_medium <- aggregate(firms_regions$medium, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
+firms_regions_large <- aggregate(firms_regions$large, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
+
+colnames(firms_regions_total) <- c("regions", "Total")
+colnames(firms_regions_micro) <- c("regions", "Micro")
+colnames(firms_regions_small) <- c("regions", "Small")
+colnames(firms_regions_medium) <- c("regions", "Medium")
+colnames(firms_regions_large) <- c("regions", "Large")
+
+firms_regions_total$Percentage_total <- (firms_regions_total$Total/sum(firms_regions_total$Total))*100 #adding percentage column
+firms_regions_micro$Percentage_micro <- (firms_regions_micro$Micro/sum(firms_regions_micro$Micro))*100
+firms_regions_small$Percentage_small <- (firms_regions_small$Small/sum(firms_regions_small$Small))*100
+firms_regions_medium$Percentage_medium <- (firms_regions_medium$Medium/sum(firms_regions_medium$Medium))*100
+firms_regions_large$Percentage_large <- (firms_regions_large$Large/sum(firms_regions_large$Large))*100
+
+ggplot(firms_regions_total, aes(x=regions,y = Percentage_total)) +
+  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity") 
+  
+ggplot(firms_regions_micro, aes(x=regions,y = Percentage_micro)) +
+  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity") 
+  
+ggplot(firms_regions_small, aes(x=regions,y = Percentage_small)) +
+  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")
+
+ggplot(firms_regions_medium, aes(x=regions,y = Percentage_medium)) +
+  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")
+
+ggplot(firms_regions_large, aes(x=regions,y = Percentage_large)) +
+  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")
+
 ```
 
 ## PCA ##   
@@ -366,15 +403,15 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust 
 ```{r}
 # firms_sampled <- firms[1:1000, ] # subsampling
 # head(firms_sampled)
-# 
 # firms_scaled <- scale(firms_sampled[, 3:8]) #scaling the data
+# 
 # head(firms_scaled)
 # 
 # firms_truncated <- firms_sampled[, 4:8]
 # head(firms_truncated)
 # plot(firms_sampled)
-# 
 # # K-means clustering...
+# 
 # 
 # fitK_scaled <- kmeans(firms_scaled, 4) 
 # head(fitK_scaled)
@@ -401,21 +438,21 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust 
 # for(i in 1:5) {
 #   plot(firms, col = k[[i]]$cluster) #plotting data based on membership to clusters for k = 1 to 5 clusters
 # }
+# head(fitM)
+# fitM <- Mclust(firms_truncated)
+# plot(fitM)
+# #Model-based clustering using mclust
+# 
+# head(clusters)
+# plot(firms_sampled, col = clusters) # as we can see, it performs quite similar to the K-means 
+# rect.hclust(fitH, k = 5, border = "red") # visualising dendrogam cut at k =5
+# clusters <- cutree(fitH, 5)  # vector with cluster membership for each observation
+# plot(fitH)
+# d <- dist(firms_truncated)
+# fitH <- hclust(d, "ward.D2")
 # 
 # #Hierarchical clustering---
 # 
-# d <- dist(firms_truncated)
-# fitH <- hclust(d, "ward.D2")
-# plot(fitH)
-# rect.hclust(fitH, k = 5, border = "red") # visualising dendrogam cut at k =5
-# clusters <- cutree(fitH, 5)  # vector with cluster membership for each observation
-# head(clusters)
-# plot(firms_sampled, col = clusters) # as we can see, it performs quite similar to the K-means 
-# 
-# #Model-based clustering using mclust
-# fitM <- Mclust(firms_truncated)
-# head(fitM)
-# plot(fitM)
 
 ```
 
