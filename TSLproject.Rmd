@@ -267,45 +267,45 @@ hist(log(firms$large))
 PCA on firms data:
 ```{r}
 
-pairs(firms[, 3:8])
-
-salary_NEW = salary[, 3:ncol(salary)]
-colnames(salary_NEW) = 1:32
-corrplot(cor(salary_NEW), method = "circle", title = "Correlation matrix for salary", 
-         diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
-         tl.col = "black", mar=c(0,0,1,0)) 
-
-
-# firms_clean <- firms[firms$micro < 20000 & firms$large < 200,]
-firms_clean <- firms[firms$micro > 1 & firms$micro < 2500 & 
-                     firms$small > 1 & firms$small < 800 & 
-                     firms$medium > 1 & firms$medium < 500 & 
-                     firms$large > 1 & firms$large < 200 &
-                     firms$null > 1 & firms$null < 2000 ,]
-myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
-#plot(scale(firms_clean$micro), scale(firms_clean$large))
-#mean(firms_clean$micro)
-#mean(firms_clean$large)
-myPr
-summary(myPr)
-plot(myPr, type = "l")
-# biplot(myPr, scale = 0)
-#extract PC scores...
-str(myPr)
-#myPr$x #checking principal component scores
-firms2 <- cbind(firms_clean, myPr$x[, 1:2])
-head(firms2)
-#plot with ggplot...
-ggplot(firms2, aes(PC1, PC2)) +
-  stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) +
-  geom_point(shape = 21, col = "black")
-# correlations between variables and PCs...
-cor(firms_clean[, 4:8], firms2[,9:10])
-
-# using ggbiplot
-ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
-  ggtitle("Biplot for the firms's size") +
-  theme(plot.title = element_text(hjust = 0.5))
+# pairs(firms[, 3:8])
+# 
+# salary_NEW = salary[, 3:ncol(salary)]
+# # colnames(salary_NEW) = 1:32
+# corrplot(cor(salary_NEW), method = "circle", title = "Correlation matrix for salary", 
+#          diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+#          tl.col = "black", mar=c(0,0,1,0)) 
+# 
+# 
+# # firms_clean <- firms[firms$micro < 20000 & firms$large < 200,]
+# firms_clean <- firms[firms$micro > 1 & firms$micro < 2500 & 
+#                      firms$small > 1 & firms$small < 800 & 
+#                      firms$medium > 1 & firms$medium < 500 & 
+#                      firms$large > 1 & firms$large < 200 &
+#                      firms$null > 1 & firms$null < 2000 ,]
+# myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
+# #plot(scale(firms_clean$micro), scale(firms_clean$large))
+# #mean(firms_clean$micro)
+# #mean(firms_clean$large)
+# myPr
+# summary(myPr)
+# plot(myPr, type = "l")
+# # biplot(myPr, scale = 0)
+# #extract PC scores...
+# str(myPr)
+# #myPr$x #checking principal component scores
+# firms2 <- cbind(firms_clean, myPr$x[, 1:2])
+# head(firms2)
+# #plot with ggplot...
+# ggplot(firms2, aes(PC1, PC2)) +
+#   stat_ellipse(geom = "polygon", col = "black", alpha = 0.5) +
+#   geom_point(shape = 21, col = "black")
+# # correlations between variables and PCs...
+# cor(firms_clean[, 4:8], firms2[,9:10])
+# 
+# # using ggbiplot
+# ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
+#   ggtitle("Biplot for the firms's size") +
+#   theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r}
