@@ -1,0 +1,11 @@
+- Luca:
+
+Diagnostics, Ftests, CV and predictions for ANOVA
+
+
+- General:
+comment code properly in an uniform way
+load all librares at the begin
+delete useless ouput (or at least comment it)
+start working on the paper and search bibliography
+add chunks' name: e.g., ```{r your title} (at the begin of the chunk)
