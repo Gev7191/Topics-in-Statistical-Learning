@@ -56,7 +56,8 @@
 
 \title[Study of French labour market and inequalities]{Study of French labour market and inequalities} 
 \author{L. Insolia, J. Kim and Y. Yeghikyan}
-\institute{SNS}
+\institute{SNS \\
+		   \vskip0.5cm\centering\small \textcolor{rscuro}{--- \emph{Midterm results} ---}}
 \date{March 14, 2018}
 
 \beamertemplatenavigationsymbolsempty
@@ -105,8 +106,8 @@
 \begin{document}
 	
 \begin{frame}
+	
 	\maketitle
-	\centering\small \textcolor{rscuro}{--- \emph{Midterm results} ---}
 \end{frame}
 
 
@@ -151,6 +152,17 @@
 
 \begin{frame}
 	\centerline{\Huge\textcolor{bscuro}{What has been done so far \ldots}}		
+\end{frame}
+
+
+\subsection{Population}
+
+
+\begin{frame}{\textcolor{bscuro}{Pre-processing phase}}
+	\begin{itemize}
+		\item ...
+		\item ...
+	\end{itemize}
 \end{frame}
 
 
@@ -226,7 +238,7 @@
 \end{frame}
 
 	
-\begin{frame}{\textcolor{bscuro}{Prediction for young people using elastic net and and 10-folds CV}}
+\begin{frame}{\textcolor{bscuro}{Elastic net and and 10-folds CV}}
 	\begin{figure}[!ht] 
 		\centering
 		\subfloat{\includegraphics[width=0.9\textwidth]{elasticNet_10foldsCV.jpeg}} 
@@ -246,10 +258,43 @@
 \end{frame}
 
 
+\begin{frame}{\textcolor{bscuro}{Distribution of firms per town}}
+\begin{figure}[!ht] 
+	\centering
+	\subfloat{\includegraphics[width=0.5\textwidth]{hist_firms_total.jpeg}}
+	\subfloat{\includegraphics[width=0.5\textwidth]{hist_firms_ratio_null_total.jpeg}}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}{\textcolor{bscuro}{Bivariate relations}}
+\begin{figure}[!ht] 
+	\centering
+	\subfloat{\includegraphics[width=0.5\textwidth]{scatter_firms.jpeg}}
+	\subfloat{\includegraphics[width=0.5\textwidth]{corr_firms.jpeg}}
+\end{figure}
+Excluding Paris
+\end{frame}
+
+
+\begin{frame}{\textcolor{bscuro}{Bivariate relations}}
+\begin{figure}[!ht] 
+	\centering
+	\subfloat{\includegraphics[width=0.5\textwidth]{scatter_firms_log.jpeg}}
+	\subfloat{\includegraphics[width=0.5\textwidth]{corr_firms_log.jpeg}}
+\end{figure}
+Including Paris
+\end{frame}
+
+
 \begin{frame}{\textcolor{bscuro}{PCA}}
-	\begin{figure}[!ht] 
+	Using original data scaled (not logs)
+	
+	Most typical vs. Excluding just Paris
+	\begin{figure} 
 		\centering
-		\subfloat{\includegraphics[width=0.7\textwidth]{biplot_firms.jpeg}}
+		\subfloat{\includegraphics[width=0.5\textwidth]{biplot_firms.jpeg}}
+				\subfloat{\includegraphics[width=0.5\textwidth]{biplot_firms_ParisExcl.jpeg}}
 	\end{figure}
 \end{frame}
 
@@ -257,7 +302,7 @@
 \section{Summary}
 
 
-\subsection{Issues}
+\subsection{Problems encountered}
 
 
 \begin{frame}{\textcolor{bscuro}{Issues}}
@@ -267,6 +312,7 @@
 		\item Missing additional information 
 		\item French DOM-TOM regions
 		\item Outliers and spatial correlation
+		\item Combine the separated datasets
 	\end{itemize}
 \end{frame}			
 
@@ -274,10 +320,9 @@
 \subsection{Future works}
 
 
-\begin{frame}{{Future works}}
+\begin{frame}{\textcolor{bscuro}{Future works}}
 	%		Elaborate on future plans; can what you did during the course be the basis for a continuing project/collaboration? 
 	\begin{itemize}
-		\item Combine the separated datasets
 		\item Create meaningful indicators
 		\item Take correlation into account (especially spatial)
 		\item Perform clustering techniques to identify geographical clusters

@@ -66,7 +66,7 @@ In particular, we are interested in:
 
 Loading all libraries needed throughout the notebook:
 ```{r}
-if(!require(plyr)){install.packages("dplyr"); library(plyr)}
+if(!require(plyr)){install.packages("plyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
 if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
 if(!require(ggmap)){install.packages("ggmap"); library(ggmap)}
@@ -156,7 +156,7 @@ names(population)[5:7] <-
 
 # [KEEP DEPT. NUM?]
 # [?loignement is the distance from where?]
-names(geo)[2:11] =
+names(geo)[c(2:11, 14)] =
   c("code_region",
     "region", 
     "region_capital",
@@ -166,10 +166,8 @@ names(geo)[2:11] =
     "circons",
     "town_name", 
     "postal_code", 
-    "CODGEO")
-
-names(geo)[14] =
-  c("eloignement")
+    "CODGEO",
+    "eloignement")
 
 # Drop unnecessary columns (code/num and name represents same thing) 
 geo <- subset(geo, select = -c(EU_circo, code_region, number_depart, prefecture, circons, eloignement))
@@ -241,8 +239,9 @@ summary(firms$null/firms$total)
 # should we remove these data?
 hist(firms$null/firms$total)
 ggplot(data=firms, aes(firms$null/firms$total)) +
-  geom_histogram(aes(y =..count..), col="black", fill="blue", alpha = .3, bins = 50) +
-  labs(x="Null firms/total firms", y="Count") +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
+  geom_density(col="black") +
+  labs(x="Null firms/total firms", y="Density") +
   ggtitle("Ratio between the number of null firms and total firms per town") +
   theme(plot.title = element_text(hjust = 0.5)) 
 
@@ -266,6 +265,16 @@ hist(log(firms$large))
 
 PCA on firms data:
 ```{r}
+
+pairs(firms[, 3:8])
+
+salary_NEW = salary[, 3:ncol(salary)]
+colnames(salary_NEW) = 1:32
+corrplot(cor(salary_NEW), method = "circle", title = "Correlation matrix for salary", 
+         diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+         tl.col = "black", mar=c(0,0,1,0)) 
+
+
 # firms_clean <- firms[firms$micro < 20000 & firms$large < 200,]
 firms_clean <- firms[firms$micro > 1 & firms$micro < 2500 & 
                      firms$small > 1 & firms$small < 800 & 
@@ -279,7 +288,7 @@ myPr <- prcomp(firms_clean[, 4:8], scale = TRUE)
 myPr
 summary(myPr)
 plot(myPr, type = "l")
-biplot(myPr, scale = 0)
+# biplot(myPr, scale = 0)
 #extract PC scores...
 str(myPr)
 #myPr$x #checking principal component scores
@@ -296,6 +305,60 @@ cor(firms_clean[, 4:8], firms2[,9:10])
 ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
   ggtitle("Biplot for the firms's size") +
   theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+
+
+# get Paris in order to exclude it in the following
+Paris = which.max(firms$total)
+
+# Original scale
+# Scatter matrix
+pairs(firms[-Paris, 3:8], gap=0, main = "Scatter matrix for firms")
+# Correlation matrix
+corrplot(cor(firms[-Paris, 3:8]), method = "number", title = "Correlation matrix for firms", 
+         diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
+         tl.col = "black", mar=c(0,0,1.5,0))
+
+# Log scale
+# Scatter matrix
+pairs(firms[-Paris, 3:8], log = "xy", gap=0, main = "Scatter matrix for firms in log scale")
+# Correlation matrix
+firmsLog = log(firms[, 3:8]) 
+firmsLog[firmsLog == -Inf] = 0
+corrplot(cor(firmsLog), method = "number", title = "Correlation matrix for firms  in log scale", 
+          diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
+          tl.col = "black", mar=c(0,0,1.5,0))
+
+# PCA
+myPr <- prcomp(firms[-which.max(firms$total), 3:8], scale = TRUE)
+summary(myPr)
+plot(myPr, type = "l")
+# PCA
+# myPr <- pca(firms[-which.max(firms$total), 3:8], nPcs = 6, scale = "uv") # cv = ..
+# summary(myPr)
+# plot(myPr, type = "l")
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("pcaMethods")
+# library(pcaMethods)
+# slplot(myPr, scoresLoadings = c(T,T))
+
+# using ggbiplot
+ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
+  ggtitle("Biplot for the firms's size") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# classic vs robust PC
+# par(mfrow=c(2,1))
+# require(graphics)
+# library(rrcov)
+# myPr<-PcaClassic(firms[-which.max(firms$total), 3:8], scale = TRUE, k = 6)
+# biplot(myPr)
+# v1 <- PcaHubert(firms[-which.max(firms$total), 3:8], scale = TRUE, mcd = T, k = 6)
+# biplot(v1)
+# plot(v1) # distance plot
+# screeplot(v1)
 ```
 
 ## Cluster Analysis ##
@@ -366,7 +429,7 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust 
 
 We plan to use these for the following tasks:
 
-* predict the salaries using such information as proxy for the competition in the job market;
+* predict the salaries using such informsation as proxy for the competition in the job market;
 * predict the total number of firms, using salary data;
 * geo-spatial plot for firms' size 
 * ... 
