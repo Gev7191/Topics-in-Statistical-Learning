@@ -81,6 +81,7 @@ if(!require(MASS)){install.packages("MASS"); library(MASS)}
 if(!require(factoextra)){install.packages("factoextra"); library(factoextra)}
 if(!require(rafalib)){install.packages("rafalib"); library(rafalib)}
 if(!require(boot)){install.packages("boot"); library(boot)}
+if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
 ```
 
 
@@ -308,8 +309,8 @@ PCA on firms data:
 #   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-```{r}
 
+```{r}
 
 # get Paris in order to exclude it in the following
 Paris = which.max(firms$total)
@@ -512,6 +513,7 @@ sum(indNA_coord)
     
 
 # read the created csv
+setwd("./data")
 retrieved_geo_NA = read.csv("geo_NA_Final.csv", header = T, encoding = "UTF-8")
 # get only long and lat and assign to original NA 
 geo$latitude[indNA_coord] = retrieved_geo_NA[,2]
@@ -872,34 +874,30 @@ salary_NEW = salary[, 3:ncol(salary)]
 colnames(salary_NEW) = 1:32
 corrplot(cor(salary_NEW), method = "circle", title = "Correlation matrix for salary", 
          diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
-         tl.col = "black", mar=c(0,0,1,0)) 
+         tl.col = "black", mar=c(0,0,1.5,0)) 
 
 # most general pairs
-pairs(salary[c(3:8, 13, 18:20)], gap=0)
+pairs(salary[c(3:8, 13, 18:20)], gap=0, main = "Scatter matrix for some variables in salary")
 # pairs highlighting genders' differences
 pairs(salary[c(9:12, 14:17)], gap=0)
 ```
 
-Fit a regression model to predict the salaries of people in age 26-50 using as regressor 51+ years:
-```{r, fig.keep='all'}
 
+First we perform some easy task
+fitting a regression model to predict the salaries of people in age 26-50 using as regressor 51+ years:
+
+```{r, fig.keep='all'}
 # fit and show OLS estimate
 plot(salary$sal_26_50 ~ salary$sal_51plus)
 fit_LM_26_50 = lm(salary$sal_26_50 ~ salary$sal_51plus, data = salary) 
 abline(fit_LM_26_50, lwd=3, col="red")
-
 # diagnostics
 summary(fit_LM_26_50)
 plot(fit_LM_26_50)
-```
 
-Same as before but adding polynomials which are evauated using 10-folds cross validation:
-
-```{r, fig.keep='all'}
-
+# Same as before but adding polynomials which are evauated using 10-folds cross validation
 require(boot)
 set.seed(1)
-
 # k-Fold Cross-Validation
 cv.err.K = rep(0, 5)
 cv.err.K = rbind(cv.err.K, cv.err.K)
@@ -907,7 +905,6 @@ for (i in 1:5){
   fit_LM_26_50.K = glm(sal_26_50 ~ poly(sal_51plus, i), data = salary)
   cv.err.K[,i] = cv.glm(salary, fit_LM_26_50.K, K = 10)$delta[1]
 }
-
 # plotting results
 plot(cv.err.K[1,], type = 'l', col = 'red', xlab = "Polynomials' order", 
      ylab = "10-folds CV", main = "CV and adjusted CV for different polynomials")
@@ -918,13 +915,11 @@ legend('topright', legend = c('CV', 'Adj. CV'), col = c('red', 'green'), pch = 1
 ```
 
 
-Predicting sal_executive with 5 regressers using Lasso with CV and 10-folds CV:
-[ PROBLEM FOR COLLINEARITY? use ridge?] [ add polynomials? ]
+Predicting sal_executive Elastic NEt with CV and 10-folds CV, using some variables and thei 2nd and 3rd order polynomials:
 ```{r, fig.keep='all'}
 
-require(glmnet)
-set.seed(1)
 
+set.seed(1)
 # crate an X matrix excluding intercept
 # x = cbind(salary$sal_midManager, salary$sal_employee, salary$sal_worker, salary$sal_18_25, salary$sal_51plus)
 # y = salary$sal_executive
@@ -1177,24 +1172,121 @@ Model salaries for people aged 18-25, which seems more difficult to predict:
 ```{r, fig.keep='all'}
 
 plot(y = salary$sal_18_25, x = salary$sal_51plus)
-# there is a clear outlier
-ind_out = which(salary$sal_18_25 == max(salary$sal_18_25))
+# there are clear outliers
+ind_out = salary$sal_18_25 > 13
 # check if is so in all dimensions (apparently not)
 col_col <- rep("black", nrow(salary))
 col_col[ind_out] <- "red"
-pairs(salary[, c(3:8, 13, 18:20)], col = col_col)
+# pairs(salary[, c(3:8, 13, 18:20)], col = col_col)
+
+# use log scale
+y = log(salary$sal_midManager[!ind_out])
+x = log(salary$sal_51plus[!ind_out])
+hist(y, 30)
+plot(y = y, x = x)
 
 # evaluate an OLS fit
-fit_LM_18_25 = lm(salary$sal_18_25 ~ salary$sal_51plus)
+fit_LM_18_25 = lm(y ~ x)
 summary(fit_LM_18_25) 
-plot(y = salary$sal_18_25, x = salary$sal_51plus)
+plot(y = y, x = x)
 abline(fit_LM_18_25, lwd=3, col="red")
 
-# # using more predictors
-# fit_LM_2 = lm(salary$sal_M_18_25 ~ salary$sal_26_50 + salary$sal_51plus + salary$sal_general + salary$sal_executive + 
-#                 salary$sal_midManager + salary$sal_employee + salary$sal_worker)
-# 
-# summary(fit_LM_2)
+# using more predictors
+x = cbind.data.frame(salary$sal_26_50, salary$sal_51plus, salary$sal_general, salary$sal_executive, salary$sal_midManager, salary$sal_employee, salary$sal_worker)
+x = x[!ind_out,]
+yx = cbind.data.frame(y, x, x*x, x*x*x, log(x))
+# assign right names
+namesdataBS = c("y", names(x))
+lll = ((dim(yx)[2]-1)/4) 
+# delete first _ in each name
+for (i in 1:lll+1){ 
+  str = namesdataBS[i] 
+  namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1] 
+} 
+# assign new names
+namesdataBS[(lll+2):(lll*2+1)] = paste(namesdataBS[1:lll+1], rep("^2", lll)) 
+namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll)) 
+namesdataBS[(lll*3+2):(lll*4+1)] = paste(namesdataBS[1:lll+1], rep("log", lll)) 
+names(yx) = namesdataBS 
+
+# LM fit
+fit_LM_2 = lm(y ~ ., data = yx)
+summary(fit_LM_2)
+
+# Elastic net with 10-folds CV
+# using 10 folds CV
+  # install.packages("doParallel")
+  # library(doParallel)
+  # cl <- makeCluster(4)
+  # registerDoParallel(cl)
+x = as.matrix(yx[, 2:ncol(yx)])
+par(mfrow =c(3,2))
+for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
+  set.seed (3)
+  cv.out = cv.glmnet(x[train ,], y[train], alpha = j)
+  plot(cv.out)
+  title(paste("alpha = ", j), line = 2.5)
+}
+
+
+# split the date leaving the 20% for CV
+train = sample(1:nrow(x), floor(nrow(x)*0.8))
+test = -train
+y.test = y[test]
+x = as.matrix(x)
+par(mfrow =c(3,2))
+for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
+  set.seed (3)
+  lasso.mod = glmnet(x[train,], y[train], alpha = j, thresh = 1e-10)
+  err.i = rep("NA", length(lasso.mod$lambda))
+  for (i in 1:length(lasso.mod$lambda)){
+    lasso.pred = predict(lasso.mod, s = lasso.mod$lambda[i], newx = x[test,])
+    err.i[i] = mean((lasso.pred - y.test)^2)
+  }
+  plot(log(lasso.mod$lambda), err.i, xlab = 'log Lambda', ylab = 'test set MSE', 
+       main = 'Test MSE among different Lambdas', type = "b", col = j)
+}
+bestlam = which.min(err.i)
+points(log(grid)[bestlam], err.i[bestlam], col = 3, cex=2, pch=20)
+
+
+# using best subset
+require(leaps)
+dataBS = as.data.frame(cbind(y, x))
+best.sub = regsubsets(y ~ x, data = dataBS, nvmax = nrow(coef(lasso.mod)))
+best.sub.summary = summary(best.sub)
+names(best.sub.summary)
+# manual plotting
+par(mfrow =c(2,2))
+# rsq
+plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l")
+ind_Rsq = which.max(best.sub.summary$rsq)
+points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20)
+# adjRsq
+plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l")
+ind_adjRsq = which.max(best.sub.summary$adjr2)
+points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20)
+# Cp
+plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l")
+ind_Cp = which.min(best.sub.summary$cp)
+points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20)
+# bic
+plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
+ind_bic = which.min(best.sub.summary$bic)
+points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
+mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5) 
+# built-in plots
+?plot.regsubsets
+par(mfrow=c(1,1))
+plot(best.sub, scale = "r2")
+plot(best.sub, scale = "adjr2")
+plot(best.sub, scale = "Cp")
+plot(best.sub, scale = "bic")
+# retrieve the model with min BIC
+coefficients(best.sub, which.min(best.sub.summary$bic))
+names(coefficients(best.sub, which.min(best.sub.summary$bic)))
+
+
 ```
 
 ANOVA model for salary:
@@ -1205,17 +1297,6 @@ sal_y = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus,
         salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
         salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus,
         salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker)
-
-hist(sal_y, 30)
-hist(log(sal_y), 30)
-hist(sal_y^-1, 30)
-sal_y = sal_y^-1  # also suggested by Box-Cox transformation
-ggplot(data=data.frame(sal_y), aes(sal_y^-1)) + 
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 60) + 
-  geom_density(col="black") + 
-  labs(x="salary^-1", y="Density") + 
-  ggtitle("Transformation of salary found using Box-Cox transformation") + 
-  theme(plot.title = element_text(hjust = 0.5))  
 
 n_sal_y = length(sal_y)             # length response variable
 n_cat = length(salary$sal_M_18_25)  # length of each category (i.e., original vectors)
@@ -1245,15 +1326,35 @@ sal_job[(n_cat*11+1):(n_cat*12), 2] = 1   # females
 sal_job[(n_cat*5+1):(n_cat*6), 3] =   1   # males
 sal_job[(n_cat*12+1):(n_cat*13), 3] = 1   # females
 
-# final data set
+# final data set 
 data_ANOVA = cbind.data.frame(response = sal_y, sex = sal_sex, age = sal_age, job = sal_job)
 names(data_ANOVA)
 # show regressors' shape
 imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
 axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
+# sub sample to avoid correlation
+set.seed(20)
+subs = sample(1:n_sal_y, size = round(n_sal_y*0.2))
+data_ANOVA = data_ANOVA[subs,]
+# show randomized data
+imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
+axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
+
+# plot response variable
+hist(data_ANOVA[,1], 30)
+hist(log(data_ANOVA[,1]), 30)
+hist(sqrt(data_ANOVA[,1]), 30)
+hist(data_ANOVA[,1]^-1, 30)
+sal_y = data_ANOVA[,1]^-1  # also suggested by Box-Cox transformation
+ggplot(data=data.frame(data_ANOVA[,1]), aes(data_ANOVA[,1]^-1)) + 
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 40) + 
+  geom_density(col="black") + 
+  labs(x="salary^-1", y="Density") + 
+  ggtitle("Transformation of salary found using Box-Cox transformation") + 
+  theme(plot.title = element_text(hjust = 0.5)) 
 
 # ANOVA model
-sal_ANOVA = lm(sal_y ~ sal_sex + sal_age + sal_job + sal_sex:sal_age + sal_sex:sal_job)
+sal_ANOVA = lm(sal_y ~ sal_sex[subs] + sal_age[subs] + sal_job[subs] + sal_sex[subs]:sal_age[subs] + sal_sex[subs]:sal_job[subs])
 summary(sal_ANOVA)
 anova((sal_ANOVA))
 
@@ -1557,7 +1658,49 @@ print(paste("The new dataset has", nrow(salaryNEW), "units and",
 ```
 
 
+Create population of the same length and merge the data:
+```{r}
+# 
+# popNEWnames = c("CODGEO", 
+#                 c(unique(as.character(populationNEW$MOCO))), 
+#                 c(unique(as.character(populationNEW$ageCateg5))),
+#                 c(unique(as.character(populationNEW$sex))),
+#                 "Pop")
+# matrix("NA", dim(populationNEW[1], ))
+head(population)
+summary(population)
+# general size of a town
+popNEW = ddply(populationNEW, .(CODGEO), summarize, popTot=sum(peopleCategNum))
+head(popNEW)
+
+# merging
+population$CODGEO = as.integer(population$CODGEO)
+newDat = merge(firmsNEW, popNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, salaryNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, geoNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = subset(newDat, select = -town.y)
+
+```
+
+
 # Analysis #
+
+General:
+```{r}
+corrplot(cor(newDat[, 3:20]), method = "circle", title = "Correlation matrix for firms", 
+         diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
+         tl.col = "black", type = "lower", mar=c(0,0,1.5,0))
+corrplot(cor(newDat[, 21:41]), method = "circle", title = "Correlation matrix for firms", 
+         diag = F, tl.cex=1, type = "lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+         tl.col = "black", mar=c(0,0,1.5,0))
+```
+
 
 Firms and geo:
 ```{r}
@@ -1603,6 +1746,10 @@ ggplot(firms_regions_large, aes(x=regions,y = Percentage_large)) +
 ```
 ## Regression ##
 ```{r}
+
+
+
+
 ```
 ## Clustering ##
 ```{r}
