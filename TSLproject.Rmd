@@ -106,6 +106,7 @@ names(salary)
 names(geo)
 ```
 
+
 To better understand the data we assign meaningful names and drop some variables which are not needed (at the moment):
 ```{r} 
 names(firms)[2:ncol(firms)] <-
@@ -1303,6 +1304,9 @@ summary(pop_by_codgeo)
 # Scale population to log
 hist(pop_by_codgeo$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
 pop_by_codgeo$total_population_log <- log10(pop_by_codgeo$total_population)
+
+
+hist(pop_by_codgeo$aged_dependency_ratio)
 ```
 ```{r}
 # # Merge geo and pop
@@ -1364,10 +1368,12 @@ summary(pca_pop_town)
 
 ```{r}
 # PCA population
-apply(pca_pop_town, 2, mean)
-apply(pca_pop_town, 2, var)
-pcapop <- prcomp(pca_pop_town[, 2:5])
-pcapop$rotation
+set.seed(3)
+subs = sample(1:nrow(pca_pop_town), size = round(nrow(pca_pop_town)*0.2))
+summary(pca_pop_town)
+
+pcapop <- prcomp(pca_pop_town[subs, 2:5])
+# pcapop$rotation
 
 plot(pcapop, type = "l")
 biplot(pcapop, scale = 0, cex = 0.5)
@@ -1376,13 +1382,13 @@ biplot(pcapop, scale = 0, cex = 0.5)
 # fviz_pca_ind(pcapop, col.ind="contrib") + scale_color_gradient2(low="blue", mid="white", high="red", midpoint=4) + theme_minimal()
 str(pcapop)
 
-ggbiplot(pcapop, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust = 1) +
-  ggtitle("Biplot for dependency ratios") +
+ggbiplot(pcapop, obs.scale = 1, var.scale = 1, varname.size = 4.5, varname.adjust = 1) +
+  ggtitle("Biplot for dependency ratios") + 
   theme(plot.title = element_text(hjust = 0.5))
 
 #pcapop$x #checking principal component scores
-pca_pop_town2 <- cbind(pca_pop_town, pcapop$x[, 1:2])
-head(pca_pop_town2)
+pca_pop_town2 <- cbind(pca_pop_town[subs,], pcapop$x[, 1:2])
+# head(pca_pop_town2)
 ```
 
 ```{r}
@@ -1405,8 +1411,8 @@ plot(cumsum(pve), xlab="PCA", ylab="Cumulative PVE", ylim=c(0,1), type='b')
 
 ```{r}
 # kmean trial
-km.out=kmeans(pca_pop_town[,2:5], 5, nstart=50)
-plot(pca_pop_town[,2:5], col=(km.out$cluster), pch=20, cex=1)
+km.out=kmeans(pca_pop_town[subs,2:5], 5, nstart=50)
+plot(pca_pop_town[subs,2:5], col=(km.out$cluster), pch=20, cex=1)
 ```
 
 ```{r}
@@ -1499,12 +1505,13 @@ Create population of the same length and merge the data:
 head(population)
 summary(population)
 # general size of a town
-popNEW = ddply(populationNEW, .(CODGEO), summarize, popTot=sum(peopleCategNum))
-head(popNEW)
+# popNEW = ddply(populationNEW, .(CODGEO), summarize, popTot=sum(peopleCategNum))
+# head(popNEW)
 
+##########################################RUN THIS PART AFTER RUNNING POP_BY_CODGEO PART ABOVE
 # merging
 population$CODGEO = as.integer(population$CODGEO)
-newDat = merge(firmsNEW, popNEW, by="CODGEO")
+newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
 names(newDat)
 head(newDat)
 newDat = merge(newDat, salaryNEW, by="CODGEO")
@@ -1515,6 +1522,7 @@ names(newDat)
 head(newDat)
 newDat = subset(newDat, select = -town.y)
 
+write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
 ```
 
 

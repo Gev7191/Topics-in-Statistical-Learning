@@ -161,8 +161,9 @@
 
 \begin{frame}{\textcolor{bscuro}{Pre-processing phase}}
 	\begin{itemize}
-		\item ...
-		\item ...
+		\item Population: restructured the dataset and created new features
+		\item Firms: categorized firms' sizes into 4 categories
+		\item Geography: retrieved the missing data using Google API
 	\end{itemize}
 \end{frame}
 
@@ -176,13 +177,19 @@
 	%			\item sex and dependency ratios 
 	\begin{figure}[!ht] 
 		\centering
-		\subfloat{{\includegraphics[width=0.5\textwidth]{dis_pop_dep.jpeg} }}
+		\subfloat{{\includegraphics[width=0.46\textwidth]{DDis_pop.jpeg} }}
 		\subfloat{{\includegraphics[width=0.5\textwidth]{pyramid_pop.jpeg} }}
 	\end{figure}
 \end{frame}
 
+\begin{frame}{\textcolor{bscuro}{Demographic profiles}}
+	\begin{figure}[!ht] 
+		\centering
+		\subfloat{{\includegraphics[width=0.7\textwidth]{Biplot_pop.jpeg} }}
+	\end{figure}
+\end{frame}
 
-\subsection{Salary}
+\subsection{Salary} 
 
 
 \begin{frame}{\textcolor{bscuro}{Inequality of salary}}	
@@ -242,7 +249,7 @@
 \begin{frame}{\textcolor{bscuro}{ANOVA using sex, job, age and interaction effects}}
 	\begin{figure}[!ht] 
 		\centering
-		\subfloat{\includegraphics[width=0.75\textwidth]{ANOVA_dataY.jpeg}} 
+		\subfloat{\includegraphics[width=0.6\textwidth]{ANOVA_dataY.jpeg}} 
 	\end{figure}
 \end{frame}
 
@@ -326,12 +333,11 @@ Including Paris
 
 \begin{frame}{\textcolor{bscuro}{Issues}}
 	\begin{itemize}
-		\item A lot of NA in geo locations (retrieved from Google API)
 		\item Unique code for salary data 1/7 of the total 
+		\item Combine the separated datasets
 		\item Missing additional information 
 		\item French DOM-TOM regions
 		\item Outliers and spatial correlation
-		\item Combine the separated datasets
 	\end{itemize}
 \end{frame}			
 
