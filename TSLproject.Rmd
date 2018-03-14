@@ -1282,6 +1282,7 @@ summary(population)
 # install.packages("plyr")
 library(plyr)
 population=populationNEW
+
 pop_by_codgeo <- ddply(population, .(CODGEO), function(population) {
   data.frame(total_population = sum(population$peopleCategNum),
              male = sum(population[population$sex == "Male",]$peopleCategNum),
@@ -1302,12 +1303,18 @@ summary(pop_by_codgeo)
 
 ```{r}
 # Scale population to log
-hist(pop_by_codgeo$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
 pop_by_codgeo$total_population_log <- log10(pop_by_codgeo$total_population)
 
+# Histogram of total population per town
+hist(pop_by_codgeo$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
 
-hist(pop_by_codgeo$aged_dependency_ratio)
+hist(pop_by_codgeo$total_population_log, xlab="Total Population in log", main = "Total population per town", col ="light blue")
+
+hist(pop_by_codgeo$dependency_ratio, xlab="", main = "", col ="light blue")
+hist(pop_by_codgeo$sex_ratio, xlab="", main = "", col ="light blue")
 ```
+
+
 ```{r}
 # # Merge geo and pop
 geo_pop_by_codgeo <- merge(geoNEW, pop_by_codgeo)
@@ -1327,7 +1334,19 @@ poppulation_distribution <-
   ggtitle("Distribution of Population for each town")
 poppulation_distribution
 ```
-
+```{r}
+# Plot "Distribution of aged dependency ratio for each CODGEO"
+#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
+sc <- scale_colour_gradientn(colours =palette(rainbow(6)), limits=c(min(geo_pop_by_codgeo$aged_dependency_ratio), max(geo_pop_by_codgeo$aged_dependency_ratio)))
+aged_ratio_distribution <-
+  FraMap +
+  geom_point(aes(x=geo_pop_by_codgeo$longitude, y=geo_pop_by_codgeo$latitude, colour=geo_pop_by_codgeo$aged_dependency_ratio),
+             data=geo_pop_by_codgeo, alpha=0.8, size=0.6) +
+  sc +
+  labs(color='') +
+  ggtitle("Aged dependency ratio per town")
+aged_ratio_distribution
+```
 
 
 
@@ -1522,7 +1541,8 @@ names(newDat)
 head(newDat)
 newDat = subset(newDat, select = -town.y)
 
-write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
+# NewDat CSV file created
+# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
 ```
 
 

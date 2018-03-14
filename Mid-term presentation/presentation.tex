@@ -55,7 +55,7 @@
 \usepackage{eurosym}
 
 \title[Study of French labour market and inequalities]{Study of French labour market and inequalities} 
-\author{L. Insolia, J. Kim and Y. Yeghikyan}
+\author{L. Insolia, J. Kim and G. Yeghikyan}
 \institute{SNS \\
 		   \vskip0.5cm\centering\small \textcolor{rscuro}{--- \emph{Midterm results} ---}}
 \date{March 14, 2018}
@@ -171,23 +171,32 @@
 \subsection{Population}
 
 
-\begin{frame}{\textcolor{bscuro}{Demographic profiles}}
+\begin{frame}{\textcolor{bscuro}{Distribution of population per town}}
 	%			\item insight to demographic profile for each town 
 	%			\item age into three different categories: child, workforce and elderly
 	%			\item sex and dependency ratios 
 	\begin{figure}[!ht] 
 		\centering
-		\subfloat{{\includegraphics[width=0.46\textwidth]{DDis_pop.jpeg} }}
-		\subfloat{{\includegraphics[width=0.5\textwidth]{pyramid_pop.jpeg} }}
+		\subfloat{{\includegraphics[width=0.55\textwidth]{DDis_pop.jpeg} }}
+		\subfloat{{\includegraphics[width=0.5\textwidth]{tot_pop.jpeg} }}
 	\end{figure}
 \end{frame}
 
-\begin{frame}{\textcolor{bscuro}{Demographic profiles}}
+\begin{frame}{\textcolor{bscuro}{Population demographics}}
 	\begin{figure}[!ht] 
 		\centering
-		\subfloat{{\includegraphics[width=0.7\textwidth]{Biplot_pop.jpeg} }}
+		\subfloat{{\includegraphics[width=0.6\textwidth]{pyramid_pop.jpeg} }}
+		\subfloat{{\includegraphics[width=0.5\textwidth]{Aged.jpeg} }}
 	\end{figure}
 \end{frame}
+
+\begin{frame}{\textcolor{bscuro}{PCA}}
+\begin{figure}[!ht] 
+	\centering
+	\subfloat{{\includegraphics[width=0.6\textwidth]{Biplot_pop.jpeg} }}
+\end{figure}
+\end{frame}
+
 
 \subsection{Salary} 
 
@@ -241,7 +250,7 @@
 	\begin{figure}[!ht] 
 		\centering
 		\subfloat{\includegraphics[width=0.5\textwidth]{ANOVA_factors.jpeg}} 
-		\subfloat{\includegraphics[width=0.5\textwidth]{ANOVA_model.jpeg}}
+		\subfloat{\includegraphics[width=0.5\textwidth]{ANOVA_factors_randomized.jpeg}}
 	\end{figure}
 \end{frame} 
 
@@ -281,15 +290,6 @@
 		\subfloat{\includegraphics[width=0.5\textwidth]{hist_firms_total.jpeg}}
 		\subfloat{\includegraphics[width=0.5\textwidth]{hist_firms_ratio_null_total.jpeg}}
 	\end{figure}
-\end{frame}
-
-
-\begin{frame}{\textcolor{bscuro}{Distribution of firms per town}}
-\begin{figure}[!ht] 
-	\centering
-	\subfloat{\includegraphics[width=0.5\textwidth]{hist_firms_total.jpeg}}
-	\subfloat{\includegraphics[width=0.5\textwidth]{hist_firms_ratio_null_total.jpeg}}
-\end{figure}
 \end{frame}
 
 
@@ -334,7 +334,7 @@ Including Paris
 \begin{frame}{\textcolor{bscuro}{Issues}}
 	\begin{itemize}
 		\item Unique code for salary data 1/7 of the total 
-		\item Combine the separated datasets
+		\item Loss of information when combining the separated datasets
 		\item Missing additional information 
 		\item French DOM-TOM regions
 		\item Outliers and spatial correlation
