@@ -19,6 +19,8 @@
 
 \setbeamertemplate{blocks}[rounded][shadow=true]
 
+%\usepackage[font=Helv,timeinterval=60]{tdclock}
+
 \makeatletter
 \pgfdeclarehorizontalshading[frametitle.bg,frametitle right.bg]{beamer@frametitleshade}{\paperheight}{%
 	color(0pt)=(myblue2);
@@ -36,6 +38,9 @@
 	\end{beamercolorbox}}%
 	\vskip0pt%
 }
+
+%\setbeamertemplate{headline}{\initclock\tiny{\tdyear-\tdmonth-\tdday\quad\tdhours:\tdminutes}}
+
 \makeatother
 
 \usepackage[english]{babel}
@@ -185,8 +190,8 @@
 \begin{frame}{\textcolor{bscuro}{Population demographics}}
 	\begin{figure}[!ht] 
 		\centering
-		\subfloat{{\includegraphics[width=0.6\textwidth]{pyramid_pop.jpeg} }}
-		\subfloat{{\includegraphics[width=0.5\textwidth]{Aged.jpeg} }}
+		\subfloat{{\includegraphics[width=0.5\textwidth]{pyramid_pop.jpeg} }}
+		\subfloat{{\includegraphics[width=0.4\textwidth]{Aged.jpeg} }}
 	\end{figure}
 \end{frame}
 
@@ -246,7 +251,7 @@
 \end{frame}
 
 
-\begin{frame}{\textcolor{bscuro}{ANOVA using sex, job, age and interaction effects}}
+\begin{frame}{\textcolor{bscuro}{ANOVA}}
 	\begin{figure}[!ht] 
 		\centering
 		\subfloat{\includegraphics[width=0.5\textwidth]{ANOVA_factors.jpeg}} 
@@ -255,19 +260,49 @@
 \end{frame} 
 
 
-\begin{frame}{\textcolor{bscuro}{ANOVA using sex, job, age and interaction effects}}
+\begin{frame}{\textcolor{bscuro}{ANOVA}}
 	\begin{figure}[!ht] 
 		\centering
-		\subfloat{\includegraphics[width=0.6\textwidth]{ANOVA_dataY.jpeg}} 
+		\subfloat{\includegraphics[width=0.4\textwidth]{ANOVA_dataY.jpeg}} 
+		\subfloat{\includegraphics[width=0.5\textwidth]{ANOVA_model.jpeg}} 
 	\end{figure}
 \end{frame}
 
-	
-\begin{frame}{\textcolor{bscuro}{Prediction for young people using BSS }}
+
+\begin{frame}{\textcolor{bscuro}{ANOVA BSS}}
+\begin{figure}[!ht] 
+	\centering
+	\subfloat{\includegraphics[width=0.6\textwidth]{ANOVA_BSS.jpeg}} 
+	\subfloat{\includegraphics[width=0.4\textwidth]{ANOVA_BSS_bic.jpeg}}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}{\textcolor{bscuro}{ANOVA GW-Lasso}}
+\begin{figure}[!ht] 
+	\centering
+	\subfloat{\includegraphics[width=0.35\textwidth]{ANOVA_CV_GWLasso.jpeg}} 
+	\subfloat{\includegraphics[width=0.35\textwidth]{ANOVA_coeff_lambd.jpeg}} 	
+	\subfloat{\includegraphics[width=0.35\textwidth]{ANOVA_interc_lambd.jpeg}} 
+\end{figure}
+\end{frame}
+
+
+\begin{frame}{\textcolor{bscuro}{Prediction for young people}}
+\begin{figure}[!ht] 
+	\centering
+	\subfloat{\includegraphics[width=0.5\textwidth]{sal_regr_resp_sampled_noOut.jpeg}} 
+	%		\qquad
+	\subfloat{\includegraphics[width=0.6\textwidth]{sal_regr_scatter_model.jpeg}}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}{\textcolor{bscuro}{Prediction for young people using BSS}}
 	\begin{figure}[!ht] 
 		\centering
 		\subfloat{\includegraphics[width=0.6\textwidth]{bestsubsel_18_25.jpeg}} 
-		\qquad
+%		\qquad
 		\subfloat{\includegraphics[width=0.5\textwidth]{bestsubsel_18_25_BIC.jpeg}}
 	\end{figure}
 \end{frame}
@@ -276,7 +311,7 @@
 \begin{frame}{\textcolor{bscuro}{Elastic net and and 10-folds CV}}
 	\begin{figure}[!ht] 
 		\centering
-		\subfloat{\includegraphics[width=0.9\textwidth]{elasticNet_10foldsCV.jpeg}} 
+		\subfloat{\includegraphics[width=0.7\textwidth]{elasticNet_10foldsCV.jpeg}} 
 	\end{figure}
 \end{frame}
 
@@ -303,14 +338,14 @@ Excluding Paris
 \end{frame}
 
 
-\begin{frame}{\textcolor{bscuro}{Bivariate relations}}
-\begin{figure}[!ht] 
-	\centering
-	\subfloat{\includegraphics[width=0.5\textwidth]{scatter_firms_log.jpeg}}
-	\subfloat{\includegraphics[width=0.5\textwidth]{corr_firms_log.jpeg}}
-\end{figure}
-Including Paris
-\end{frame}
+%\begin{frame}{\textcolor{bscuro}{Bivariate relations}}
+%\begin{figure}[!ht] 
+%	\centering
+%	\subfloat{\includegraphics[width=0.5\textwidth]{scatter_firms_log.jpeg}}
+%	\subfloat{\includegraphics[width=0.5\textwidth]{corr_firms_log.jpeg}}
+%\end{figure}
+%Including Paris
+%\end{frame}
 
 
 \begin{frame}{\textcolor{bscuro}{PCA}}
@@ -349,10 +384,8 @@ Including Paris
 	%		Elaborate on future plans; can what you did during the course be the basis for a continuing project/collaboration? 
 	\begin{itemize}
 		\item Create meaningful indicators
-		\item Take correlation into account (especially spatial)
-		\item Perform clustering techniques to identify geographical clusters
-		\item Perform groupwise lasso to predict salary data
-		\item Verification/improvement of the obtained results 
+		\item Clustering techniques to identify geographical clusters
+		\item Verification and improvement of the obtained results 
 		\item Compare the methodologies used with robust ones
 		\item Find complementary datasets
 	\end{itemize}	
