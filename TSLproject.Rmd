@@ -310,7 +310,7 @@ PCA on firms data:
 #   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-
+Modified PCA [Luca]:
 ```{r}
 
 # get Paris in order to exclude it in the following
@@ -428,7 +428,7 @@ We plan to use these for the following tasks:
 * predict the salaries using such information as proxy for the competition in the job market;
 * predict the total number of firms, using salary data;
 * geo-spatial plot for firms' size 
-* ... 
+* ... missing: histogram for firms' size
 
 
 # Analyze geographical data #
@@ -913,7 +913,7 @@ legend('topright', legend = c('CV', 'Adj. CV'), col = c('red', 'green'), pch = 1
 Predicting salary for young people using Elastic NEt with CV and 10-folds CV. The predictors are most of the original variables and their 2nd, 3rd order polynomials and log tranformation:
 
 ```{r}
-# function to plot best subset regression
+# funtion to plot BSS
 plot.regsubsets2 <-  
   function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
                                                            "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)), ...)  
@@ -967,7 +967,7 @@ ggplot(data=salary, aes(salary$sal_18_25)) +
   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 35) + 
   geom_density(col="black") + 
   labs(x="salary^-1", y="Density") + 
-  ggtitle("Transformation of salary found using Box-Cox transformation") + 
+  ggtitle("Original response variable") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 # response variable histogram (excluding outliers)
@@ -975,7 +975,7 @@ ggplot(data=salary[ind,], aes(y)) +
   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 35) + 
   geom_density(col="black") + 
   labs(x="salary^-1", y="Density") + 
-  ggtitle("Transformation of salary found using Box-Cox transformation") + 
+  ggtitle("Original response variable excluding outliers") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 # after sampling to avoid serial correlation
@@ -985,11 +985,11 @@ ggplot(data=salary[ind,][indd,], aes(y[indd])) +
   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 30) + 
   geom_density(col="black") + 
   labs(x="salary^-1", y="Density") + 
-  ggtitle("Transformation of salary found using Box-Cox transformation") + 
+  ggtitle("Sampled response variable and excluding outliers") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
 # correlations
-# corrplot(cor(yx), method = "number", title = "Correlation matrix for salary", 
+# corrplot(cor(yx), method = "number", title = "Correlation matrix for salary",
 #          diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
 #          tl.col = "black")  # , mar=c(0,0,1.5,0)
 
@@ -1000,7 +1000,7 @@ summary(yx)
 inddd = yx$`salary$sal_midManager` < 20
 yx = yx[inddd,]
 # final dataset
-pairs(yx, gap=0, main = "Scatter matrix for some variables in salary")
+pairs(yx, gap=0, main = "Scatter matrix for the variables in the model")
 
 # create final dataframe
 require(leaps) 
@@ -1048,7 +1048,7 @@ for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
   }
   if (itercol == 1){
     plot(log(lasso.mod$lambda), err.i, xlab = 'log Lambda', ylab = 'test set MSE', 
-       main = 'Test MSE among different Lambdas', type = "b", col = itercol)
+         main = 'Test MSE among different Lambdas', type = "b", col = itercol)
   } else{
     lines(log(lasso.mod$lambda), err.i, type = "b", col = itercol)
   }
@@ -1086,12 +1086,15 @@ par(mfrow=c(1,1))
 plot(best.sub, scale = "r2") 
 plot(best.sub, scale = "adjr2") 
 plot(best.sub, scale = "Cp") 
+plot(best.sub, scale = "bic") 
 plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.9) 
 mtext("Best subset selection for salary 18-25 using BIC", outer=TRUE,  cex=1.4, line=-3.5) 
 # retrieve the model with min BIC 
 coefficients(best.sub, which.min(best.sub.summary$bic))
 names(coefficients(best.sub, 10))
 # nnn = names(coefficients(best.sub, which.min(best.sub.summary$bic)))
+
+
 
 ```
 
@@ -1100,12 +1103,11 @@ names(coefficients(best.sub, 10))
 
 ANOVA model for salary:
 ```{r}
-
 # create response variable
 sal_y = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus,
-        salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
-        salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus,
-        salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker)
+          salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
+          salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus,
+          salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker)
 
 n_sal_y = length(sal_y)             # length response variable
 n_cat = length(salary$sal_M_18_25)  # length of each category (i.e., original vectors)
@@ -1141,6 +1143,7 @@ names(data_ANOVA)
 # show regressors' shape
 imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
 axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
+box()
 # sub sample to avoid correlation
 set.seed(20)
 subs = sample(1:n_sal_y, size = round(n_sal_y*0.2))
@@ -1148,6 +1151,7 @@ data_ANOVA = data_ANOVA[subs,]
 # show randomized data
 imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
 axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
+box()
 
 # plot response variable
 hist(data_ANOVA[,1], 30)
@@ -1155,24 +1159,141 @@ hist(log(data_ANOVA[,1]), 30)
 hist(sqrt(data_ANOVA[,1]), 30)
 hist(data_ANOVA[,1]^-1, 30)
 sal_y = data_ANOVA[,1]^-1  # also suggested by Box-Cox transformation
-ggplot(data=data.frame(data_ANOVA[,1]), aes(data_ANOVA[,1]^-1)) + 
+ggplot(data=data.frame(data_ANOVA[,1]), aes(sal_y)) + 
   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 40) + 
   geom_density(col="black") + 
   labs(x="salary^-1", y="Density") + 
   ggtitle("Transformation of salary found using Box-Cox transformation") + 
   theme(plot.title = element_text(hjust = 0.5)) 
 
+sex = sal_sex[subs]
+age = sal_age[subs,]
+job = sal_job[subs,]
 # ANOVA model
-sal_ANOVA = lm(sal_y ~ sal_sex[subs] + sal_age[subs] + sal_job[subs] + sal_sex[subs]:sal_age[subs] + sal_sex[subs]:sal_job[subs])
+sal_ANOVA = lm(sal_y ~ sex + age + job + sex:age + sex:job)
+# names(sal_ANOVA$coefficients) = c("Males", "26-50", )
 summary(sal_ANOVA)
 anova((sal_ANOVA))
 
 # box-cox transformation suggested to use y^-1
 boxcox(sal_ANOVA)
+title("Box-Cox transformation of the response")
 
-# adding contrasts?
-# add CV and LASSO!
+# BSS
+best.sub = regsubsets((sal_y ~ sex + age + job + sex:age + sex:job), 
+                      data = data_ANOVA, nvmax = 12) 
+best.sub.summary = summary(best.sub) 
+# plots: manual plotting 
+par(mfrow =c(2,2)) 
+# rsq 
+plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l") 
+ind_Rsq = which.max(best.sub.summary$rsq) 
+points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20) 
+# adjRsq 
+plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l") 
+ind_adjRsq = which.max(best.sub.summary$adjr2) 
+points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20) 
+# Cp 
+plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l") 
+ind_Cp = which.min(best.sub.summary$cp) 
+points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20) 
+# bic 
+plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l") 
+ind_bic = which.min(best.sub.summary$bic) 
+points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20) 
+# mtext("My 'Title' in a strange place", line=15) 
+mtext("Best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-2.5) 
+# existing plots
+par(mfrow=c(1,1)) 
+plot(best.sub, scale = "r2") 
+plot(best.sub, scale = "bic") 
+plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.7) 
+mtext("Best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-3.5) 
+plot(best.sub, scale = "Cp") 
+plot(best.sub, scale = "adjr2") 
+# retrieve the model with min BIC 
+coefficients(best.sub, which.min(best.sub.summary$bic))
+
+
+# group lasso
+# install.packages("gglasso")
+library(gglasso)
+# install.packages("RColorBrewer")
+library(RColorBrewer)
+# install.packages("zoo")
+library(zoo)
+grp = c(1,2,2,3,3,3,4,4,5,5,5)
+form <- model.matrix(sal_y ~ (sex + age + job)^2)
+head(form)
+form = form[,2:12]
+fit = gglasso(x=form,y=sal_y,group=grp,loss='ls')
+coef.mat=fit$beta
+
+#Group1 enters the equation
+g1=max(which(coef.mat[1,]==0))
+#Group2 enters the equation
+g2=max(which(coef.mat[2,]==0))
+#Group3 enters the equation
+g3=max(which(coef.mat[4,]==0))
+#Group4 enters the equation
+g4=max(which(coef.mat[7,]==0))
+#Group5 enters the equation
+g5=max(which(coef.mat[9,]==0))
+#Coefficient Plot
+cols=brewer.pal(5,name="Set1")
+plot(fit$b0,main="Coefficient vs Step",
+     ylab="Intercept",xlab="Step (decreasing Lambda)",
+     col=cols[1],
+     xlim=c(-1,100),
+     ylim=c(0.076,max(fit$b0)+0.001),
+     type="l",lwd=4)
+grid()
+par(new=T)
+xx=c(g1,g2,g3,g4,g5)
+yy=c(fit$b0[g1],fit$b0[g2],fit$b0[g3],fit$b0[g4],fit$b0[g5])
+plot(x=xx,y=yy,pch=13,lwd=2,cex=2,col=cols[-1],
+     xlim=c(-1,100),ylim=c(0.076,max(fit$b0)+0.001),
+     xaxt='n',yaxt='n',xlab="",ylab="")
+lmda=round(fit$lambda[c(g1,g2,g3,g4,g5)],4)
+text(x=xx-0.005,y=yy+0.0001,labels=c("Group1","Group2","Group3","Group4","Group5","Group6"),pos=3,cex=0.7)
+text(x=xx-0.005,y=yy-0.0001,labels=paste("Lambda\n=",lmda),pos=1,cex=0.6)
+
+# coefficient plot 2 (my version)
+cols=brewer.pal(5,name="Set1")
+plot(fit$beta[1,], main="Coefficients vs Lambda",
+     ylab="Coefficients",xlab="Step (decreasing Lambda)",
+     col=cols[1],
+     # xlim=c(-1,100),
+     ylim=c(min(fit$beta), max(fit$beta)),
+     type="l",lwd=4)
+for (j in 2:11){
+  lines(fit$beta[j,],
+        type="l",lwd=4, col=cols[j])
+}
+# plot legend once
+grid()
+par(new=T)
+legend('bottomleft', legend = paste("group ", 1:5), lty=1, col=cols[1:5], cex = 0.7,lwd=2)
+
+#Cross Validation
+fit.cv=cv.gglasso(x=form,y=sal_y,group=grp,nfolds=10)
+plot(fit.cv, main="10-folds CV for groupwise Lasso in ANOVA")
+#Pick the best Lambda
+lmbda=fit.cv$lambda.1se
+(coefs=coef.gglasso(object=fit,s=lmbda))
+#At best lambda get coefficients and fitted values
+plt=sal_y-predict.gglasso(object=fit,newx=form,s=lmbda,type='link')
+plot(plt, ylab="residuals", xlab="index", main="Plot of residuals")
+abline(0, 0, col= "red")
+# matplot(plt,main="Predicted vs Actual",type='l',lwd=2,col=cols[c(1,2)]),
+#         ylab="Unemplyoment %",
+#         xlab="Time")
+grid()
+
+
+
 ```
+
 
 
 PCA for salary:
