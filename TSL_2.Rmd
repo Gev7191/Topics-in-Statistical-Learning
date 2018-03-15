@@ -1,0 +1,120 @@
+---
+title: "TSL Project"
+author: "L. Insolia, J. Kim and G. Yeghikyan"    
+date: "`r format(Sys.time(), '%d/%m/%Y')`"
+output:
+  html_notebook:
+    # df_print: paged
+    toc: yes
+    toc_depth: '3' # up to three depths of headings (specified by #, ## and ###)
+    highlight: tango
+    keep_tex: yes
+    number_sections: yes
+    # theme: united
+  # pdf document:
+  html_document:
+    theme: united
+    highlight: tango    
+    toc: yes
+    toc_depth: '3' 
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+    keep_tex: true
+    latex_engine: pdflatex
+editor_options:
+  # toc: yes
+  # toc_depth: 3
+  chunk_output_type: inline
+---
+
+# General information #
+
+We analyze a dataset published on [Kaggle](https://www.kaggle.com/etiennelq/french-employment-by-town).
+It refers to french employment, salaries, population per town. 
+The aim is to evaluate equality/inequalities in France, and geographical distribution of business according to their size.
+
+Such data are collected by the INSEE.
+Information regarding the number of firms in every french town, categorized by size
+can be found [here](https://www.insee.fr/fr/metadonnees/definition/c1135). This dataset contains about 35000 units/per town.
+
+Information about salaries around french town per job categories, age and sex (expressed in average net amount per hour in euro) can be found [here](https://www.insee.fr/fr/statistiques/2522515). This dataset contains about 5000 units/per town. 
+
+Demographic information in France per town, age, sex and living mode
+can be found [here](https://www.insee.fr/fr/statistiques/2863607). This dataset contains about 8 million units/per town. Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire). 
+
+The final dataset contains 58 variables and 5022 observations. 
+
+## Aim of the study ##
+This project aims to explore structure of French labour market. 
+In particular, we are interested in:
+
+* evaluating possible inequalities: per towns/region, sex, age, job categories etc.;
+* discover geographical distribution of business according to their size
+* predicting the ... using a regression model;
+* reduce the dimensionality of ... performing a PCA;
+* explore different algorithms to cluster male/females using ...
+
+## Plan for the study ##
+1. Unsupervised learning: 
+* PCA
+* Clustering methods (K-means/Hierarchical)
+2. Supervised learning:
+* Linear/Quadratic Discriminant Analysis
+* KNN
+* Cross-validation
+* Bootstrap
+* Subset selection 
+* Shrinkage methods
+* Dimension reduction methods
+3. Description of population demographics in France
+4. Structure of the french labour market
+5. ...
+6. Future works
+
+# General pre-processing phase #
+
+Loading all libraries needed throughout the notebook:
+```{r}
+if(!require(plyr)){install.packages("dplyr"); library(plyr)}
+if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
+if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
+if(!require(ggmap)){install.packages("ggmap"); library(ggmap)}
+if(!require(ggbiplot)){
+  if(!require(devtools)){
+    install.packages("devtools")}
+  install_github("vqv/ggbiplot")
+  library(ggbiplot)}
+if(!require(mclust)){install.packages("mclust"); library(mclust)} 
+if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
+if(!require(MASS)){install.packages("MASS"); library(MASS)}
+if(!require(factoextra)){install.packages("factoextra"); library(factoextra)}
+if(!require(rafalib)){install.packages("rafalib"); library(rafalib)}
+if(!require(boot)){install.packages("boot"); library(boot)}
+if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
+```
+
+```{r}
+# loading data
+# setwd("./data")
+fulldata<-read.csv("newDat.csv", encoding = "UTF-8")
+
+names(fulldata)
+
+# change the variable's name
+names(fulldata)[1:1] <-
+  c("town")
+```
+
+
+# Unsupervised learning
+```{r}
+
+```
+
+# Supervised learning
+```{r}
+
+```
+
+
