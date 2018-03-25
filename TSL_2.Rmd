@@ -43,7 +43,7 @@ Information about salaries around french town per job categories, age and sex (e
 Demographic information in France per town, age, sex and living mode
 can be found [here](https://www.insee.fr/fr/statistiques/2863607). This dataset contains about 8 million units/per town. Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire). 
 
-The final dataset contains 58 variables and 5022 observations. 
+These datasets have been pre-processed and put together. The final dataset contains 58 variables and 5022 observations. 
 
 ## Aim of the study ##
 This project aims to explore structure of French labour market. 
@@ -72,6 +72,22 @@ In particular, we are interested in:
 5. ...
 6. Future works
 
+## Plan for the report ##
+1. Introduction 
+* reporting background and motivation
+2. Methods 
+* Description of data and preprocessing steps
+* Description of computational and statistical methodology used
+3. Results
+* Description of results obtained; tables and figures
+4. Discussion
+* Scientific interpretation of results, as applicable
+* Description of future plans to pursue this line of research
+5. Appendix 
+* Full detail on Methods
+* Record of methodology that was explored and discarded 
+6. References.
+
 # General pre-processing phase #
 
 Loading all libraries needed throughout the notebook:
@@ -94,27 +110,39 @@ if(!require(boot)){install.packages("boot"); library(boot)}
 if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
 ```
 
+Cleaning
 ```{r}
 # loading data
-# setwd("./data")
-fulldata<-read.csv("newDat.csv", encoding = "UTF-8")
+setwd("./data")
+fulldata <- read.csv("newDat.csv", encoding = "UTF-8")
 
+# check the names
 names(fulldata)
 
 # change the variable's name
-names(fulldata)[1:1] <-
-  c("town")
+names(fulldata)[1:2] <-
+  c("town",
+    "total_firms")
+
+# drop repeated variable
+fulldata <- subset(fulldata, select = -c(town_name))
 ```
 
 
 # Unsupervised learning
+## PCA
 ```{r}
 
 ```
+
+## Clustering methods (K-means/Hierarchical)
+```{r}
+
+```
+
 
 # Supervised learning
 ```{r}
 
 ```
-
 

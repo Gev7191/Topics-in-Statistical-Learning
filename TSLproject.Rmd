@@ -1338,7 +1338,7 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 
 ## Pre-processing ##
 
 
-```{r}
+```{r Pre-processing-Population data}
 # preliminary checks
 names(population)
 summary(population)
@@ -1369,7 +1369,7 @@ summary(population)
 
 ## Descriptive statistics ##
 
-```{r}
+```{r Descriptive statistics}
 # #Compare age categories:
 # #library(ggplot2)
 # #  number of units
@@ -1398,7 +1398,7 @@ summary(population)
 
 ## RUN THE NEW POP FIRST AND THEN RUN THE CHUNKS BELOW
 
-```{r}
+```{r Restructuring population data}
 # Restructure population data to produce the demographic profile per town
 # install.packages("plyr")
 library(plyr)
@@ -1422,7 +1422,7 @@ pop_by_codgeo$child_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, po
 summary(pop_by_codgeo)
 ```
 
-```{r}
+```{r Scaling population data to log}
 # Scale population to log
 pop_by_codgeo$total_population_log <- log10(pop_by_codgeo$total_population)
 
@@ -1436,13 +1436,13 @@ hist(pop_by_codgeo$sex_ratio, xlab="", main = "", col ="light blue")
 ```
 
 
-```{r}
+```{r Merge geography and population data}
 # # Merge geo and pop
 geo_pop_by_codgeo <- merge(geoNEW, pop_by_codgeo)
 summary(geo_pop_by_codgeo)
 ```
 
-```{r}
+```{r Plot distribution of population for each CODGEO}
 # Plot "Distribution of Population for each CODGEO"
 #myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
 sc <- scale_colour_gradientn(colours =palette(rainbow(6)), limits=c(min(geo_pop_by_codgeo$total_population_log), max(geo_pop_by_codgeo$total_population_log)))
@@ -1455,7 +1455,8 @@ poppulation_distribution <-
   ggtitle("Distribution of Population for each town")
 poppulation_distribution
 ```
-```{r}
+
+```{r Plot distribution of aged dependency ratio}
 # Plot "Distribution of aged dependency ratio for each CODGEO"
 #myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
 sc <- scale_colour_gradientn(colours =palette(rainbow(6)), limits=c(min(geo_pop_by_codgeo$aged_dependency_ratio), max(geo_pop_by_codgeo$aged_dependency_ratio)))
@@ -1471,7 +1472,7 @@ aged_ratio_distribution
 
 
 
-```{r}
+```{r Population pyramide}
 # Population pyramide
 population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
   data.frame(total_population = sum(population$peopleCategNum))
@@ -1488,7 +1489,7 @@ print(pop_pyramid)
 
 
 ## PCA ##
-```{r}
+```{r PCA population-Create clean dataset}
 # PCA trial 
 # create a clean dataset with only necessary variables inside.
 pca_pop_town <- ddply(pop_by_codgeo, .(CODGEO), function(pop_by_codgeo) {
@@ -1506,7 +1507,7 @@ summary(pca_pop_town)
 ```
 
 
-```{r}
+```{r PCA population }
 # PCA population
 set.seed(3)
 subs = sample(1:nrow(pca_pop_town), size = round(nrow(pca_pop_town)*0.2))
@@ -1531,14 +1532,14 @@ pca_pop_town2 <- cbind(pca_pop_town[subs,], pcapop$x[, 1:2])
 # head(pca_pop_town2)
 ```
 
-```{r}
+```{r Plot PCA}
 #plot with ggplot...
-ggplot(pca_pop_town2, aes(PC1, PC2)) + 
-  stat_ellipse(geom = "polygon", col = "gray", alpha = 0.5) + 
-  geom_point(shape = 21, col = "black")
+ggplot(pca_pop_town2, aes(PC1, PC2)) +
+    stat_ellipse(geom = "polygon", col = "gray", alpha = 0.5) +
+    geom_point(shape = 21, col = "black")
 ```
 
-```{r}
+```{r Proportion of variance explained & cumulative PVE}
 # Proportion of variance explained & cumulative PVE
 pcapop$sdev
 pr.var=pcapop$sdev^2 
@@ -1549,13 +1550,13 @@ plot(pve, xlab="PCA", ylab="PVE", ylim=c(0,1), type='b')
 plot(cumsum(pve), xlab="PCA", ylab="Cumulative PVE", ylim=c(0,1), type='b')
 ```
 
-```{r}
+```{r Kmean}
 # kmean trial
 km.out=kmeans(pca_pop_town[subs,2:5], 5, nstart=50)
 plot(pca_pop_town[subs,2:5], col=(km.out$cluster), pch=20, cex=1)
 ```
 
-```{r}
+```{r H-cluster}
 #hierarchical clustering
 sd.data=scale(pca_pop_town)
 par(mfrow=c(1,3))
@@ -1634,19 +1635,7 @@ print(paste("The new dataset has", nrow(salaryNEW), "units and",
 
 
 Create population of the same length and merge the data:
-```{r}
-# 
-# popNEWnames = c("CODGEO", 
-#                 c(unique(as.character(populationNEW$MOCO))), 
-#                 c(unique(as.character(populationNEW$ageCateg5))),
-#                 c(unique(as.character(populationNEW$sex))),
-#                 "Pop")
-# matrix("NA", dim(populationNEW[1], ))
-head(population)
-summary(population)
-# general size of a town
-# popNEW = ddply(populationNEW, .(CODGEO), summarize, popTot=sum(peopleCategNum))
-# head(popNEW)
+```{r Merge the data and create csv file}
 
 ##########################################RUN THIS PART AFTER RUNNING POP_BY_CODGEO PART ABOVE
 # merging
