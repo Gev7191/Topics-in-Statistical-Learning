@@ -82,6 +82,8 @@ if(!require(factoextra)){install.packages("factoextra"); library(factoextra)}
 if(!require(rafalib)){install.packages("rafalib"); library(rafalib)}
 if(!require(boot)){install.packages("boot"); library(boot)}
 if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
+if(!require(gglasso)){install.packages("gglasso"); library(gglasso)}
+if(!require(zoo)){install.packages("zoo"); library(zoo)}
 ```
 
 
@@ -526,7 +528,8 @@ summary(geo)
 ## Descriptive statistics ##
 
 ```{r}
-
+#library(ggplot2)
+#library(ggmap)
 # plot france (center: 2.213749 46.227638)
 # fra_center = as.numeric(geocode("France"))
 fra_center = c(2.213749, 46.227638)
@@ -1332,6 +1335,90 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 
 
 * ...
 
+# Produce consistent datasets #
+## Match CODGEO 
+The CODGEO variables (code_insee in the original geo data) have to be merged.
+However, for different reasons already identified by other kaggle users they need some pre-processing.
+To do so, some already known mistakes are corrected:
+
+```{r Match CODGEO}
+firms$CODGEO      <- sub("A", "0", firms$CODGEO)
+firms$CODGEO      <- sub("B", "0", firms$CODGEO)
+salary$CODGEO     <- sub("A", "0", salary$CODGEO)
+salary$CODGEO     <- sub("B", "0", salary$CODGEO)
+population$CODGEO <- sub("A", "0", population$CODGEO)
+population$CODGEO <- sub("B", "0", population$CODGEO)
+geo$CODGEO        <- sub("A", "0", geo$CODGEO)
+geo$CODGEO        <- sub("B", "0", geo$CODGEO)
+
+# [Check if there are more]
+```
+
+## New dataset
+Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
+```{r new datasets retaining only the common CODGEO}
+# use only integer values
+geo$CODGEO = as.integer(geo$CODGEO)  # already integer
+population$CODGEO = as.integer(population$CODGEO)
+firms$CODGEO = as.integer(firms$CODGEO)
+salary$CODGEO = as.integer(salary$CODGEO)
+
+# store datasets' names to loop on them
+dataset = c("population", "salary", "firms", "geo")
+
+# obtain sommon IDs for all datasets
+for (i in dataset){
+  # get i-th name and create a new variable concateneting "NEW" at the end
+  nam <- paste(i, "NEW", sep = "")
+  # initialize counter to identify the number of iteration in j
+  iter = 1
+  for (j in dataset){
+    if (j != i){
+      # for each dataset different from the i-th
+      if (iter == 1){
+        # 1st iteration: use the original dataset (e.g., geo)
+        assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
+      } else{
+        # successive iteration: use the new dataset (e.g., geoNEW)
+        assign(nam, semi_join(get(nam), get(j), by = "CODGEO"))
+      }
+      iter = iter + 1
+    }
+  }
+}
+
+# check how many observation have been deleted
+for (i in dataset){
+  del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
+  del_prop = del_rows / nrow(get(i))
+  del_obs = paste("For", i, del_rows, "units have been deleted.",
+                  "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
+  print(paste(del_obs))
+}
+
+print(paste("The new dataset has", nrow(salaryNEW), "units and", 
+      ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
+```
+
+
+## merge the data:
+```{r Merge the data and create csv file}
+# merging
+population$CODGEO = as.integer(population$CODGEO)
+newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, salaryNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, geoNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = subset(newDat, select = -town.y)
+
+# NewDat CSV file created
+# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
+```
 
 # Analyze population data #
 
@@ -1396,8 +1483,6 @@ summary(population)
 ```
 
 
-## RUN THE NEW POP FIRST AND THEN RUN THE CHUNKS BELOW
-
 ```{r Restructuring population data}
 # Restructure population data to produce the demographic profile per town
 # install.packages("plyr")
@@ -1431,8 +1516,8 @@ hist(pop_by_codgeo$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, b
 
 hist(pop_by_codgeo$total_population_log, xlab="Total Population in log", main = "Total population per town", col ="light blue")
 
-hist(pop_by_codgeo$dependency_ratio, xlab="", main = "", col ="light blue")
-hist(pop_by_codgeo$sex_ratio, xlab="", main = "", col ="light blue")
+hist(pop_by_codgeo$dependency_ratio, xlab="", main = "dependency ratio", col ="light blue")
+hist(pop_by_codgeo$sex_ratio, xlab="", main = "sex ratio", col ="light blue")
 ```
 
 
@@ -1568,98 +1653,10 @@ plot(hclust(data.dist), labels=pca_pop_town$CODGEO, main="complete", xlab="", su
 ```
 
 
-# Produce consistent datasets #
-
-The CODGEO variables (code_insee in the original geo data) have to be merged.
-However, for different reasons already identified by other kaggle users they need some pre-processing.
-To do so, some already known mistakes are corrected:
-
-```{r}
-firms$CODGEO      <- sub("A", "0", firms$CODGEO)
-firms$CODGEO      <- sub("B", "0", firms$CODGEO)
-salary$CODGEO     <- sub("A", "0", salary$CODGEO)
-salary$CODGEO     <- sub("B", "0", salary$CODGEO)
-population$CODGEO <- sub("A", "0", population$CODGEO)
-population$CODGEO <- sub("B", "0", population$CODGEO)
-geo$CODGEO        <- sub("A", "0", geo$CODGEO)
-geo$CODGEO        <- sub("B", "0", geo$CODGEO)
-
-# [Check if there are more]
-```
-
-
-Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
-```{r}
-# use only integer values
-geo$CODGEO = as.integer(geo$CODGEO)  # already integer
-population$CODGEO = as.integer(population$CODGEO)
-firms$CODGEO = as.integer(firms$CODGEO)
-salary$CODGEO = as.integer(salary$CODGEO)
-
-# store datasets' names to loop on them
-dataset = c("population", "salary", "firms", "geo")
-
-# obtain sommon IDs for all datasets
-for (i in dataset){
-  # get i-th name and create a new variable concateneting "NEW" at the end
-  nam <- paste(i, "NEW", sep = "")
-  # initialize counter to identify the number of iteration in j
-  iter = 1
-  for (j in dataset){
-    if (j != i){
-      # for each dataset different from the i-th
-      if (iter == 1){
-        # 1st iteration: use the original dataset (e.g., geo)
-        assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
-      } else{
-        # successive iteration: use the new dataset (e.g., geoNEW)
-        assign(nam, semi_join(get(nam), get(j), by = "CODGEO"))
-      }
-      iter = iter + 1
-    }
-  }
-}
-
-# check how many observation have been deleted
-for (i in dataset){
-  del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
-  del_prop = del_rows / nrow(get(i))
-  del_obs = paste("For", i, del_rows, "units have been deleted.",
-                  "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
-  print(paste(del_obs))
-}
-
-print(paste("The new dataset has", nrow(salaryNEW), "units and", 
-      ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
-```
-
-
-Create population of the same length and merge the data:
-```{r Merge the data and create csv file}
-
-##########################################RUN THIS PART AFTER RUNNING POP_BY_CODGEO PART ABOVE
-# merging
-population$CODGEO = as.integer(population$CODGEO)
-newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = merge(newDat, salaryNEW, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = merge(newDat, geoNEW, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = subset(newDat, select = -town.y)
-
-# NewDat CSV file created
-# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
-```
-
-
 # Analysis #
 
 General:
-```{r}
+```{r Correlation plot with new merged data}
 corrplot(cor(newDat[, 3:20]), method = "circle", title = "Correlation matrix for firms", 
          diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
          tl.col = "black", type = "lower", mar=c(0,0,1.5,0))
