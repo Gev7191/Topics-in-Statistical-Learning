@@ -84,6 +84,7 @@ if(!require(boot)){install.packages("boot"); library(boot)}
 if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
 if(!require(gglasso)){install.packages("gglasso"); library(gglasso)}
 if(!require(zoo)){install.packages("zoo"); library(zoo)}
+if(!require(readxl)){install.packages("readxl");library(readxl)}
 ```
 
 
@@ -264,51 +265,6 @@ hist(log(firms$micro))
 hist(log(firms$small))
 hist(log(firms$medium))
 hist(log(firms$large))
-<<<<<<< Updated upstream
-=======
-
-#grouping Regions according to CODGEO
-geoNEW_sub <- geoNEW[, c("region", "CODGEO")] 
-firms_regions <- merge(geoNEW_sub, firmsNEW, by = "CODGEO") #merging firms and geo datasets
-firms_regions_total <- aggregate(firms_regions$total, by = list(region = firms_regions$region), FUN = sum) #total number of firms per region
-firms_regions_micro <- aggregate(firms_regions$micro, by = list(region = firms_regions$region), FUN = sum) #number of micro firms per region
-firms_regions_small <- aggregate(firms_regions$small, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
-firms_regions_medium <- aggregate(firms_regions$medium, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
-firms_regions_large <- aggregate(firms_regions$large, by = list(region = firms_regions$region), FUN = sum) #number of small firms per region
-
-colnames(firms_regions_total) <- c("regions", "Total")
-colnames(firms_regions_micro) <- c("regions", "Micro")
-colnames(firms_regions_small) <- c("regions", "Small")
-colnames(firms_regions_medium) <- c("regions", "Medium")
-colnames(firms_regions_large) <- c("regions", "Large")
-
-firms_regions_total$Percentage_total <- (firms_regions_total$Total/sum(firms_regions_total$Total))*100 #adding percentage column
-firms_regions_micro$Percentage_micro <- (firms_regions_micro$Micro/sum(firms_regions_micro$Micro))*100
-firms_regions_small$Percentage_small <- (firms_regions_small$Small/sum(firms_regions_small$Small))*100
-firms_regions_medium$Percentage_medium <- (firms_regions_medium$Medium/sum(firms_regions_medium$Medium))*100
-firms_regions_large$Percentage_large <- (firms_regions_large$Large/sum(firms_regions_large$Large))*100
-
-ggplot(firms_regions_total, aes(x=regions,y = Percentage_total)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity") +
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-  
-ggplot(firms_regions_micro, aes(x=regions,y = Percentage_micro)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")+
-  theme(axis.text.x = element_text(angle = 60, hjust = 1)) 
-  
-ggplot(firms_regions_small, aes(x=regions,y = Percentage_small)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")+
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-ggplot(firms_regions_medium, aes(x=regions,y = Percentage_medium)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")+
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-ggplot(firms_regions_large, aes(x=regions,y = Percentage_large)) +
-  geom_bar(col="black", fill = "blue", alpha = .5, stat = "identity")+
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
->>>>>>> Stashed changes
 ```
 
 ## PCA ##   
@@ -1445,32 +1401,8 @@ print(paste("The new dataset has", nrow(salaryNEW), "units and",
       ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
 ```
 
-
-## merge the data:
-```{r Merge the data and create csv file}
-# merging
-population$CODGEO = as.integer(population$CODGEO)
-newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = merge(newDat, salaryNEW, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = merge(newDat, geoNEW, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = subset(newDat, select = -town.y)
-
-# NewDat CSV file created
-# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
-```
-
-# Analyze population data #
-
-## Pre-processing ##
-
-
-```{r Pre-processing-Population data}
+## Pre-processing population data before merging
+```{r Pre-processing-Population data before merging}
 # preliminary checks
 names(population)
 summary(population)
@@ -1496,8 +1428,53 @@ head(population)
 head(population)
 summary(population)
 
-
 ```
+
+```{r Create cleaned population dataset by CODGEO before merging other dataset}
+pop_by_codgeo <- ddply(population, .(CODGEO), function(population) {
+  data.frame(total_population = sum(population$peopleCategNum),
+             male = sum(population[population$sex == "Male",]$peopleCategNum),
+             female = sum(population[population$sex == "Female",]$peopleCategNum),
+             child = sum(population[population$ageCateg5 %in% seq(0, 10, by=5),]$peopleCategNum),
+             elderly = sum(population[population$ageCateg5 %in% seq(65, 80, by=5),]$peopleCategNum),
+             workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
+  )})
+
+pop_by_codgeo$dependent <- pop_by_codgeo$child + pop_by_codgeo$elderly
+pop_by_codgeo$sex_ratio <- ifelse(pop_by_codgeo$female==0, 0, pop_by_codgeo$male / pop_by_codgeo$female)
+pop_by_codgeo$dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$dependent / pop_by_codgeo$workforce)
+pop_by_codgeo$aged_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$elderly / pop_by_codgeo$workforce)
+pop_by_codgeo$child_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$child / pop_by_codgeo$workforce)
+```
+
+
+## merge the data:
+```{r Merge the data and create csv file}
+# merging
+population$CODGEO = as.integer(population$CODGEO)
+newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, salaryNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, geoNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = subset(newDat, select = -town.y)
+
+# NewDat CSV file created
+# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
+```
+
+# Analyze population data #
+
+## Pre-processing ##
+
+```{r Pre-processing}
+#Pre-processing phase is completed before merging the dataset
+```
+
 
 ## Descriptive statistics ##
 
@@ -1533,22 +1510,6 @@ summary(population)
 # install.packages("plyr")
 library(plyr)
 population=populationNEW
-
-pop_by_codgeo <- ddply(population, .(CODGEO), function(population) {
-  data.frame(total_population = sum(population$peopleCategNum),
-             male = sum(population[population$sex == "Male",]$peopleCategNum),
-             female = sum(population[population$sex == "Female",]$peopleCategNum),
-             child = sum(population[population$ageCateg5 %in% seq(0, 10, by=5),]$peopleCategNum),
-             elderly = sum(population[population$ageCateg5 %in% seq(65, 80, by=5),]$peopleCategNum),
-             workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
-  )})
-
-pop_by_codgeo$dependent <- pop_by_codgeo$child + pop_by_codgeo$elderly
-pop_by_codgeo$sex_ratio <- ifelse(pop_by_codgeo$female==0, 0, pop_by_codgeo$male / pop_by_codgeo$female)
-pop_by_codgeo$dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$dependent / pop_by_codgeo$workforce)
-pop_by_codgeo$aged_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$elderly / pop_by_codgeo$workforce)
-pop_by_codgeo$child_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$child / pop_by_codgeo$workforce)
-
 summary(pop_by_codgeo)
 ```
 
@@ -1559,7 +1520,7 @@ pop_by_codgeo$total_population_log <- log10(pop_by_codgeo$total_population)
 # Histogram of total population per town
 hist(pop_by_codgeo$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
 
-hist(pop_by_codgeo$total_population_log, xlab="Total Population in log", main = "Total population per town", col ="light blue")
+hist(pop_by_codgeo$total_population_log, xlab="Total Population in log", main = "Total population per CODGEO", col ="light blue")
 
 hist(pop_by_codgeo$dependency_ratio, xlab="", main = "dependency ratio", col ="light blue")
 hist(pop_by_codgeo$sex_ratio, xlab="", main = "sex ratio", col ="light blue")
@@ -1576,14 +1537,14 @@ summary(geo_pop_by_codgeo)
 # Plot "Distribution of Population for each CODGEO"
 #myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
 sc <- scale_colour_gradientn(colours =palette(rainbow(6)), limits=c(min(geo_pop_by_codgeo$total_population_log), max(geo_pop_by_codgeo$total_population_log)))
-poppulation_distribution <-
+population_distribution <-
   FraMap +
   geom_point(aes(x=geo_pop_by_codgeo$longitude, y=geo_pop_by_codgeo$latitude, colour=geo_pop_by_codgeo$total_population_log),
              data=geo_pop_by_codgeo, alpha=0.8, size=0.6) +
   sc +
   labs(color='Total Population in Log') +
-  ggtitle("Distribution of Population for each town")
-poppulation_distribution
+  ggtitle("Distribution of Population for each CODGEO")
+population_distribution
 ```
 
 ```{r Plot distribution of aged dependency ratio}
@@ -1596,7 +1557,7 @@ aged_ratio_distribution <-
              data=geo_pop_by_codgeo, alpha=0.8, size=0.6) +
   sc +
   labs(color='') +
-  ggtitle("Aged dependency ratio per town")
+  ggtitle("Aged dependency ratio per CODGEO")
 aged_ratio_distribution
 ```
 
@@ -1618,7 +1579,7 @@ print(pop_pyramid)
 
 
 
-## PCA ##
+## Unsupervised learning ##
 ```{r PCA population-Create clean dataset}
 # PCA trial 
 # create a clean dataset with only necessary variables inside.
@@ -1730,3 +1691,110 @@ Firms and geo:
 ```{r}
 
 ```
+
+## Supervised Learning data
+
+# Import dataset
+```{r Load additional datasets}
+# loading data
+require(readr)
+educ        <- read.csv("./data/level_education.csv", sep =";")
+immig       <- read.csv("./data/Immig.csv", sep =";")
+categ_socio <- read.csv("./data/Categorie_socioprofessionnelle.csv", sep =";")
+status_work <- read.csv("./data/Emplois_lieu_travail.csv", sep =";")
+ineq        <- read.csv("./data/Comparateur_territoires.csv", sep =";")
+```
+
+# Pre-processing
+```{r Check variables' names}
+# names(educ)
+# names(immig)
+# names(categ_socio)
+# names(status_work)
+# names(ineq)
+```
+
+To better understand the data we assign meaningful names and drop some variables which are not needed (at the moment):
+```{r Educ-rename variables}
+names(educ)[3:11] <-
+  c("M_NoDip_Age15",
+    "F_NoDip_Age15",
+    "M_Sec_Age15",
+    "F_Sec_Age15",
+    "M_Hi_Age15",
+    "F_Hi_Age15",
+    "M_univ_Age15",
+    "F_univ_Age15")
+```
+
+```{r Ineq-Drop unnecessary columns and rename them }
+summary(ineq)
+
+ineq <- subset(ineq, select = -c(P09_POP, NAISD16, DECESD16, P14_RP_PROP, P09_EMPLT,ETTOT15, ETAZ15, ETBE15, ETFZ15, ETGU15, ETGZ15, ETOQ15, ETTEF115, ETTEFP1015))
+
+names(ineq)[5:ncol(ineq)] <-
+  c("pop_2014",
+    "Superficie",
+    "birth09_14",
+    "death09_14",
+    "households14",
+    "housing14",
+    "princ_resid14",
+    "sec_resid14",
+    "vac_resid14",
+    "tax_house14",
+    "shared_tax_house14",
+    "median_living14",
+    "lev_ineq14",
+    "empl",
+    "emp_sal",
+    "pop15_64",
+    "unemp15_64",
+    "act15_64")
+```
+
+```{r Categ_socio-rename variables }
+names(categ_socio)
+names(categ_socio)[3:ncol(categ_socio)] <-
+  c("M_immi_agri",
+    "F_immi_agri",
+    "M_NoImmi_agri",
+    "F_NoImmi_agri",
+    "M_immi_comm",
+    "F_immi_comm",
+    "M_NoImmi_comm",
+    "F_NoImmi_comm",
+    "M_immi_exec",
+    "F_immi_exec",
+    "M_NoImmi_exec",
+    "F_NoImmi_exec",
+    "M_immi_midman",
+    "F_immi_midman",
+    "M_NoImmi_midman",
+    "F_NoImmi_midman",
+    "M_immi_emp",
+    "F_immi_emp",
+    "M_NoImmi_emp",
+    "F_NoImmi_emp",
+    "M_immi_worker",
+    "F_immi_worker",
+    "M_NoImmi_worker",
+    "F_NoImmi_worker",
+    "M_immi_retired",
+    "F_immi_retired",
+    "M_NoImmi_retired",
+    "F_NoImmi_retired",
+    "M_immi_noAct",
+    "F_immi_noAct",
+    "M_NoImmi_noAct",
+    "F_NoImmi_noAct")
+
+#total number immigrants (male/female) per CODGEO
+tot_immig<- ddply(categ_socio, .(CODGEO), function(categ_socio) {
+  data.frame(total_immig = sum(categ_socio$M_immi_agri, categ_socio$F_immi_agri, categ_socio$M_immi_comm, categ_socio$F_immi_comm, categ_socio$M_immi_exec, categ_socio$F_immi_exec, categ_socio$M_immi_midman, categ_socio$F_immi_midman, categ_socio$M_immi_noAct, categ_socio$F_immi_noAct, categ_socio$M_immi_retired, categ_socio$F_immi_retired, categ_socio$M_immi_emp, categ_socio$F_immi_emp, categ_socio$M_immi_worker, categ_socio$F_immi_worker),
+             male_immig = sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker),
+             female_immig = sum(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct, categ_socio$F_immi_retired, categ_socio$F_immi_worker)
+  )})
+
+```
+
