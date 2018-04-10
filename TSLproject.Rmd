@@ -1,35 +1,33 @@
 ---
 title: "TSL Project"
-author: "L. Insolia, J. Kim and G. Yeghikyan"    
+author: "Luca Insolia, Jisu Kim and Gevorg Yeghikyan"    
 date: "`r format(Sys.time(), '%d/%m/%Y')`"
 output:
   html_notebook:
-    # df_print: paged
     toc: yes
-    toc_depth: '3' # up to three depths of headings (specified by #, ## and ###)
+    toc_depth: '3' 
     highlight: tango
     keep_tex: yes
     number_sections: yes
-    # theme: united
-  # pdf document:
   html_document:
     theme: united
     highlight: tango    
     toc: yes
     toc_depth: '3' 
-  pdf_document:
-    toc: yes
-    toc_depth: '3'
-    keep_tex: true
-    latex_engine: pdflatex
-editor_options:
-  # toc: yes
-  # toc_depth: 3
-  chunk_output_type: inline
+#   pdf_document: # ADD PDF!
+#     toc: yes
+#     toc_depth: '3'
+#     keep_tex: true
+#     latex_engine: pdflatex
+# editor_options:
+#   # toc: yes
+#   # toc_depth: 3
+#   chunk_output_type: inline
 ---
 
 
-# General information #
+# General information 
+
 We analyze a dataset published on [Kaggle](https://www.kaggle.com/etiennelq/french-employment-by-town).
 It refers to french employment, salaries, population per town. 
 The aim is to evaluate equality/inequalities in France, and geographical distribution of business according to their size.
@@ -45,7 +43,9 @@ can be found [here](https://www.insee.fr/fr/statistiques/2863607). This dataset 
 
 These datasets have been pre-processed and put together. The final dataset contains 58 variables and 5022 observations. 
 
-## Aim of the study ##
+
+## Aim of the study 
+
 This project aims to explore structure of French labour market. 
 In particular, we are interested in:
 
@@ -55,7 +55,9 @@ In particular, we are interested in:
 * reduce the dimensionality of ... performing a PCA;
 * explore different algorithms to cluster male/females using ...
 
-## Plan for the study ##
+
+## Plan for the study 
+
 1. Unsupervised learning: 
 * PCA
 * Clustering methods (K-means/Hierarchical)
@@ -72,29 +74,16 @@ In particular, we are interested in:
 5. ...
 6. Future works
 
-## Plan for the report ##
-1. Introduction 
-* reporting background and motivation
-2. Methods 
-* Description of data and preprocessing steps
-* Description of computational and statistical methodology used
-3. Results
-* Description of results obtained; tables and figures
-4. Discussion
-* Scientific interpretation of results, as applicable
-* Description of future plans to pursue this line of research
-5. Appendix 
-* Full detail on Methods
-* Record of methodology that was explored and discarded 
-6. References.
 
-
-# General pre-processing phase #
+# General pre-processing phase 
 
 Loading all libraries needed throughout the notebook:
-```{r}
+```{r loading libraries}
+
+# data manipulation
 if(!require(plyr)){install.packages("dplyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
+# plotting
 if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
 if(!require(ggmap)){install.packages("ggmap"); library(ggmap)}
 if(!require(ggbiplot)){
@@ -102,43 +91,52 @@ if(!require(ggbiplot)){
     install.packages("devtools")}
   install_github("vqv/ggbiplot")
   library(ggbiplot)}
-if(!require(mclust)){install.packages("mclust"); library(mclust)} 
 if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
-if(!require(MASS)){install.packages("MASS"); library(MASS)}
-if(!require(factoextra)){install.packages("factoextra"); library(factoextra)}
-if(!require(rafalib)){install.packages("rafalib"); library(rafalib)}
-if(!require(boot)){install.packages("boot"); library(boot)}
-if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
-if(!require(gglasso)){install.packages("gglasso"); library(gglasso)}
 if(!require(zoo)){install.packages("zoo"); library(zoo)}
-if(!require(readxl)){install.packages("readxl");library(readxl)}
+# Mclust clustering
+if(!require(mclust)){install.packages("mclust"); library(mclust)}
+# plot design matrix
+if(!require(rafalib)){install.packages("rafalib"); library(rafalib)}
+# cross validation
+if(!require(boot)){install.packages("boot"); library(boot)}
+# elastic net
+if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
+# group Lasso
+if(!require(gglasso)){install.packages("gglasso"); library(gglasso)}
+
+# box-cox tranformation (in ANOVA)
+# if(!require(MASS)){install.packages("MASS"); library(MASS)}
+# plot for PCA
+# if(!require(factoextra)){install.packages("factoextra"); library(factoextra)}
+
 ```
 
 
-Import the four datasets:
-```{r warning=FALSE}
-# set the encoding used [to test]
-# options(encoding = "ISO-8859-1")  # default in Windows 
+Import the four main datasets:
+```{r load datasets, warning=FALSE}
 
-# loading data
 setwd("./data")
 firms       <- read.csv("base_etablissement_par_tranche_effectif.csv", encoding = "UTF-8")
 geo         <- read.csv("name_geographic_information.csv", encoding = "UTF-8")
 salary      <- read.csv("net_salary_per_town_categories.csv", encoding = "UTF-8")
 population  <- read.csv("population.csv", encoding = "UTF-8")
+
 ```
 
-Check variable names:
-```{r}
+Check variables' names:
+```{r original names}
+
 names(firms) 
 names(population)
 names(salary)
 names(geo)
+
 ```
 
 
-To better understand the data we assign meaningful names and drop some variables which are not needed (at the moment):
-```{r} 
+Assign meaningful names and drop some variables which are not needed:
+```{r assign names}
+
 names(firms)[2:ncol(firms)] <-
   c("town", 
     "regNum",
@@ -186,8 +184,6 @@ names(population)[5:7] <-
     "sex",
     "peopleCategNum")
 
-# [KEEP DEPT. NUM?]
-# [?loignement is the distance from where?]
 names(geo)[2:11] =
   c("code_region",
     "region", 
@@ -205,25 +201,35 @@ names(geo)[14] =
 
 # Drop unnecessary columns (code/num and name represents same thing) 
 geo <- subset(geo, select = -c(EU_circo, code_region, number_depart, prefecture, circons, eloignement))
+
 ```
 
-Check variable names again:
-```{r}
+Check new variables' names:
+```{r new names}
+
 names(firms) 
 names(population)
 names(salary)
 names(geo)
+
 ```
 
 
+## Additional notes 
+
+* Keep Department number?
+
+* Eloignement is the distance from where?
 
 
 
+# Analyze firms data 
 
-# Analyze firms data #
+## Pre-processing:
 
-## Pre-processing ##
-```{r}
+Categorize firms' size according to [EU standard](http://ec.europa.eu/eurostat/statistics-explained/index.php/Glossary:Enterprise_size), but in a slightly different form for medium and large firms (i.e., medium firms have <200 instead of <250 employees):
+
+```{r pre processing firms}
 
 # preliminary checks
 dim(firms)
@@ -232,14 +238,10 @@ head(firms)
 str(firms)
 summary(firms)
 
-# converting CODGEO format
-# firms$CODGEO <- as.numeric(firms$CODGEO)
-
-# Check for duplicated data
+# No duplicated data
 sum(duplicated.data.frame(firms))
 
-# Categorize firms' size according to EU standard, but slightly different for medium and large firms (medium firms have <200 instead of <250 employees)
-# http://ec.europa.eu/eurostat/statistics-explained/index.php/Glossary:Enterprise_size
+# merge variables
 firms$micro   <- firms$firmsEmpl_1_5 + firms$firmsEmpl_6_9
 firms$small   <- firms$firmsEmpl_10_19 + firms$firmsEmpl_20_49
 firms$medium  <- firms$firmsEmpl_50_99 + firms$firmsEmpl_100_199
@@ -252,12 +254,16 @@ firms <- subset(firms, select = c(CODGEO, town, total, micro, small, medium, lar
 head(firms)
 summary(firms)
 str(firms)
-# deptNum has to be factor?
+
 ```
 
-## Descriptive statistics ##
+## Descriptive statistics 
+
+Check the distribution of the null firms (i.e., unknown sizes) and analyze
+firms' distribution per town:
   
-```{r}
+```{r firms distribution}
+
 # there is an obs with more than 316K null data: we check if it is plausible
 # get the highest 20 null values
 str_firms <- sort(firms$null, decreasing = T)[1:20]
@@ -265,9 +271,9 @@ str_firms <- sort(firms$null, decreasing = T)[1:20]
 str_firms_ind <- match(str_firms, firms$null)
 # get the corresponding city
 firms$town[str_firms_ind]
-# hence, it seems reasonable..
+# it is about the largest cities, hence it seems reasonable..
 
-# check the ratio of null for each town
+# check the ratio of null firms for each town
 summary(firms$null/firms$total)
 # a lot of information is missing
 # should we remove these data?
@@ -294,10 +300,11 @@ hist(log(firms$medium))
 hist(log(firms$large))
 ```
 
-## PCA ##   
+## PCA 
 
 PCA on firms data:
-```{r}
+
+```{r PCA}
 
 # pairs(firms[, 3:8])
 # 
@@ -341,7 +348,7 @@ PCA on firms data:
 ```
 
 Modified PCA [Luca]:
-```{r}
+```{r PCA 2}
 
 # get Paris in order to exclude it in the following
 Paris = which.max(firms$total)
@@ -387,9 +394,9 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust 
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-## Cluster Analysis ##
+## Cluster Analysis 
 
-```{r}
+```{r clustering}
 # firms_sampled <- firms[1:1000, ] # subsampling
 # head(firms_sampled)
 # firms_scaled <- scale(firms_sampled[, 3:8]) #scaling the data
@@ -446,12 +453,12 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 5.5, varname.adjust 
 ```
 
 
-## What we have learned ##
+## Issues
 
-* More micro firms than small ones
-* ... 
+* Some towns have 100% of null firms
 
-## How to use these data ##
+
+## How to use these data 
 
 We plan to use these for the following tasks:
 
@@ -461,10 +468,12 @@ We plan to use these for the following tasks:
 * ... missing: histogram for firms' size
 
 
-# Analyze geographical data #
+# Analyze geographical data 
 
-## Pre-processing ##
-```{r}
+## Pre-processing 
+
+Correct typos for longitude data and keep just the unique CODGEO to avoid towns with multiple postal codes:
+```{r pre processing geo}
 
 # preliminary checks
 dim(geo)
@@ -483,7 +492,7 @@ geo$longitude[indNA_Long]                       # verify that they were actually
 geo$longitude <- as.numeric(newLong)            # overwrite the longitude variable with the new one
 
 # Check for duplicated data (e.g., cities with different postal codes, that we dropped):
-  # es. to verify it:  try on the initial dataset
+  # ex. to verify it,  try on the initial dataset:
   # sum(geo$nom_commune == "Paris")
   # ind_duplic <- geo$nom_commune == "Paris"
   # geo[ind_duplic,]
@@ -498,42 +507,43 @@ summary(geo)
 ```
 
 
-Assign lat and long values for NAs units:
-```{r}
+Assign latitude and longitude values for missing data (almost 3000):
+```{r assign NA}
 
 # index of NAs and their total
 indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
 sum(indNA_coord)
 
-# NO MORE NEEDED BECAUSE IS A CSV FILE
-    # # initialize variables
-    # city_search = 0
-    # res = as.data.frame(matrix(c(0, 0, 0), 1, 3))
-    # names(res) = c("lon", "lat", "address")
-    # 
-    # # retrieve lat and long (Google API = 2500 request per day)
-    # # my_iter = floor(sum(indNA_coord)/3)
-    # for (i in 1:sum(indNA_coord)){
-    # 
-    #   # city searched
-    #   city_search[i] = paste(c(as.character(NA_coord$town_name[i]), as.character(NA_coord$postal_code[i]), as.character(NA_coord$department[i]), "France"), sep=" ", collapse = ", ")
-    #   
-    #   # solution
-    #   res[i,] = geocode(city_search[i], output = "latlona", source = c("google", "dsk"), messaging = FALSE)
-    # 
-    #   # retrieve still missing data, because of existing problems with API (up to 15 trials)
-    #   j = 0
-    #   while (any(is.na(res[i,])) & j < 25){
-    #     res[i,] = geocode(city_search[i], output = "latlona", source = c("google", "dsk"), messaging = FALSE)
-    #     j = j + 1
-    #   }
-    # }
+# code used to retrieve the NA using Google API, which have been saved in a csv file
+# 
+# # initialize variables
+# city_search = 0
+# res = as.data.frame(matrix(c(0, 0, 0), 1, 3))
+# names(res) = c("lon", "lat", "address")
+# 
+# # retrieve lat and long (Google API = 2500 request per day)
+# # my_iter = floor(sum(indNA_coord)/3)
+# for (i in 1:sum(indNA_coord)){
+# 
+#   # city searched
+#   city_search[i] = paste(c(as.character(NA_coord$town_name[i]), as.character(NA_coord$postal_code[i]), as.character(NA_coord$department[i]), "France"), sep=" ", collapse = ", ")
+#   
+#   # solution
+#   res[i,] = geocode(city_search[i], output = "latlona", source = c("google", "dsk"), messaging = FALSE)
+# 
+#   # retrieve still missing data, because of existing problems with API (up to 15 trials)
+#   j = 0
+#   while (any(is.na(res[i,])) & j < 25){
+#     res[i,] = geocode(city_search[i], output = "latlona", source = c("google", "dsk"), messaging = FALSE)
+#     j = j + 1
+#   }
+# }
 
-    # # check the solution
-    # sol = cbind(searched = city_search, res)
+# # check the solution
+# sol = cbind(searched = city_search, res)
 
-    # # save it as a csv file to save time
-    # write.csv(retrieved_geo_NA[,2:3], "geo_NA_Final.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
+# # save it as a csv file to save time
+# write.csv(retrieved_geo_NA[,2:3], "geo_NA_Final.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
     
 
 # read the created csv
@@ -553,28 +563,20 @@ summary(geo)
 
 ```
 
-## Descriptive statistics ##
+## Descriptive statistics 
 
-```{r}
-#library(ggplot2)
-#library(ggmap)
-# plot france (center: 2.213749 46.227638)
-# fra_center = as.numeric(geocode("France"))
-fra_center = c(2.213749, 46.227638)
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
-FraMap
+Plot available towns in a map:
 
-# plot all towns available
-geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
-geo_pos = geo_pos[complete.cases(geo_pos),]
-FraMap +
-  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.8, size=0.6) 
+```{r map}
 
 # delete non-European countries
 ind_nonEur = geo$latitude < 30 | geo$latitude > 70 |geo$longitude < -20 | geo$longitude > 20
 sum(ind_nonEur)
 geo = geo[!ind_nonEur,]
 
+# center of France, obtained using:
+# fra_center = as.numeric(geocode("France"))
+fra_center = c(2.213749, 46.227638)
 # plot all European towns available
 geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
 geo_pos = geo_pos[complete.cases(geo_pos),]
@@ -585,30 +587,27 @@ ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
 
 
 
-## What we have learned ##
+## What we have learned 
 
 Solved: 
 
-* Why latitude is missing and not longitude?
-* There are some duplications.
-
-To do:
-
-* What to do with non-European towns?
+* Latitude is missing and not longitude
+* There are some duplications
+* Exclude non-European
 
 
-
-## How to use these data ##
+## How to use these data 
 
 * Compare European towns vs. old colonies?
 * Useful for all datasets/analyses
 
 
-# Analyze salary data #
+# Analyze salary data 
 
-## Pre-processing ##
+## Pre-processing 
 
-```{r}
+Verification of the dataset:
+```{r pre processing salary}
 
 # preliminary checks
 dim(salary)
@@ -617,13 +616,6 @@ head(salary)
 str(salary)
 summary(salary)
 
-# Drop unnecessary columns (town name repeats in other table, is it surely possible to merge them?)
-names(salary)
-# salary <- subset(salary, select = -c(town))
-
-# Convert CODGEO to numeric
-salary$CODGEO <- as.numeric(as.character(salary$CODGEO))
-
 # Check for duplicated data
 sum(duplicated.data.frame(salary))
 
@@ -631,18 +623,16 @@ sum(duplicated.data.frame(salary))
 
 
 
-## Descriptive statistics ##
+## Descriptive statistics 
 
 Univariate analysis comparing salaries for both genders among various job categories:
 
-```{r}
+```{r boxplots works}
 
 #  number of units
 n_sex <- length(salary$sal_Females)
-
 # vector representing males and females
 Label <- c(rep("M", n_sex*5), rep("F", n_sex*5))
-
 # vector representing the variable considered
 Variable <- c(rep("General", n_sex), 
              rep("Executive", n_sex),
@@ -654,13 +644,11 @@ Variable <- c(rep("General", n_sex),
              rep("MidManager", n_sex),
              rep("Employee", n_sex),
              rep("Worker",n_sex))
-
 # merge these data
 sal_sex = cbind.data.frame(Label = Label, 
              value = c(salary$sal_Males, salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
                        salary$sal_Females, salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker),
              Variable = Variable)
-
 # plotting phase
 ggplot(data = sal_sex, aes(x=Label, y=value)) +
   geom_boxplot(aes(fill = Label)) +
@@ -670,6 +658,7 @@ ggplot(data = sal_sex, aes(x=Label, y=value)) +
   xlab("Sex") + ylab("Mean net salary per hour") + ggtitle("Gender comparison for different job positions") +
   theme(plot.title = element_text(hjust = 0.5)) +      stat_boxplot(geom = "errorbar", width = 0.5)
   # + guides(fill=guide_legend(title="Legend"))
+
 
 # the same but excluding outliers
 ggplot(data = sal_sex, aes(x=Label, y=value)) +
@@ -684,12 +673,13 @@ ggplot(data = sal_sex, aes(x=Label, y=value)) +
 
 ```
 
+
 Univariate analysis comparing salaries for both genders among various ages:
 
-```{r}
+```{r boxplots ages}
+
 # vector representing males and females
 Label <- c(rep("M", n_sex*3), rep("F", n_sex*3))
-
 # vector representing the variable considered
 Variable <- c(rep("18-25", n_sex), 
               rep("26-50", n_sex),
@@ -697,13 +687,11 @@ Variable <- c(rep("18-25", n_sex),
               rep("18-25", n_sex), 
               rep("26-50", n_sex),
               rep("51+", n_sex))
-
 # merge these data
 sal_sex <- cbind.data.frame(Label = Label, 
                            value = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus, 
                                      salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus),
                            Variable = Variable)
-
 # plotting phase
 ggplot(data = sal_sex, aes(x=Label, y=value)) +
   geom_boxplot(aes(fill = Label)) +
@@ -717,13 +705,13 @@ ggplot(data = sal_sex, aes(x=Label, y=value)) +
 
 
 The income inequality between genders, age groups and working positions is clear.
-In the following analyses the focus is on the salary ratio between womand and man among different
+In the following analyses the focus is on the salary ratio between women and men among different
 job positions:
-
 ```{r ratio F vs M accross jobs}
+
 # Gender salary ratio and general level of income
 
-# Overall mean salary: The higher the net mean income, the more skewed the ratio of salary between female and male is. only 2 towns have a ratio>1
+# Overall mean salary: The higher the net mean income, the more skewed the ratio of salary between female and male is. Only 2 towns have a ratio>1
 # create overall F vs M ratio
 salary$salary_ratio_FvsM <- salary$sal_Females / salary$sal_Males
 # histogram
@@ -742,7 +730,7 @@ ggplot(salary, aes(x= sal_general, y=salary_ratio_FvsM)) +
   geom_smooth(method = "lm") 
 
 
-# Executives mean salary: a bit better for females and less skewed
+# Executives mean salary: a bit better the situation for females in this case and less skewed
 # create Executives F vs M ratio
 salary$salary_ratio_FvsM_Exec <- salary$sal_F_executive / salary$sal_M_executive
 # histogram
@@ -761,7 +749,7 @@ ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_Exec)) +
   geom_smooth(method = "lm")
 
 
-# Middle managers mean salary: ...
+# Middle managers mean salary: ....
 # create Middle managers F vs M ratio
 salary$salary_ratio_FvsM_midManag <- salary$sal_F_midManager / salary$sal_M_midManager
 # histogram
@@ -819,8 +807,8 @@ ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_employee)) +
 
 ```
 
-Now we perform the same analysis for different age groups:
 
+Now the focus is on the salary ratio between women and men among different age groups:
 ```{r ratio F vs M accross ages}
 
 # 18-25 mean salary: are quite equal apart from some outliers and a quadratic trend
@@ -846,8 +834,7 @@ ggplot(salary, aes(x= sal_18_25, y= salary_ratio_FvsM_18_25)) +
   labs(x="18-25 salary", y="18-25 salary ratio (females/males)") + 
   labs(title = "18-25 salary ratio between females and males \n vs. overall 18-25 salary") + 
   theme(plot.title = element_text(hjust = 0.5)) +
-  geom_smooth(method = "lm")
-# [whic is better? themselve or general salary as predictor?]
+  geom_smooth(method = "loess")
 
 
 # 26-50 mean salary: ...
@@ -890,53 +877,52 @@ ggplot(salary, aes(x= sal_general, y= salary_ratio_FvsM_51plus)) +
 ```
 
 
-
-## Linear models ##
-
-Highlight bivariate relations using scatter matrices:
+Highlight bivariate relations:
 ```{r bivariate plots}
+
 # correlation matrix
-salary_NEW = salary[, 3:ncol(salary)]
-# colnames(salary_NEW) = 1:32
-corrplot(cor(salary_NEW), method = "circle", title = "Correlation matrix for salary", 
-         diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+corrplot(cor(salary[, 3:ncol(salary)]), method = "circle", title = "Correlation matrix for salary data", 
+         diag = T, tl.cex=0.5, type="lower", 
          tl.col = "black", mar=c(0,0,1.5,0)) 
 
 # most general pairs
-pairs(salary[c(3:8, 13, 18:20)], gap=0, main = "Scatter matrix for some variables in salary")
+pairs(salary[c(3:8, 13, 18:20)], gap=0, main = "Scatter matrix of the main variables in salary data", cex = 0.6)
 # pairs highlighting genders' differences
-pairs(salary[c(9:12, 14:17)], gap=0)
+pairs(salary[c(9:12, 14:17)], gap=0, main = "Scatter matrix of job categories for both genders", cex = 0.6)
+
 ```
 
+
+
+## Linear models
 
 First we perform some easy task
 fitting a regression model to predict the salaries of people in age 26-50 using as regressor 51+ years:
 
-```{r, fig.keep='all'}
-# fit and show OLS estimate
-plot(salary$sal_26_50 ~ salary$sal_51plus)
-fit_LM_26_50 = lm(salary$sal_26_50 ~ salary$sal_51plus, data = salary) 
-abline(fit_LM_26_50, lwd=3, col="red")
-# diagnostics
-summary(fit_LM_26_50)
-plot(fit_LM_26_50)
-
-# Same as before but adding polynomials which are evauated using 10-folds cross validation
-require(boot)
-set.seed(1)
-# k-Fold Cross-Validation
-cv.err.K = rep(0, 5)
-cv.err.K = rbind(cv.err.K, cv.err.K)
-for (i in 1:5){
-  fit_LM_26_50.K = glm(sal_26_50 ~ poly(sal_51plus, i), data = salary)
-  cv.err.K[,i] = cv.glm(salary, fit_LM_26_50.K, K = 10)$delta[1]
-}
-# plotting results
-plot(cv.err.K[1,], type = 'l', col = 'red', xlab = "Polynomials' order", 
-     ylab = "10-folds CV", main = "CV and adjusted CV for different polynomials")
-lines(cv.err.K[2,], col = 'green')
-points(which.min(cv.err.K), cv.err.K[1, which.min(cv.err.K)], col = "red", cex=2, pch=20)
-legend('topright', legend = c('CV', 'Adj. CV'), col = c('red', 'green'), pch = 10)
+```{r exLinMod, fig.keep='all'}
+# # fit and show OLS estimate
+# plot(salary$sal_26_50 ~ salary$sal_51plus)
+# fit_LM_26_50 = lm(salary$sal_26_50 ~ salary$sal_51plus, data = salary) 
+# abline(fit_LM_26_50, lwd=3, col="red")
+# # diagnostics
+# summary(fit_LM_26_50)
+# plot(fit_LM_26_50)
+# 
+# # Same as before but adding polynomials which are evauated using 10-folds cross validation
+# set.seed(1)
+# # k-Fold Cross-Validation
+# cv.err.K = rep(0, 5)
+# cv.err.K = rbind(cv.err.K, cv.err.K)
+# for (i in 1:5){
+#   fit_LM_26_50.K = glm(sal_26_50 ~ poly(sal_51plus, i), data = salary)
+#   cv.err.K[,i] = cv.glm(salary, fit_LM_26_50.K, K = 10)$delta[1]
+# }
+# # plotting results
+# plot(cv.err.K[1,], type = 'l', col = 'red', xlab = "Polynomials' order", 
+#      ylab = "10-folds CV", main = "CV and adjusted CV for different polynomials")
+# lines(cv.err.K[2,], col = 'green')
+# points(which.min(cv.err.K), cv.err.K[1, which.min(cv.err.K)], col = "red", cex=2, pch=20)
+# legend('topright', legend = c('CV', 'Adj. CV'), col = c('red', 'green'), pch = 10)
 
 ```
 
@@ -944,391 +930,391 @@ legend('topright', legend = c('CV', 'Adj. CV'), col = c('red', 'green'), pch = 1
 Predicting salary for young people using Elastic NEt with CV and 10-folds CV. The predictors are most of the original variables and their 2nd, 3rd order polynomials and log tranformation:
 
 ```{r}
-# funtion to plot BSS
-plot.regsubsets2 <-  
-  function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
-                                                           "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)), ...)  
-  { 
-    obj <- x 
-    lsum <- summary(obj) 
-    par(mar = c(7, 5, 6, 3) + 0.1) 
-    nmodels <- length(lsum$rsq) 
-    np <- obj$np 
-    propscale <- FALSE 
-    sscale <- pmatch(scale[1], c("bic", "Cp", "adjr2", "r2"),  
-                     nomatch = 0) 
-    if (sscale == 0)  
-      stop(paste("Unrecognised scale=", scale)) 
-    if (propscale)  
-      stop(paste("Proportional scaling only for probabilities")) 
-    yscale <- switch(sscale, lsum$bic, lsum$cp, lsum$adjr2, lsum$rsq) 
-    up <- switch(sscale, -1, -1, 1, 1) 
-    index <- order(yscale * up) 
-    colorscale <- switch(sscale, yscale, yscale, -log(pmax(yscale,  
-                                                           1e-04)), -log(pmax(yscale, 1e-04))) 
-    image(z = t(ifelse(lsum$which[index, ], colorscale[index],  
-                       NA + max(colorscale) * 1.5)), xaxt = "n", yaxt = "n",  
-          x = (1:np), y = 1:nmodels, xlab = "", ylab = scale[1],  
-          col = col) 
-    laspar <- par("las") 
-    on.exit(par(las = laspar)) 
-    par(las = 2) 
-    axis(1, at = 1:np, labels = labels, ...) # I modified this line 
-    axis(2, at = 1:nmodels, labels = signif(yscale[index], 2)) 
-    if (!is.null(main))  
-      title(main = main) 
-    box() 
-    invisible(NULL) 
-  } 
-
-set.seed(2018)
-
-# load the data
-ind = salary$sal_18_25 < 11.5
-y = salary$sal_18_25[ind]
-x = cbind.data.frame(salary$sal_26_50, salary$sal_51plus, 
-                     salary$sal_general,  salary$sal_executive, salary$sal_midManager, 
-                     salary$sal_employee, salary$sal_worker, 
-                     salary$sal_Males, salary$sal_Females)
-x = x[ind, ]
-yx = cbind.data.frame(y, x)
-
-# original response variable histogram
-ggplot(data=salary, aes(salary$sal_18_25)) + 
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 35) + 
-  geom_density(col="black") + 
-  labs(x="salary^-1", y="Density") + 
-  ggtitle("Original response variable") + 
-  theme(plot.title = element_text(hjust = 0.5)) 
-
-# response variable histogram (excluding outliers)
-ggplot(data=salary[ind,], aes(y)) + 
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 35) + 
-  geom_density(col="black") + 
-  labs(x="salary^-1", y="Density") + 
-  ggtitle("Original response variable excluding outliers") + 
-  theme(plot.title = element_text(hjust = 0.5)) 
-
-# after sampling to avoid serial correlation
-indd = sample(1:length(y), round(length(y)*0.4))
-yx = yx[indd,]
-ggplot(data=salary[ind,][indd,], aes(y[indd])) + 
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 30) + 
-  geom_density(col="black") + 
-  labs(x="salary^-1", y="Density") + 
-  ggtitle("Sampled response variable and excluding outliers") + 
-  theme(plot.title = element_text(hjust = 0.5)) 
-
-# correlations
-# corrplot(cor(yx), method = "number", title = "Correlation matrix for salary",
-#          diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
-#          tl.col = "black")  # , mar=c(0,0,1.5,0)
-
-# scatter matrix
-# pairs(yx, gap=0, main = "Scatter matrix for some variables in salary")
-# manually remove outliers in mid mangager
-summary(yx)
-inddd = yx$`salary$sal_midManager` < 20
-yx = yx[inddd,]
-# final dataset
-pairs(yx, gap=0, main = "Scatter matrix for the variables in the model")
-
-# create final dataframe
-require(leaps) 
-# assign names for predictors transformation
-namesdataBS = names(yx)
-yx = cbind.data.frame(yx, yx[,2:ncol(yx)]^2, yx[,2:ncol(yx)]^3, log(yx[,2:ncol(yx)]))
-dim(yx)
-lll = ((dim(yx)[2]-1)/4) 
-for (i in 1:lll+1){ 
-  str = namesdataBS[i] 
-  namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1] 
-} 
-namesdataBS[(lll+2):(lll*2+1)] = paste(namesdataBS[1:lll+1], rep("^2", lll)) 
-namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll)) 
-namesdataBS[(lll*3+2):(lll*4+1)] = paste(namesdataBS[1:lll+1], rep("log", lll)) 
-names(yx) = namesdataBS 
-
-# Elastic net
-x = as.matrix(yx[, 2:ncol(yx)])
-y = yx[, 1]
-par(mfrow =c(3,2))
-for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
-  # set.seed (3)
-  cv.out = cv.glmnet(x, y, alpha = j)
-  plot(cv.out)
-  title(paste("alpha = ", j), line = 2.3)
-}
-mtext(expression("Best lambda for salary 18-25 using elastic and 10-folds CV"), outer=TRUE,  cex=1, line=-1.4) 
-
-
-# split the date leaving the 20% for CV
-par(mfrow =c(1,1))
-train = sample(1:nrow(x), floor(nrow(x)*0.8))
-test = -train
-y.test = y[test]
-x = as.matrix(x)
-itercol = 1
-for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
-  # set.seed (3)
-  lasso.mod = glmnet(x[train,], y[train], alpha = j, thresh = 1e-10)
-  err.i = rep("NA", length(lasso.mod$lambda))
-  for (i in 1:length(lasso.mod$lambda)){
-    lasso.pred = predict(lasso.mod, s = lasso.mod$lambda[i], newx = x[test,], alpha = j)
-    err.i[i] = mean((lasso.pred - y.test)^2)
-  }
-  if (itercol == 1){
-    plot(log(lasso.mod$lambda), err.i, xlab = 'log Lambda', ylab = 'test set MSE', 
-         main = 'Test MSE among different Lambdas', type = "b", col = itercol)
-  } else{
-    lines(log(lasso.mod$lambda), err.i, type = "b", col = itercol)
-  }
-  bestlam = which.min(err.i)
-  points(log(lasso.mod$lambda)[bestlam], err.i[bestlam], col = 3, cex=2, pch=20)
-  itercol = itercol +1
-}
-
-
-# best subset selection
-best.sub = regsubsets(y ~ ., data = yx, nvmax = ncol(yx)) 
-best.sub.summary = summary(best.sub) 
-# manual plotting 
-par(mfrow =c(2,2))
-# rsq 
-plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l") 
-ind_Rsq = which.max(best.sub.summary$rsq) 
-points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20) 
-# adjRsq 
-plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l") 
-ind_adjRsq = which.max(best.sub.summary$adjr2) 
-points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20) 
-# Cp 
-plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l") 
-ind_Cp = which.min(best.sub.summary$cp) 
-points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20) 
-# bic 
-plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l") 
-ind_bic = which.min(best.sub.summary$bic) 
-points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20) 
-# mtext("My 'Title' in a strange place", line=15) 
-mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5) 
-# built-in plots 
-par(mfrow=c(1,1)) 
-plot(best.sub, scale = "r2") 
-plot(best.sub, scale = "adjr2") 
-plot(best.sub, scale = "Cp") 
-plot(best.sub, scale = "bic") 
-plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.9) 
-mtext("Best subset selection for salary 18-25 using BIC", outer=TRUE,  cex=1.4, line=-3.5) 
-# retrieve the model with min BIC 
-coefficients(best.sub, which.min(best.sub.summary$bic))
-names(coefficients(best.sub, 10))
-# nnn = names(coefficients(best.sub, which.min(best.sub.summary$bic)))
-
+# # funtion to plot BSS
+# plot.regsubsets2 <-  
+#   function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
+#                                                            "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)), ...)  
+#   { 
+#     obj <- x 
+#     lsum <- summary(obj) 
+#     par(mar = c(7, 5, 6, 3) + 0.1) 
+#     nmodels <- length(lsum$rsq) 
+#     np <- obj$np 
+#     propscale <- FALSE 
+#     sscale <- pmatch(scale[1], c("bic", "Cp", "adjr2", "r2"),  
+#                      nomatch = 0) 
+#     if (sscale == 0)  
+#       stop(paste("Unrecognised scale=", scale)) 
+#     if (propscale)  
+#       stop(paste("Proportional scaling only for probabilities")) 
+#     yscale <- switch(sscale, lsum$bic, lsum$cp, lsum$adjr2, lsum$rsq) 
+#     up <- switch(sscale, -1, -1, 1, 1) 
+#     index <- order(yscale * up) 
+#     colorscale <- switch(sscale, yscale, yscale, -log(pmax(yscale,  
+#                                                            1e-04)), -log(pmax(yscale, 1e-04))) 
+#     image(z = t(ifelse(lsum$which[index, ], colorscale[index],  
+#                        NA + max(colorscale) * 1.5)), xaxt = "n", yaxt = "n",  
+#           x = (1:np), y = 1:nmodels, xlab = "", ylab = scale[1],  
+#           col = col) 
+#     laspar <- par("las") 
+#     on.exit(par(las = laspar)) 
+#     par(las = 2) 
+#     axis(1, at = 1:np, labels = labels, ...) # I modified this line 
+#     axis(2, at = 1:nmodels, labels = signif(yscale[index], 2)) 
+#     if (!is.null(main))  
+#       title(main = main) 
+#     box() 
+#     invisible(NULL) 
+#   } 
+# 
+# set.seed(2018)
+# 
+# # load the data
+# ind = salary$sal_18_25 < 11.5
+# y = salary$sal_18_25[ind]
+# x = cbind.data.frame(salary$sal_26_50, salary$sal_51plus, 
+#                      salary$sal_general,  salary$sal_executive, salary$sal_midManager, 
+#                      salary$sal_employee, salary$sal_worker, 
+#                      salary$sal_Males, salary$sal_Females)
+# x = x[ind, ]
+# yx = cbind.data.frame(y, x)
+# 
+# # original response variable histogram
+# ggplot(data=salary, aes(salary$sal_18_25)) + 
+#   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 35) + 
+#   geom_density(col="black") + 
+#   labs(x="salary^-1", y="Density") + 
+#   ggtitle("Original response variable") + 
+#   theme(plot.title = element_text(hjust = 0.5)) 
+# 
+# # response variable histogram (excluding outliers)
+# ggplot(data=salary[ind,], aes(y)) + 
+#   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 35) + 
+#   geom_density(col="black") + 
+#   labs(x="salary^-1", y="Density") + 
+#   ggtitle("Original response variable excluding outliers") + 
+#   theme(plot.title = element_text(hjust = 0.5)) 
+# 
+# # after sampling to avoid serial correlation
+# indd = sample(1:length(y), round(length(y)*0.4))
+# yx = yx[indd,]
+# ggplot(data=salary[ind,][indd,], aes(y[indd])) + 
+#   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 30) + 
+#   geom_density(col="black") + 
+#   labs(x="salary^-1", y="Density") + 
+#   ggtitle("Sampled response variable and excluding outliers") + 
+#   theme(plot.title = element_text(hjust = 0.5)) 
+# 
+# # correlations
+# # corrplot(cor(yx), method = "number", title = "Correlation matrix for salary",
+# #          diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+# #          tl.col = "black")  # , mar=c(0,0,1.5,0)
+# 
+# # scatter matrix
+# # pairs(yx, gap=0, main = "Scatter matrix for some variables in salary")
+# # manually remove outliers in mid mangager
+# summary(yx)
+# inddd = yx$`salary$sal_midManager` < 20
+# yx = yx[inddd,]
+# # final dataset
+# pairs(yx, gap=0, main = "Scatter matrix for the variables in the model")
+# 
+# # create final dataframe
+# require(leaps) 
+# # assign names for predictors transformation
+# namesdataBS = names(yx)
+# yx = cbind.data.frame(yx, yx[,2:ncol(yx)]^2, yx[,2:ncol(yx)]^3, log(yx[,2:ncol(yx)]))
+# dim(yx)
+# lll = ((dim(yx)[2]-1)/4) 
+# for (i in 1:lll+1){ 
+#   str = namesdataBS[i] 
+#   namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1] 
+# } 
+# namesdataBS[(lll+2):(lll*2+1)] = paste(namesdataBS[1:lll+1], rep("^2", lll)) 
+# namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll)) 
+# namesdataBS[(lll*3+2):(lll*4+1)] = paste(namesdataBS[1:lll+1], rep("log", lll)) 
+# names(yx) = namesdataBS 
+# 
+# # Elastic net
+# x = as.matrix(yx[, 2:ncol(yx)])
+# y = yx[, 1]
+# par(mfrow =c(3,2))
+# for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
+#   # set.seed (3)
+#   cv.out = cv.glmnet(x, y, alpha = j)
+#   plot(cv.out)
+#   title(paste("alpha = ", j), line = 2.3)
+# }
+# mtext(expression("Best lambda for salary 18-25 using elastic and 10-folds CV"), outer=TRUE,  cex=1, line=-1.4) 
+# 
+# 
+# # split the date leaving the 20% for CV
+# par(mfrow =c(1,1))
+# train = sample(1:nrow(x), floor(nrow(x)*0.8))
+# test = -train
+# y.test = y[test]
+# x = as.matrix(x)
+# itercol = 1
+# for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
+#   # set.seed (3)
+#   lasso.mod = glmnet(x[train,], y[train], alpha = j, thresh = 1e-10)
+#   err.i = rep("NA", length(lasso.mod$lambda))
+#   for (i in 1:length(lasso.mod$lambda)){
+#     lasso.pred = predict(lasso.mod, s = lasso.mod$lambda[i], newx = x[test,], alpha = j)
+#     err.i[i] = mean((lasso.pred - y.test)^2)
+#   }
+#   if (itercol == 1){
+#     plot(log(lasso.mod$lambda), err.i, xlab = 'log Lambda', ylab = 'test set MSE', 
+#          main = 'Test MSE among different Lambdas', type = "b", col = itercol)
+#   } else{
+#     lines(log(lasso.mod$lambda), err.i, type = "b", col = itercol)
+#   }
+#   bestlam = which.min(err.i)
+#   points(log(lasso.mod$lambda)[bestlam], err.i[bestlam], col = 3, cex=2, pch=20)
+#   itercol = itercol +1
+# }
+# 
+# 
+# # best subset selection
+# best.sub = regsubsets(y ~ ., data = yx, nvmax = ncol(yx)) 
+# best.sub.summary = summary(best.sub) 
+# # manual plotting 
+# par(mfrow =c(2,2))
+# # rsq 
+# plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l") 
+# ind_Rsq = which.max(best.sub.summary$rsq) 
+# points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20) 
+# # adjRsq 
+# plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l") 
+# ind_adjRsq = which.max(best.sub.summary$adjr2) 
+# points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20) 
+# # Cp 
+# plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l") 
+# ind_Cp = which.min(best.sub.summary$cp) 
+# points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20) 
+# # bic 
+# plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l") 
+# ind_bic = which.min(best.sub.summary$bic) 
+# points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20) 
+# # mtext("My 'Title' in a strange place", line=15) 
+# mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5) 
+# # built-in plots 
+# par(mfrow=c(1,1)) 
+# plot(best.sub, scale = "r2") 
+# plot(best.sub, scale = "adjr2") 
+# plot(best.sub, scale = "Cp") 
+# plot(best.sub, scale = "bic") 
+# plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.9) 
+# mtext("Best subset selection for salary 18-25 using BIC", outer=TRUE,  cex=1.4, line=-3.5) 
+# # retrieve the model with min BIC 
+# coefficients(best.sub, which.min(best.sub.summary$bic))
+# names(coefficients(best.sub, 10))
+# # nnn = names(coefficients(best.sub, which.min(best.sub.summary$bic)))
+# 
 
 
 ```
-
 
 
 
 ANOVA model for salary:
 ```{r}
-# create response variable
-sal_y = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus,
-          salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
-          salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus,
-          salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker)
-
-n_sal_y = length(sal_y)             # length response variable
-n_cat = length(salary$sal_M_18_25)  # length of each category (i.e., original vectors)
-
-# create sex dummy variable, 1 for males and 0 for females
-sal_sex = rep(0, n_sal_y)   # full regressors
-sal_sex[1:n_sal_y/2] = 1    # assign males
-
-# create age dummy variables, 18-25 years old is the base case
-sal_age = cbind(rep(0, n_sal_y), rep(0, n_sal_y)) # full regressors
-# 26-50 y.o.
-sal_age[(n_cat+1):(n_cat*2), 1] = 1     # males
-sal_age[(n_cat*8+1):(n_cat*9), 1] = 1   # females
-# 51+ y.o.
-sal_age[(n_cat*2+1):(n_cat*3), 2] = 1   # males
-sal_age[(n_cat*9+1):(n_cat*10), 2] = 1  # females
-
-# create job type dummy variables, worker is the base case
-sal_job = cbind(rep(0, n_sal_y), rep(0, n_sal_y), rep(0, n_sal_y)) # full regressors
-# executives
-sal_job[(n_cat*3+1):(n_cat*4), 1] = 1     # males
-sal_job[(n_cat*10+1):(n_cat*11), 1] = 1   # females
-# middle managers
-sal_job[(n_cat*4+1):(n_cat*5), 2] = 1     # males
-sal_job[(n_cat*11+1):(n_cat*12), 2] = 1   # females
-# employee
-sal_job[(n_cat*5+1):(n_cat*6), 3] =   1   # males
-sal_job[(n_cat*12+1):(n_cat*13), 3] = 1   # females
-
-# final data set 
-data_ANOVA = cbind.data.frame(response = sal_y, sex = sal_sex, age = sal_age, job = sal_job)
-names(data_ANOVA)
-# show regressors' shape
-imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
-axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
-box()
-# sub sample to avoid correlation
-set.seed(20)
-subs = sample(1:n_sal_y, size = round(n_sal_y*0.2))
-data_ANOVA = data_ANOVA[subs,]
-# show randomized data
-imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
-axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
-box()
-
-# plot response variable
-hist(data_ANOVA[,1], 30)
-hist(log(data_ANOVA[,1]), 30)
-hist(sqrt(data_ANOVA[,1]), 30)
-hist(data_ANOVA[,1]^-1, 30)
-sal_y = data_ANOVA[,1]^-1  # also suggested by Box-Cox transformation
-ggplot(data=data.frame(data_ANOVA[,1]), aes(sal_y)) + 
-  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 40) + 
-  geom_density(col="black") + 
-  labs(x="salary^-1", y="Density") + 
-  ggtitle("Transformation of salary found using Box-Cox transformation") + 
-  theme(plot.title = element_text(hjust = 0.5)) 
-
-sex = sal_sex[subs]
-age = sal_age[subs,]
-job = sal_job[subs,]
-# ANOVA model
-sal_ANOVA = lm(sal_y ~ sex + age + job + sex:age + sex:job)
-# names(sal_ANOVA$coefficients) = c("Males", "26-50", )
-summary(sal_ANOVA)
-anova((sal_ANOVA))
-
-# box-cox transformation suggested to use y^-1
-boxcox(sal_ANOVA)
-title("Box-Cox transformation of the response")
-
-# BSS
-best.sub = regsubsets((sal_y ~ sex + age + job + sex:age + sex:job), 
-                      data = data_ANOVA, nvmax = 12) 
-best.sub.summary = summary(best.sub) 
-# plots: manual plotting 
-par(mfrow =c(2,2)) 
-# rsq 
-plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l") 
-ind_Rsq = which.max(best.sub.summary$rsq) 
-points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20) 
-# adjRsq 
-plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l") 
-ind_adjRsq = which.max(best.sub.summary$adjr2) 
-points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20) 
-# Cp 
-plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l") 
-ind_Cp = which.min(best.sub.summary$cp) 
-points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20) 
-# bic 
-plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l") 
-ind_bic = which.min(best.sub.summary$bic) 
-points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20) 
-# mtext("My 'Title' in a strange place", line=15) 
-mtext("Best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-2.5) 
-# existing plots
-par(mfrow=c(1,1)) 
-plot(best.sub, scale = "r2") 
-plot(best.sub, scale = "bic") 
-plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.7) 
-mtext("Best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-3.5) 
-plot(best.sub, scale = "Cp") 
-plot(best.sub, scale = "adjr2") 
-# retrieve the model with min BIC 
-coefficients(best.sub, which.min(best.sub.summary$bic))
-
-
-# group lasso
-# install.packages("gglasso")
-library(gglasso)
-# install.packages("RColorBrewer")
-library(RColorBrewer)
-# install.packages("zoo")
-library(zoo)
-grp = c(1,2,2,3,3,3,4,4,5,5,5)
-form <- model.matrix(sal_y ~ (sex + age + job)^2)
-head(form)
-form = form[,2:12]
-fit = gglasso(x=form,y=sal_y,group=grp,loss='ls')
-coef.mat=fit$beta
-
-#Group1 enters the equation
-g1=max(which(coef.mat[1,]==0))
-#Group2 enters the equation
-g2=max(which(coef.mat[2,]==0))
-#Group3 enters the equation
-g3=max(which(coef.mat[4,]==0))
-#Group4 enters the equation
-g4=max(which(coef.mat[7,]==0))
-#Group5 enters the equation
-g5=max(which(coef.mat[9,]==0))
-#Coefficient Plot
-cols=brewer.pal(5,name="Set1")
-plot(fit$b0,main="Coefficient vs Step",
-     ylab="Intercept",xlab="Step (decreasing Lambda)",
-     col=cols[1],
-     xlim=c(-1,100),
-     ylim=c(0.076,max(fit$b0)+0.001),
-     type="l",lwd=4)
-grid()
-par(new=T)
-xx=c(g1,g2,g3,g4,g5)
-yy=c(fit$b0[g1],fit$b0[g2],fit$b0[g3],fit$b0[g4],fit$b0[g5])
-plot(x=xx,y=yy,pch=13,lwd=2,cex=2,col=cols[-1],
-     xlim=c(-1,100),ylim=c(0.076,max(fit$b0)+0.001),
-     xaxt='n',yaxt='n',xlab="",ylab="")
-lmda=round(fit$lambda[c(g1,g2,g3,g4,g5)],4)
-text(x=xx-0.005,y=yy+0.0001,labels=c("Group1","Group2","Group3","Group4","Group5","Group6"),pos=3,cex=0.7)
-text(x=xx-0.005,y=yy-0.0001,labels=paste("Lambda\n=",lmda),pos=1,cex=0.6)
-
-# coefficient plot 2 (my version)
-cols=brewer.pal(5,name="Set1")
-plot(fit$beta[1,], main="Coefficients vs Lambda",
-     ylab="Coefficients",xlab="Step (decreasing Lambda)",
-     col=cols[1],
-     # xlim=c(-1,100),
-     ylim=c(min(fit$beta), max(fit$beta)),
-     type="l",lwd=4)
-for (j in 2:11){
-  lines(fit$beta[j,],
-        type="l",lwd=4, col=cols[j])
-}
-# plot legend once
-grid()
-par(new=T)
-legend('bottomleft', legend = paste("group ", 1:5), lty=1, col=cols[1:5], cex = 0.7,lwd=2)
-
-#Cross Validation
-fit.cv=cv.gglasso(x=form,y=sal_y,group=grp,nfolds=10)
-plot(fit.cv, main="10-folds CV for groupwise Lasso in ANOVA")
-#Pick the best Lambda
-lmbda=fit.cv$lambda.1se
-(coefs=coef.gglasso(object=fit,s=lmbda))
-#At best lambda get coefficients and fitted values
-plt=sal_y-predict.gglasso(object=fit,newx=form,s=lmbda,type='link')
-plot(plt, ylab="residuals", xlab="index", main="Plot of residuals")
-abline(0, 0, col= "red")
-# matplot(plt,main="Predicted vs Actual",type='l',lwd=2,col=cols[c(1,2)]),
-#         ylab="Unemplyoment %",
-#         xlab="Time")
-grid()
-
+# 
+# # create response variable
+# sal_y = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus,
+#           salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
+#           salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus,
+#           salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker)
+# 
+# n_sal_y = length(sal_y)             # length response variable
+# n_cat = length(salary$sal_M_18_25)  # length of each category (i.e., original vectors)
+# 
+# # create sex dummy variable, 1 for males and 0 for females
+# sal_sex = rep(0, n_sal_y)   # full regressors
+# sal_sex[1:n_sal_y/2] = 1    # assign males
+# 
+# # create age dummy variables, 18-25 years old is the base case
+# sal_age = cbind(rep(0, n_sal_y), rep(0, n_sal_y)) # full regressors
+# # 26-50 y.o.
+# sal_age[(n_cat+1):(n_cat*2), 1] = 1     # males
+# sal_age[(n_cat*8+1):(n_cat*9), 1] = 1   # females
+# # 51+ y.o.
+# sal_age[(n_cat*2+1):(n_cat*3), 2] = 1   # males
+# sal_age[(n_cat*9+1):(n_cat*10), 2] = 1  # females
+# 
+# # create job type dummy variables, worker is the base case
+# sal_job = cbind(rep(0, n_sal_y), rep(0, n_sal_y), rep(0, n_sal_y)) # full regressors
+# # executives
+# sal_job[(n_cat*3+1):(n_cat*4), 1] = 1     # males
+# sal_job[(n_cat*10+1):(n_cat*11), 1] = 1   # females
+# # middle managers
+# sal_job[(n_cat*4+1):(n_cat*5), 2] = 1     # males
+# sal_job[(n_cat*11+1):(n_cat*12), 2] = 1   # females
+# # employee
+# sal_job[(n_cat*5+1):(n_cat*6), 3] =   1   # males
+# sal_job[(n_cat*12+1):(n_cat*13), 3] = 1   # females
+# 
+# # final data set 
+# data_ANOVA = cbind.data.frame(response = sal_y, sex = sal_sex, age = sal_age, job = sal_job)
+# names(data_ANOVA)
+# # show regressors' shape
+# imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
+# axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
+# box()
+# # sub sample to avoid correlation
+# set.seed(20)
+# subs = sample(1:n_sal_y, size = round(n_sal_y*0.2))
+# data_ANOVA = data_ANOVA[subs,]
+# # show randomized data
+# imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")  
+# axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl.")) 
+# box()
+# 
+# # plot response variable
+# hist(data_ANOVA[,1], 30)
+# hist(log(data_ANOVA[,1]), 30)
+# hist(sqrt(data_ANOVA[,1]), 30)
+# hist(data_ANOVA[,1]^-1, 30)
+# sal_y = data_ANOVA[,1]^-1  # also suggested by Box-Cox transformation
+# ggplot(data=data.frame(data_ANOVA[,1]), aes(sal_y)) + 
+#   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 40) + 
+#   geom_density(col="black") + 
+#   labs(x="salary^-1", y="Density") + 
+#   ggtitle("Transformation of salary found using Box-Cox transformation") + 
+#   theme(plot.title = element_text(hjust = 0.5)) 
+# 
+# sex = sal_sex[subs]
+# age = sal_age[subs,]
+# job = sal_job[subs,]
+# # ANOVA model
+# sal_ANOVA = lm(sal_y ~ sex + age + job + sex:age + sex:job)
+# # names(sal_ANOVA$coefficients) = c("Males", "26-50", )
+# summary(sal_ANOVA)
+# anova((sal_ANOVA))
+# 
+# # box-cox transformation suggested to use y^-1
+# boxcox(sal_ANOVA)
+# title("Box-Cox transformation of the response")
+# 
+# # BSS
+# best.sub = regsubsets((sal_y ~ sex + age + job + sex:age + sex:job), 
+#                       data = data_ANOVA, nvmax = 12) 
+# best.sub.summary = summary(best.sub) 
+# # plots: manual plotting 
+# par(mfrow =c(2,2)) 
+# # rsq 
+# plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l") 
+# ind_Rsq = which.max(best.sub.summary$rsq) 
+# points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20) 
+# # adjRsq 
+# plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l") 
+# ind_adjRsq = which.max(best.sub.summary$adjr2) 
+# points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20) 
+# # Cp 
+# plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l") 
+# ind_Cp = which.min(best.sub.summary$cp) 
+# points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20) 
+# # bic 
+# plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l") 
+# ind_bic = which.min(best.sub.summary$bic) 
+# points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20) 
+# # mtext("My 'Title' in a strange place", line=15) 
+# mtext("Best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-2.5) 
+# # existing plots
+# par(mfrow=c(1,1)) 
+# plot(best.sub, scale = "r2") 
+# plot(best.sub, scale = "bic") 
+# plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.7) 
+# mtext("Best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-3.5) 
+# plot(best.sub, scale = "Cp") 
+# plot(best.sub, scale = "adjr2") 
+# # retrieve the model with min BIC 
+# coefficients(best.sub, which.min(best.sub.summary$bic))
+# 
+# 
+# # group lasso
+# # install.packages("gglasso")
+# library(gglasso)
+# # install.packages("RColorBrewer")
+# library(RColorBrewer)
+# # install.packages("zoo")
+# library(zoo)
+# grp = c(1,2,2,3,3,3,4,4,5,5,5)
+# form <- model.matrix(sal_y ~ (sex + age + job)^2)
+# head(form)
+# form = form[,2:12]
+# fit = gglasso(x=form,y=sal_y,group=grp,loss='ls')
+# coef.mat=fit$beta
+# 
+# #Group1 enters the equation
+# g1=max(which(coef.mat[1,]==0))
+# #Group2 enters the equation
+# g2=max(which(coef.mat[2,]==0))
+# #Group3 enters the equation
+# g3=max(which(coef.mat[4,]==0))
+# #Group4 enters the equation
+# g4=max(which(coef.mat[7,]==0))
+# #Group5 enters the equation
+# g5=max(which(coef.mat[9,]==0))
+# #Coefficient Plot
+# cols=brewer.pal(5,name="Set1")
+# plot(fit$b0,main="Coefficient vs Step",
+#      ylab="Intercept",xlab="Step (decreasing Lambda)",
+#      col=cols[1],
+#      xlim=c(-1,100),
+#      ylim=c(0.076,max(fit$b0)+0.001),
+#      type="l",lwd=4)
+# grid()
+# par(new=T)
+# xx=c(g1,g2,g3,g4,g5)
+# yy=c(fit$b0[g1],fit$b0[g2],fit$b0[g3],fit$b0[g4],fit$b0[g5])
+# plot(x=xx,y=yy,pch=13,lwd=2,cex=2,col=cols[-1],
+#      xlim=c(-1,100),ylim=c(0.076,max(fit$b0)+0.001),
+#      xaxt='n',yaxt='n',xlab="",ylab="")
+# lmda=round(fit$lambda[c(g1,g2,g3,g4,g5)],4)
+# text(x=xx-0.005,y=yy+0.0001,labels=c("Group1","Group2","Group3","Group4","Group5","Group6"),pos=3,cex=0.7)
+# text(x=xx-0.005,y=yy-0.0001,labels=paste("Lambda\n=",lmda),pos=1,cex=0.6)
+# 
+# # coefficient plot 2 (my version)
+# cols=brewer.pal(5,name="Set1")
+# plot(fit$beta[1,], main="Coefficients vs Lambda",
+#      ylab="Coefficients",xlab="Step (decreasing Lambda)",
+#      col=cols[1],
+#      # xlim=c(-1,100),
+#      ylim=c(min(fit$beta), max(fit$beta)),
+#      type="l",lwd=4)
+# for (j in 2:11){
+#   lines(fit$beta[j,],
+#         type="l",lwd=4, col=cols[j])
+# }
+# # plot legend once
+# grid()
+# par(new=T)
+# legend('bottomleft', legend = paste("group ", 1:5), lty=1, col=cols[1:5], cex = 0.7,lwd=2)
+# 
+# #Cross Validation
+# fit.cv=cv.gglasso(x=form,y=sal_y,group=grp,nfolds=10)
+# plot(fit.cv, main="10-folds CV for groupwise Lasso in ANOVA")
+# #Pick the best Lambda
+# lmbda=fit.cv$lambda.1se
+# (coefs=coef.gglasso(object=fit,s=lmbda))
+# #At best lambda get coefficients and fitted values
+# plt=sal_y-predict.gglasso(object=fit,newx=form,s=lmbda,type='link')
+# plot(plt, ylab="residuals", xlab="index", main="Plot of residuals")
+# abline(0, 0, col= "red")
+# # matplot(plt,main="Predicted vs Actual",type='l',lwd=2,col=cols[c(1,2)]),
+# #         ylab="Unemplyoment %",
+# #         xlab="Time")
+# grid()
+# 
 
 
 ```
 
 
-
 PCA for salary:
 ```{r}
+
 myPr <- prcomp(salary[, 3:26], scale = TRUE)
 myPr
 summary(myPr)
@@ -1353,23 +1339,25 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 
 ```
 
 
-## What we have learned ##
+## What we have learned 
 
 * Check the outlier in sal_18_25: which city is it, etc.
 * evaluate possible multicollinearity
 * Try a regression with all predictors ans lasso
 
-## How to use these data ##
+## How to use these data 
 
 * ...
 
-# Produce consistent datasets #
-## Match CODGEO 
+
+# Produce consistent datasets
+
 The CODGEO variables (code_insee in the original geo data) have to be merged.
 However, for different reasons already identified by other kaggle users they need some pre-processing.
 To do so, some already known mistakes are corrected:
 
-```{r Match CODGEO}
+```{r fix CODGEO}
+
 firms$CODGEO      <- sub("A", "0", firms$CODGEO)
 firms$CODGEO      <- sub("B", "0", firms$CODGEO)
 salary$CODGEO     <- sub("A", "0", salary$CODGEO)
@@ -1379,14 +1367,14 @@ population$CODGEO <- sub("B", "0", population$CODGEO)
 geo$CODGEO        <- sub("A", "0", geo$CODGEO)
 geo$CODGEO        <- sub("B", "0", geo$CODGEO)
 
-# [Check if there are more]
 ```
 
-## New dataset
+
 Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
-```{r new datasets retaining only the common CODGEO}
+```{r match CODGEO}
+
 # use only integer values
-geo$CODGEO = as.integer(geo$CODGEO)  # already integer
+geo$CODGEO = as.integer(geo$CODGEO)  
 population$CODGEO = as.integer(population$CODGEO)
 firms$CODGEO = as.integer(firms$CODGEO)
 salary$CODGEO = as.integer(salary$CODGEO)
@@ -1494,16 +1482,16 @@ newDat = subset(newDat, select = -town.y)
 # write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
 ```
 
-# Analyze population data #
+# Analyze population data 
 
-## Pre-processing ##
+## Pre-processing 
 
 ```{r Pre-processing}
 #Pre-processing phase is completed before merging the dataset
 ```
 
 
-## Descriptive statistics ##
+## Descriptive statistics 
 
 ```{r Descriptive statistics}
 # #Compare age categories:
@@ -1606,7 +1594,7 @@ print(pop_pyramid)
 
 
 
-## Unsupervised learning ##
+## Unsupervised learning 
 ```{r PCA population-Create clean dataset}
 # PCA trial 
 # create a clean dataset with only necessary variables inside.
@@ -1686,7 +1674,7 @@ plot(hclust(data.dist), labels=pca_pop_town$CODGEO, main="complete", xlab="", su
 ```
 
 
-# Analysis #
+# Analysis 
 
 General:
 ```{r Correlation plot with new merged data}
@@ -1703,18 +1691,18 @@ Firms and geo:
 ```{r}
 
 ```
-## PCA ##
+## PCA 
 ```{r}
 
 ```
-## Regression ##
+## Regression
 ```{r}
 
 
 
 
 ```
-## Clustering ##
+## Clustering 
 ```{r}
 
 ```
