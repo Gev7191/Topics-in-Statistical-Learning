@@ -30,39 +30,66 @@ editor_options:
 
 
 # General information #
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
 We analyze a dataset published on [Kaggle](https://www.kaggle.com/etiennelq/french-employment-by-town).
 It refers to french employment, salaries, population per town. 
 The aim is to evaluate equality/inequalities in France, and geographical distribution of business according to their size.
 
 Such data are collected by the INSEE.
 Information regarding the number of firms in every french town, categorized by size
-can be found [here](https://www.insee.fr/fr/metadonnees/definition/c1135). 
-Information about salaries around french town per job categories, age and sex (expressed in average net amount per hour in euro) can be found [here](https://www.insee.fr/fr/statistiques/2522515).
+can be found [here](https://www.insee.fr/fr/metadonnees/definition/c1135). This dataset contains about 35000 units/per town.
+
+Information about salaries around french town per job categories, age and sex (expressed in average net amount per hour in euro) can be found [here](https://www.insee.fr/fr/statistiques/2522515). This dataset contains about 5000 units/per town. 
+
 Demographic information in France per town, age, sex and living mode
-can be found [here](https://www.insee.fr/fr/statistiques/2863607).
+can be found [here](https://www.insee.fr/fr/statistiques/2863607). This dataset contains about 8 million units/per town. Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire). 
 
-Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire), 
-it allows to add cat?gorie socioprofessionnelle.
-
-
-
+These datasets have been pre-processed and put together. The final dataset contains 58 variables and 5022 observations. 
 
 ## Aim of the study ##
-This project aims to explore existing patterns among French towns.
-
+This project aims to explore structure of French labour market. 
 In particular, we are interested in:
 
-* evaluating possible inequalities: per towns/region, sex, age, etc.;
+* evaluating possible inequalities: per towns/region, sex, age, job categories etc.;
+* discover geographical distribution of business according to their size
 * predicting the ... using a regression model;
 * reduce the dimensionality of ... performing a PCA;
 * explore different algorithms to cluster male/females using ...
 
+## Plan for the study ##
+1. Unsupervised learning: 
+* PCA
+* Clustering methods (K-means/Hierarchical)
+2. Supervised learning:
+* Linear/Quadratic Discriminant Analysis
+* KNN
+* Cross-validation
+* Bootstrap
+* Subset selection 
+* Shrinkage methods
+* Dimension reduction methods
+3. Description of population demographics in France
+4. Structure of the french labour market
+5. ...
+6. Future works
+
+## Plan for the report ##
+1. Introduction 
+* reporting background and motivation
+2. Methods 
+* Description of data and preprocessing steps
+* Description of computational and statistical methodology used
+3. Results
+* Description of results obtained; tables and figures
+4. Discussion
+* Scientific interpretation of results, as applicable
+* Description of future plans to pursue this line of research
+5. Appendix 
+* Full detail on Methods
+* Record of methodology that was explored and discarded 
+6. References.
 
 
 # General pre-processing phase #
-
 
 Loading all libraries needed throughout the notebook:
 ```{r}
@@ -1706,7 +1733,7 @@ ineq        <- read.csv("./data/Comparateur_territoires.csv", sep =";")
 ```
 
 # Pre-processing
-```{r Check variables' names}
+```{r Check names}
 # names(educ)
 # names(immig)
 # names(categ_socio)
@@ -1728,8 +1755,6 @@ names(educ)[3:11] <-
 ```
 
 ```{r Ineq-Drop unnecessary columns and rename them }
-summary(ineq)
-
 ineq <- subset(ineq, select = -c(P09_POP, NAISD16, DECESD16, P14_RP_PROP, P09_EMPLT,ETTOT15, ETAZ15, ETBE15, ETFZ15, ETGU15, ETGZ15, ETOQ15, ETTEF115, ETTEFP1015))
 
 names(ineq)[5:ncol(ineq)] <-
@@ -1754,7 +1779,6 @@ names(ineq)[5:ncol(ineq)] <-
 ```
 
 ```{r Categ_socio-rename variables }
-names(categ_socio)
 names(categ_socio)[3:ncol(categ_socio)] <-
   c("M_immi_agri",
     "F_immi_agri",
