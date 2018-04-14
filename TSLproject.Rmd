@@ -1372,11 +1372,13 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 
 ```
 
 
+
 ## What we have learned 
 
 * Check the outlier in sal_18_25: which city is it, etc.
 * evaluate possible multicollinearity
 * Try a regression with all predictors ans lasso
+
 
 ## How to use these data 
 
@@ -1384,40 +1386,40 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 
 
 # Analyze population data 
 
+
+# Analyze population data 
+
 ## Pre-processing 
 
-```{r Pre-processing-Population data}
+Rename the variables for population and exclude the unnecessary ones:
+```{r Pre processing population}
+
 # preliminary checks
 names(population)
 summary(population)
 
-# Drop unnecessary columns (NIVGEO is the same for all)
+# drop unnecessary columns (NIVGEO is the same for all)
 population <- subset(population, select = -c(NIVGEO, LIBGEO))
-
-# converting CODGEO to numeric
-population$CODGEO <- as.numeric(as.character(population$CODGEO))
-
 
 # Refactor sex and MOCO
 population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
-                          labels = c("children_living_with_two_parents", "children living with one parent",
-                                     "adults_living_in_couple_without_child", "adults_living_in_couple_with_children",
-                                     "adults_living_alone_with_children","persons not from family living in the home",
+                          labels = c("children_living_with_two_parents", 
+                                     "children_living_with_one_parent",
+                                     "adults_living_in_couple_without_child",
+                                     "adults_living_in_couple_with_children",
+                                     "adults_living_alone_with_children",
+                                     "persons_not_from_family_living_in_the_home",
                                      "persons_living_alone"))
 population$sex <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
-head(population)
-# Take out rows with NB (number of people in this category) equal to 0
-# population <- population[population$peopleCategNum != 0,]
 
+# check again
 head(population)
 summary(population)
 
 ```
 
-```{r Create new variables and re-organize the dataset}
-
-# Re-organize the data according to the CODGEO (no repetition over different categories of variables) and create new variables such as "child", "elderly" and "workforce" 
-population <- ddply(population, .(CODGEO), function(population) {
+```{r Create cleaned population dataset by CODGEO before merging other dataset}
+pop_by_codgeo <- ddply(population, .(CODGEO), function(population) {
   data.frame(total_population = sum(population$peopleCategNum),
              male = sum(population[population$sex == "Male",]$peopleCategNum),
              female = sum(population[population$sex == "Female",]$peopleCategNum),
@@ -1426,16 +1428,45 @@ population <- ddply(population, .(CODGEO), function(population) {
              workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
   )})
 
-# Create new variables: dependent/ sex, dependency, aged and child dependency ratios
-population$dependent <- population$child + population$elderly
-population$sex_ratio <- ifelse(population$female==0, 0, population$male / population$female)
-population$dependency_ratio <- ifelse(population$workforce==0, 0, population$dependent / population$workforce)
-population$aged_dependency_ratio <- ifelse(population$workforce==0, 0, population$elderly / population$workforce)
-population$child_dependency_ratio <- ifelse(population$workforce==0, 0, population$child / population$workforce)
+pop_by_codgeo$dependent <- pop_by_codgeo$child + pop_by_codgeo$elderly
+pop_by_codgeo$sex_ratio <- ifelse(pop_by_codgeo$female==0, 0, pop_by_codgeo$male / pop_by_codgeo$female)
+pop_by_codgeo$dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$dependent / pop_by_codgeo$workforce)
+pop_by_codgeo$aged_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$elderly / pop_by_codgeo$workforce)
+pop_by_codgeo$child_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$child / pop_by_codgeo$workforce)
 ```
+
+
+## merge the data:
+```{r Merge the data and create csv file}
+# merging
+population$CODGEO = as.integer(population$CODGEO)
+newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, salaryNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, geoNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = subset(newDat, select = -town.y)
+
+# NewDat CSV file created
+# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
+```
+
+# Analyze population data 
+
+## Pre-processing 
+
+```{r Pre-processing}
+#Pre-processing phase is completed before merging the dataset
+```
+
 
 ## Descriptive statistics 
 
+...
 ```{r Descriptive statistics}
 # #Compare age categories:
 # #library(ggplot2)
@@ -1462,7 +1493,7 @@ population$child_dependency_ratio <- ifelse(population$workforce==0, 0, populati
 #p
 ```
 
-
+...
 ```{r Scaling population data to log}
 
 # Scale population to log
@@ -1482,8 +1513,9 @@ hist(population$sex_ratio, xlab="", main = "sex ratio", col ="light blue")
 
 ```{r Merge geography and population data}
 
-# Merge geo and population data
-geo_population <- merge(geo, population, by = "CODGEO")
+# Merge geo and pop
+geo_pop_by_codgeo <- merge(geoNEW, pop_by_codgeo)
+summary(geo_pop_by_codgeo)
 
 ```
 
@@ -1545,6 +1577,100 @@ aged_ratio_distribution
 
 ```
 
+
+
+# Produce consistent datasets
+
+The CODGEO variables (code_insee in the original geo data) have to be merged.
+However, for different reasons already identified by other kaggle users they need some pre-processing.
+To do so, some already known mistakes are corrected:
+
+```{r fix CODGEO}
+
+firms$CODGEO      <- sub("A", "0", firms$CODGEO)
+firms$CODGEO      <- sub("B", "0", firms$CODGEO)
+salary$CODGEO     <- sub("A", "0", salary$CODGEO)
+salary$CODGEO     <- sub("B", "0", salary$CODGEO)
+population$CODGEO <- sub("A", "0", population$CODGEO)
+population$CODGEO <- sub("B", "0", population$CODGEO)
+geo$CODGEO        <- sub("A", "0", geo$CODGEO)
+geo$CODGEO        <- sub("B", "0", geo$CODGEO)
+
+```
+
+
+Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
+```{r match CODGEO}
+
+# use only integer values
+geo$CODGEO = as.integer(geo$CODGEO)  
+population$CODGEO = as.integer(population$CODGEO)
+firms$CODGEO = as.integer(firms$CODGEO)
+salary$CODGEO = as.integer(salary$CODGEO)
+
+# store datasets' names to loop on them
+dataset = c("population", "salary", "firms", "geo")
+
+# obtain sommon IDs for all datasets
+for (i in dataset){
+  # get i-th name and create a new variable concateneting "NEW" at the end
+  nam <- paste(i, "NEW", sep = "")
+  # initialize counter to identify the number of iteration in j
+  iter = 1
+  for (j in dataset){
+    if (j != i){
+      # for each dataset different from the i-th
+      if (iter == 1){
+        # 1st iteration: use the original dataset (e.g., geo)
+        assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
+      } else{
+        # successive iteration: use the new dataset (e.g., geoNEW)
+        assign(nam, semi_join(get(nam), get(j), by = "CODGEO"))
+      }
+      iter = iter + 1
+    }
+  }
+}
+
+# check how many observation have been deleted
+for (i in dataset){
+  del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
+  del_prop = del_rows / nrow(get(i))
+  del_obs = paste("For", i, del_rows, "units have been deleted.",
+                  "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
+  print(paste(del_obs))
+}
+
+print(paste("The new dataset has", nrow(salaryNEW), "units and", 
+      ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
+```
+
+Merge the data:
+```{r Merge the data and create csv file}
+
+# merging
+population$CODGEO = as.integer(population$CODGEO)
+newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, salaryNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = merge(newDat, geoNEW, by="CODGEO")
+names(newDat)
+head(newDat)
+newDat = subset(newDat, select = -town.y)
+
+# NewDat CSV file created
+# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
+
+```
+
+
+
+
+
+# population
 
 ## Unsupervised learning 
 ```{r PCA population-Create clean dataset}
