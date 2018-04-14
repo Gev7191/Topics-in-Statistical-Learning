@@ -388,7 +388,8 @@ Paris = which.max(firms$total)
 
 # Original scale
 # Scatter matrix
-pairs(firms[-Paris, 3:8], gap=0, main = "Scatter matrix for firms")
+# pairs(firms[-Paris, 3:8], gap=0, main = "Scatter matrix for firms")
+
 # Correlation matrix
 corrplot(cor(firms[-Paris, 3:8]), method = "number", title = "Correlation matrix for firms", 
          diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
@@ -396,7 +397,8 @@ corrplot(cor(firms[-Paris, 3:8]), method = "number", title = "Correlation matrix
 
 # Log scale
 # Scatter matrix
-pairs(firms[-Paris, 3:8], log = "xy", gap=0, main = "Scatter matrix for firms in log scale")
+# pairs(firms[-Paris, 3:8], log = "xy", gap=0, main = "Scatter matrix for firms in log scale")
+
 # Correlation matrix
 firmsLog = log(firms[, 3:8]) 
 firmsLog[firmsLog == -Inf] = 0
@@ -533,6 +535,7 @@ sum(duplicated.data.frame(geo))
 # retaing unique postal cities
 geo <- unique(geo, by = "CODGEO")
 
+
 # check again
 head(geo)
 summary(geo)
@@ -592,6 +595,12 @@ sum(indNA_coord)
 # exclude those towns
 geo = geo[!indNA_coord,]
 
+sum(duplicated.data.frame(geo)) 
+# retaing unique postal cities
+geo <- unique(geo, by = "CODGEO")
+# DF[!duplicated(DF$ID), ] 
+
+
 summary(geo)
 
 ```
@@ -614,7 +623,7 @@ fra_center = c(2.213749, 46.227638)
 geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
 geo_pos = geo_pos[complete.cases(geo_pos),]
 ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
-  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.8, size=0.6) 
+  geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.2, size=0.01) 
 
 ```
 
@@ -1386,9 +1395,6 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 
 
 # Analyze population data 
 
-
-# Analyze population data 
-
 ## Pre-processing 
 
 Rename the variables for population and exclude the unnecessary ones:
@@ -1418,8 +1424,31 @@ summary(population)
 
 ```
 
-```{r Create cleaned population dataset by CODGEO before merging other dataset}
-pop_by_codgeo <- ddply(population, .(CODGEO), function(population) {
+Understand the distribution of population according to different age categories using population pyramide:
+```{r Population pyramide}
+
+# need the initial shape of data to construct the pyramide 
+# Population pyramide
+population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
+  data.frame(total_population = sum(population$peopleCategNum))
+  })
+pop_pyramid <- ggplot(data = population_data2,
+       mapping = aes(x = ageCateg5, fill = sex,
+                     y = ifelse(test = sex == "Male",
+                                yes = -total_population, no = total_population))) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) + 
+  ggtitle("Pyramid of Population") + theme(plot.title = element_text(hjust = 0.5)) + 
+  labs(x= "Age")+ labs(y = "Population") + coord_flip() # + scale_fill_brewer(palette = "Set1")
+pop_pyramid
+
+```
+
+Re-organize population dataset and set CODGEO as units and create new variables using the available variables.
+```{r Re-organize population dataset by CODGEO}
+
+# Re-organize the data by creating new variables: "total population", "male", "female", "child", "elderly" and "workforce".
+population <- ddply(population, .(CODGEO), function(population) {
   data.frame(total_population = sum(population$peopleCategNum),
              male = sum(population[population$sex == "Male",]$peopleCategNum),
              female = sum(population[population$sex == "Female",]$peopleCategNum),
@@ -1428,251 +1457,92 @@ pop_by_codgeo <- ddply(population, .(CODGEO), function(population) {
              workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
   )})
 
-pop_by_codgeo$dependent <- pop_by_codgeo$child + pop_by_codgeo$elderly
-pop_by_codgeo$sex_ratio <- ifelse(pop_by_codgeo$female==0, 0, pop_by_codgeo$male / pop_by_codgeo$female)
-pop_by_codgeo$dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$dependent / pop_by_codgeo$workforce)
-pop_by_codgeo$aged_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$elderly / pop_by_codgeo$workforce)
-pop_by_codgeo$child_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$child / pop_by_codgeo$workforce)
+# Calculate ratios using the existing variables
+population$dependent <- population$child + population$elderly
+population$sex_ratio <- ifelse(population$female==0, 0, population$male / population$female)
+population$dependency_ratio <- ifelse(population$workforce==0, 0, population$dependent / population$workforce)
+population$aged_dependency_ratio <- ifelse(population$workforce==0, 0, population$elderly / population$workforce)
+population$child_dependency_ratio <- ifelse(population$workforce==0, 0, population$child / population$workforce)
+
 ```
-
-
-## merge the data:
-```{r Merge the data and create csv file}
-# merging
-population$CODGEO = as.integer(population$CODGEO)
-newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = merge(newDat, salaryNEW, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = merge(newDat, geoNEW, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = subset(newDat, select = -town.y)
-
-# NewDat CSV file created
-# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
-```
-
-# Analyze population data 
-
-## Pre-processing 
-
-```{r Pre-processing}
-#Pre-processing phase is completed before merging the dataset
-```
-
 
 ## Descriptive statistics 
 
-...
-```{r Descriptive statistics}
-# #Compare age categories:
-# #library(ggplot2)
-# #  number of units
-# n_cat <- length(population$CODGEO)
-# # extract unique categories
-# uniq_cat <- unique(population$ageCateg5!=5)
-# # vector representing sex for each category
-# Label <- c(rep(c('Male', 'Female'), n_cat))
-# # vector representing the variable considered
-# Variable <- rep(uniq_cat, n_cat/length(uniq_cat))
-# Value=population$peopleCategNum
-# merge these data
-#pop_categ = cbind.data.frame(Label = Label, 
-#             value = Value,
-#             Variable = Variable)
-#p <- ggplot(data = pop_categ, aes(x=Label, y=value)) 
-#p <- p + geom_boxplot(aes(fill = Label))
-# if you want color for points replace group with colour=Label
-#p <- p + geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75))
-#p <- p + facet_wrap( ~ Variable, scales="free")
-#p <- p + xlab("x-axis") + ylab("y-axis") + ggtitle("Category comparison")
-# p <- p + guides(fill=guide_legend(title="Legend"))
-#p
-```
+Plot population data across different towns.
+```{r plotting some population data in log10}
 
-...
-```{r Scaling population data to log}
+# Histogram of total population per town in log
+ggplot(data=population, aes(ifelse(total_population!=0, log10(total_population), 0))) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
+  geom_density(col="black") +
+  labs(x="Log10 total population", y="Density") +
+  ggtitle("Histogram of total population per town in log10 scale") +
+  theme(plot.title = element_text(hjust = 0.5))
 
-# Scale population to log
-population$total_population_log <- log10(population$total_population)
-
-# Histogram of total population per town
-hist(population$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
-# Histogram of total population per town
-hist(population$total_population_log, xlab="Total Population in log", main = "Total population per town", col ="light blue")
 # Histogram of dependency ratio per town
-hist(population$dependency_ratio, xlab="", main = "dependency ratio", col ="light blue")
+ggplot(data=population, aes(ifelse(dependency_ratio!=0, log10(dependency_ratio), 0))) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
+  geom_density(col="black") +
+  labs(x="Log10 dependency ratio", y="Density") +
+  ggtitle("Histogram of dependency ratio per town in log10 scale") +
+  theme(plot.title = element_text(hjust = 0.5))
+
 # Histogram of sex ratio per town
-hist(population$sex_ratio, xlab="", main = "sex ratio", col ="light blue")
+ggplot(data=population, aes(ifelse(sex_ratio!=0, log10(sex_ratio), 0))) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
+  geom_density(col="black") +
+  labs(x="Log10 sex ratio", y="Density") +
+  ggtitle("Histogram of sex ratio per town in log10 scale") +
+  theme(plot.title = element_text(hjust = 0.5))
 
 ```
 
+Understand which towns have the highest concentration of population and ratios.
+```{r geo plot for each town}
 
-```{r Merge geography and population data}
+# Merge geography and population data
+geo_population <- merge(geo, population, by="CODGEO")
 
-# Merge geo and pop
-geo_pop_by_codgeo <- merge(geoNEW, pop_by_codgeo)
-summary(geo_pop_by_codgeo)
+# Try to cll google API until there is no error
+# 
+# FraMap = NA
+# while (any(is.na(FraMap))){
+#   FraMap = tryCatch({
+#       ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
+#   }, error = function(e) {
+#     message("cannot open URL")  
+#     FraMap = NA
+#   })
+# }
 
-```
+# France map
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
 
-```{r Plot distribution of population for each CODGEO}
-
-# Plot "Distribution of Population for each CODGEO"
-#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
-# FraMap
-geo_population$total_population_log[geo_population$total_population_log == -Inf] = 0
-sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$total_population_log), max(geo_population$total_population_log)))
+# Plot "Distribution of total population for each town" 
+sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$total_population), max(geo_population$total_population)))
 population_distribution <-
   FraMap +
-  geom_point(aes(x=geo_population$longitude, y=geo_population$latitude, colour=geo_population$total_population_log),
-             data=geo_population, alpha=0.1, size=0.01) +
-  sc +
-  labs(color='Total Population in Log') +
-  ggtitle("Distribution of Population for each CODGEO")
+  geom_point(aes(x=geo_population$longitude, y=geo_population$latitude, colour=geo_population$total_population),
+             data=geo_population, alpha=0.2, size=0.01) +
+  sc + labs(color='') + ggtitle("Distribution of Population for each town")
 population_distribution
 
-min(geo_population$total_population_log)
-# ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
-#   geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.8, size=0.6) 
-
-```
-
-```{r Plot distribution of aged dependency ratio}
-
-# Plot "Distribution of aged dependency ratio for each CODGEO"
-#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-sc <- scale_colour_gradientn(colours =palette(rainbow(2)), limits=c(min(geo_population$aged_dependency_ratio), max(geo_population$aged_dependency_ratio)))
+# Plot "Distribution of aged dependency ratio for each town"
+sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$aged_dependency_ratio), max(geo_population$aged_dependency_ratio)))
 aged_ratio_distribution <-
   FraMap +
   geom_point(aes(x=geo_population$longitude, y=geo_population$latitude, colour=geo_population$aged_dependency_ratio),
-             data=geo_population, alpha=0.1, size=0.01) +
-  sc +
-  labs(color='') +
-  ggtitle("Aged dependency ratio per CODGEO")
+             data=geo_population, alpha=0.2, size=0.01) +
+  sc + labs(color='') + ggtitle("Aged dependency ratio per town")
 aged_ratio_distribution
 
-```
-
-
-```{r Population pyramide}
-
-# need the initial shape of data to construct the pyramide 
-# Population pyramide
-# population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
-#   data.frame(total_population = sum(population$peopleCategNum))
-#   })
-# pop_pyramid <- ggplot(data = population_data2, 
-#        mapping = aes(x = ageCateg5, fill = sex, 
-#                      y = ifelse(test = sex == "Male", 
-#                                 yes = -total_population, no = total_population))) +
-#   geom_bar(stat = "identity") +
-#   scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) + ggtitle("Pyramid of Population") + theme(plot.title = element_text(hjust = 0.5)) + labs(x= "Age")+ labs(y = "Population") + coord_flip()
-# print(pop_pyramid)
 
 ```
 
-
-
-# Produce consistent datasets
-
-The CODGEO variables (code_insee in the original geo data) have to be merged.
-However, for different reasons already identified by other kaggle users they need some pre-processing.
-To do so, some already known mistakes are corrected:
-
-```{r fix CODGEO}
-
-firms$CODGEO      <- sub("A", "0", firms$CODGEO)
-firms$CODGEO      <- sub("B", "0", firms$CODGEO)
-salary$CODGEO     <- sub("A", "0", salary$CODGEO)
-salary$CODGEO     <- sub("B", "0", salary$CODGEO)
-population$CODGEO <- sub("A", "0", population$CODGEO)
-population$CODGEO <- sub("B", "0", population$CODGEO)
-geo$CODGEO        <- sub("A", "0", geo$CODGEO)
-geo$CODGEO        <- sub("B", "0", geo$CODGEO)
-
-```
-
-
-Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
-```{r match CODGEO}
-
-# use only integer values
-geo$CODGEO = as.integer(geo$CODGEO)  
-population$CODGEO = as.integer(population$CODGEO)
-firms$CODGEO = as.integer(firms$CODGEO)
-salary$CODGEO = as.integer(salary$CODGEO)
-
-# store datasets' names to loop on them
-dataset = c("population", "salary", "firms", "geo")
-
-# obtain sommon IDs for all datasets
-for (i in dataset){
-  # get i-th name and create a new variable concateneting "NEW" at the end
-  nam <- paste(i, "NEW", sep = "")
-  # initialize counter to identify the number of iteration in j
-  iter = 1
-  for (j in dataset){
-    if (j != i){
-      # for each dataset different from the i-th
-      if (iter == 1){
-        # 1st iteration: use the original dataset (e.g., geo)
-        assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
-      } else{
-        # successive iteration: use the new dataset (e.g., geoNEW)
-        assign(nam, semi_join(get(nam), get(j), by = "CODGEO"))
-      }
-      iter = iter + 1
-    }
-  }
-}
-
-# check how many observation have been deleted
-for (i in dataset){
-  del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
-  del_prop = del_rows / nrow(get(i))
-  del_obs = paste("For", i, del_rows, "units have been deleted.",
-                  "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
-  print(paste(del_obs))
-}
-
-print(paste("The new dataset has", nrow(salaryNEW), "units and", 
-      ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
-```
-
-Merge the data:
-```{r Merge the data and create csv file}
-
-# merging
-population$CODGEO = as.integer(population$CODGEO)
-newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = merge(newDat, salaryNEW, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = merge(newDat, geoNEW, by="CODGEO")
-names(newDat)
-head(newDat)
-newDat = subset(newDat, select = -town.y)
-
-# NewDat CSV file created
-# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
-
-```
-
-
-
-
-
-# population
 
 ## Unsupervised learning 
+
+Practise what has been done thoughout class.
 ```{r PCA population-Create clean dataset}
 # # PCA trial 
 # # create a clean dataset with only necessary variables inside.
@@ -1763,7 +1633,7 @@ The CODGEO variables (code_insee in the original geo data) have to be merged.
 However, for different reasons already identified by other kaggle users they need some pre-processing.
 To do so, some already known mistakes are corrected:
 
-```{r fix CODGEO}
+```{r fix and match CODGEO}
 
 firms$CODGEO      <- sub("A", "0", firms$CODGEO)
 firms$CODGEO      <- sub("B", "0", firms$CODGEO)
@@ -1774,12 +1644,8 @@ population$CODGEO <- sub("B", "0", population$CODGEO)
 geo$CODGEO        <- sub("A", "0", geo$CODGEO)
 geo$CODGEO        <- sub("B", "0", geo$CODGEO)
 
-```
 
-
-Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
-```{r match CODGEO}
-
+# Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
 # use only integer values
 geo$CODGEO = as.integer(geo$CODGEO)  
 population$CODGEO = as.integer(population$CODGEO)
@@ -1826,9 +1692,13 @@ print(paste("The new dataset has", nrow(salaryNEW), "units and",
 
 ## merge the data:
 ```{r Merge the data and create csv file}
+
+# exclude same CODGEO and different postal code in geo data
+
+
 # merging
 population$CODGEO = as.integer(population$CODGEO)
-newDat = merge(firmsNEW, population, by="CODGEO")
+newDat = merge(firmsNEW, populationNEW, by="CODGEO")
 names(newDat)
 head(newDat)
 newDat = merge(newDat, salaryNEW, by="CODGEO")
@@ -1879,7 +1749,7 @@ Firms and geo:
 
 ## Supervised Learning data
 
-# Import dataset
+# Import additional dataset
 ```{r Load additional datasets}
 
 # loading data
@@ -1895,24 +1765,26 @@ ineq        <- read.csv("Comparateur_territoires.csv", sep =";")
 # Pre-processing
 ```{r Check names}
 # names(educ)
-# names(immig)
 # names(categ_socio)
-# names(status_work)
 # names(ineq)
+# names(status_work)
+# names(immig)
 ```
 
 To better understand the data we assign meaningful names and drop some variables which are not needed (at the moment):
 ```{r Educ-rename variables}
-# Have not finished 
-names(educ)[3:11] <-
-  c("M_NoDip_Age15",
-    "F_NoDip_Age15",
-    "M_Sec_Age15",
-    "F_Sec_Age15",
-    "M_Hi_Age15",
-    "F_Hi_Age15",
-    "M_univ_Age15",
-    "F_univ_Age15")
+educ <- subset(educ, select= -c(LIBGEO))
+
+# rename variables
+names(educ)[2:ncol(educ)] <-
+  c("Age15_NoDip_M","Age15_NoDip_F", "Age15_Sec_M", "Age15_Sec_F", "Age15_Hi_M","Age15_Hi_F", "Age15_Univ_M","Age15_Univ_F",
+    "Age20_NoDip_M", "Age20_NoDip_F", "Age20_Sec_M","Age20_Sec_F", "Age20_Hi_M", "Age20_Hi_F","Age20_Univ_M", "Age20_Univ_F",       "Age25_NoDip_M", "Age25_NoDip_F","Age25_Sec_M","Age25_Sec_F", "Age25_Hi_M", "Age25_Hi_F","Age25_Univ_M","Age25_Univ_F",         "Age30_NoDip_M", "Age30_NoDip_F","Age30_Sec_M","Age30_Sec_F", "Age30_Hi_M", "Age30_Hi_F","Age30_Univ_M","Age30_Univ_F",         "Age35_NoDip_M", "Age35_NoDip_F","Age35_Sec_M","Age35_Sec_F", "Age35_Hi_M", "Age35_Hi_F",
+    "Age35_Univ_M","Age35_Univ_F", "Age40_NoDip_M", "Age40_NoDip_F","Age40_Sec_M","Age40_Sec_F", "Age40_Hi_M", "Age40_Hi_F",        "Age40_Univ_M","Age40_Univ_F", "Age45_NoDip_M", "Age45_NoDip_F","Age45_Sec_M","Age45_Sec_F", "Age45_Hi_M", "Age45_Hi_F",
+    "Age45_Univ_M","Age45_Univ_F", "Age50_NoDip_M", "Age50_NoDip_F","Age50_Sec_M","Age50_Sec_F", "Age50_Hi_M", "Age50_Hi_F",
+    "Age50_Univ_M","Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age55_Sec_M", "Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F",
+    "Age55_Univ_M","Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age60_Sec_M","Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F",
+    "Age60_Univ_M","Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age65_Sec_M","Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F",
+    "Age65_Univ_M","Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F")
 ```
 
 ```{r Ineq-Drop unnecessary columns and rename them}
@@ -1981,23 +1853,13 @@ names(categ_socio)[3:ncol(categ_socio)] <-
 categ_socio <- subset(categ_socio, select = -c(LIBGEO))
 
 # Create new variables: total number immigrants per town generated by summation
-# categ_socio$total_immig <- sum(categ_socio$M_immi_agri, categ_socio$F_immi_agri, categ_socio$M_immi_comm, categ_socio$F_immi_comm, categ_socio$M_immi_exec, categ_socio$F_immi_exec, categ_socio$M_immi_midman, categ_socio$F_immi_midman, categ_socio$M_immi_noAct, categ_socio$F_immi_noAct, categ_socio$M_immi_retired, categ_socio$F_immi_retired, categ_socio$M_immi_emp, categ_socio$F_immi_emp, categ_socio$M_immi_worker, categ_socio$F_immi_worker)
-# 
-# # total number of male immigrants per town 
-# categ_socio$male_immig <- sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker)
-# 
-# # total number of female immigrants per town
-# categ_socio$female_immig <- sum(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct, categ_socio$F_immi_retired, categ_socio$F_immi_worker)
+categ_socio$total_immig <- rowSums(cbind(categ_socio$M_immi_agri, categ_socio$F_immi_agri, categ_socio$M_immi_comm, categ_socio$F_immi_comm, categ_socio$M_immi_exec, categ_socio$F_immi_exec, categ_socio$M_immi_midman, categ_socio$F_immi_midman, categ_socio$M_immi_noAct, categ_socio$F_immi_noAct, categ_socio$M_immi_retired, categ_socio$F_immi_retired, categ_socio$M_immi_emp, categ_socio$F_immi_emp, categ_socio$M_immi_worker, categ_socio$F_immi_worker))
+ 
+# total number of male immigrants per town 
+categ_socio$male_immig<-rowSums(cbind(categ_socio$male_immig <- sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker))
+ 
+# total number of female immigrants per town
+categ_socio$female_immig <- rowSums(cbind(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct,categ_socio$F_immi_retired, categ_socio$F_immi_worker))
 
-# TRY FINDING A DIFFERENT WAY OF DOING THIS INSTEAD OF CREATING A NEW FILE AND MERGE THEM, JUST ADD THEM ON THE ORIGINAL FILE
-# total number of immigrants and its number per gender, per town created
-total_immigration <- ddply(categ_socio, .(CODGEO), function(categ_socio) {
-  data.frame(total_immig = sum(categ_socio$M_immi_agri, categ_socio$F_immi_agri, categ_socio$M_immi_comm, categ_socio$F_immi_comm, categ_socio$M_immi_exec, categ_socio$F_immi_exec, categ_socio$M_immi_midman, categ_socio$F_immi_midman, categ_socio$M_immi_noAct, categ_socio$F_immi_noAct, categ_socio$M_immi_retired, categ_socio$F_immi_retired, categ_socio$M_immi_emp, categ_socio$F_immi_emp, categ_socio$M_immi_worker, categ_socio$F_immi_worker),
-             female_immig = sum(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct, categ_socio$F_immi_retired, categ_socio$F_immi_worker),
-             male_immig = sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker)
-  )})
-
-# merge the total immigrants' number with categ_socio
-categ_socio <- merge(categ_socio, total_immigration)
 ```
 
