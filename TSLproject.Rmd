@@ -1382,6 +1382,254 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 
 
 * ...
 
+# Analyze population data 
+
+## Pre-processing 
+
+```{r Pre-processing-Population data}
+# preliminary checks
+names(population)
+summary(population)
+
+# Drop unnecessary columns (NIVGEO is the same for all)
+population <- subset(population, select = -c(NIVGEO, LIBGEO))
+
+# converting CODGEO to numeric
+population$CODGEO <- as.numeric(as.character(population$CODGEO))
+
+
+# Refactor sex and MOCO
+population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
+                          labels = c("children_living_with_two_parents", "children living with one parent",
+                                     "adults_living_in_couple_without_child", "adults_living_in_couple_with_children",
+                                     "adults_living_alone_with_children","persons not from family living in the home",
+                                     "persons_living_alone"))
+population$sex <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
+head(population)
+# Take out rows with NB (number of people in this category) equal to 0
+# population <- population[population$peopleCategNum != 0,]
+
+head(population)
+summary(population)
+
+```
+
+```{r Create new variables and re-organize the dataset}
+
+# Re-organize the data according to the CODGEO (no repetition over different categories of variables) and create new variables such as "child", "elderly" and "workforce" 
+population <- ddply(population, .(CODGEO), function(population) {
+  data.frame(total_population = sum(population$peopleCategNum),
+             male = sum(population[population$sex == "Male",]$peopleCategNum),
+             female = sum(population[population$sex == "Female",]$peopleCategNum),
+             child = sum(population[population$ageCateg5 %in% seq(0, 10, by=5),]$peopleCategNum),
+             elderly = sum(population[population$ageCateg5 %in% seq(65, 80, by=5),]$peopleCategNum),
+             workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
+  )})
+
+# Create new variables: dependent/ sex, dependency, aged and child dependency ratios
+population$dependent <- population$child + population$elderly
+population$sex_ratio <- ifelse(population$female==0, 0, population$male / population$female)
+population$dependency_ratio <- ifelse(population$workforce==0, 0, population$dependent / population$workforce)
+population$aged_dependency_ratio <- ifelse(population$workforce==0, 0, population$elderly / population$workforce)
+population$child_dependency_ratio <- ifelse(population$workforce==0, 0, population$child / population$workforce)
+```
+
+## Descriptive statistics 
+
+```{r Descriptive statistics}
+# #Compare age categories:
+# #library(ggplot2)
+# #  number of units
+# n_cat <- length(population$CODGEO)
+# # extract unique categories
+# uniq_cat <- unique(population$ageCateg5!=5)
+# # vector representing sex for each category
+# Label <- c(rep(c('Male', 'Female'), n_cat))
+# # vector representing the variable considered
+# Variable <- rep(uniq_cat, n_cat/length(uniq_cat))
+# Value=population$peopleCategNum
+# merge these data
+#pop_categ = cbind.data.frame(Label = Label, 
+#             value = Value,
+#             Variable = Variable)
+#p <- ggplot(data = pop_categ, aes(x=Label, y=value)) 
+#p <- p + geom_boxplot(aes(fill = Label))
+# if you want color for points replace group with colour=Label
+#p <- p + geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75))
+#p <- p + facet_wrap( ~ Variable, scales="free")
+#p <- p + xlab("x-axis") + ylab("y-axis") + ggtitle("Category comparison")
+# p <- p + guides(fill=guide_legend(title="Legend"))
+#p
+```
+
+
+```{r Scaling population data to log}
+
+# Scale population to log
+population$total_population_log <- log10(population$total_population)
+
+# Histogram of total population per town
+hist(population$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
+# Histogram of total population per town
+hist(population$total_population_log, xlab="Total Population in log", main = "Total population per town", col ="light blue")
+# Histogram of dependency ratio per town
+hist(population$dependency_ratio, xlab="", main = "dependency ratio", col ="light blue")
+# Histogram of sex ratio per town
+hist(population$sex_ratio, xlab="", main = "sex ratio", col ="light blue")
+
+```
+
+
+```{r Merge geography and population data}
+
+# Merge geo and population data
+geo_population <- merge(geo, population, by = "CODGEO")
+
+```
+
+```{r Plot distribution of population for each CODGEO}
+
+# Plot "Distribution of Population for each CODGEO"
+#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
+
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal")
+# FraMap
+geo_population$total_population_log[geo_population$total_population_log == -Inf] = 0
+sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$total_population_log), max(geo_population$total_population_log)))
+population_distribution <-
+  FraMap +
+  geom_point(aes(x=geo_population$longitude, y=geo_population$latitude, colour=geo_population$total_population_log),
+             data=geo_population, alpha=0.1, size=0.01) +
+  sc +
+  labs(color='Total Population in Log') +
+  ggtitle("Distribution of Population for each CODGEO")
+population_distribution
+
+min(geo_population$total_population_log)
+# ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
+#   geom_point(aes(x=lon, y=lat), data=geo_pos, col="orange", alpha=0.8, size=0.6) 
+
+```
+
+```{r Plot distribution of aged dependency ratio}
+
+# Plot "Distribution of aged dependency ratio for each CODGEO"
+#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
+sc <- scale_colour_gradientn(colours =palette(rainbow(2)), limits=c(min(geo_population$aged_dependency_ratio), max(geo_population$aged_dependency_ratio)))
+aged_ratio_distribution <-
+  FraMap +
+  geom_point(aes(x=geo_population$longitude, y=geo_population$latitude, colour=geo_population$aged_dependency_ratio),
+             data=geo_population, alpha=0.1, size=0.01) +
+  sc +
+  labs(color='') +
+  ggtitle("Aged dependency ratio per CODGEO")
+aged_ratio_distribution
+
+```
+
+
+```{r Population pyramide}
+
+# need the initial shape of data to construct the pyramide 
+# Population pyramide
+# population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
+#   data.frame(total_population = sum(population$peopleCategNum))
+#   })
+# pop_pyramid <- ggplot(data = population_data2, 
+#        mapping = aes(x = ageCateg5, fill = sex, 
+#                      y = ifelse(test = sex == "Male", 
+#                                 yes = -total_population, no = total_population))) +
+#   geom_bar(stat = "identity") +
+#   scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) + ggtitle("Pyramid of Population") + theme(plot.title = element_text(hjust = 0.5)) + labs(x= "Age")+ labs(y = "Population") + coord_flip()
+# print(pop_pyramid)
+
+```
+
+
+## Unsupervised learning 
+```{r PCA population-Create clean dataset}
+# # PCA trial 
+# # create a clean dataset with only necessary variables inside.
+# pca_pop_town <- ddply(population, .(CODGEO), function(population) {
+#   data.frame(population$sex_ratio, population$dependency_ratio, population$aged_dependency_ratio, population$child_dependency_ratio)})
+# 
+# # rename the variables 
+# names(pca_pop_town)[1:ncol(pca_pop_town)] <-
+#   c("CODGEO",
+#     "sex_ratio",
+#     "dependency_ratio",
+#     "aged_dep_ratio",
+#     "child_dep_ratio")
+# 
+# summary(pca_pop_town)
+```
+
+
+```{r PCA population }
+# PCA population
+# set.seed(3)
+# subs = sample(1:nrow(pca_pop_town), size = round(nrow(pca_pop_town)*0.2))
+# summary(pca_pop_town)
+# 
+# pcapop <- prcomp(pca_pop_town[subs, 2:5])
+# # pcapop$rotation
+# 
+# plot(pcapop, type = "l")
+# biplot(pcapop, scale = 0, cex = 0.5)
+# # fviz_pca_ind(pcapop) + labs(title="PCA", x="PC1", y="PC2")
+# # scale_color_gradient2(low="blue", mid="white",high="red", midpoint=4)
+# # fviz_pca_ind(pcapop, col.ind="contrib") + scale_color_gradient2(low="blue", mid="white", high="red", midpoint=4) + theme_minimal()
+# str(pcapop)
+# 
+# ggbiplot(pcapop, obs.scale = 1, var.scale = 1, varname.size = 4.5, varname.adjust = 1) +
+#   ggtitle("Biplot for dependency ratios") + 
+#   theme(plot.title = element_text(hjust = 0.5))
+# 
+# #pcapop$x #checking principal component scores
+# pca_pop_town2 <- cbind(pca_pop_town[subs,], pcapop$x[, 1:2])
+# # head(pca_pop_town2)
+```
+
+```{r Plot PCA}
+#plot with ggplot...
+# ggplot(pca_pop_town2, aes(PC1, PC2)) +
+#     stat_ellipse(geom = "polygon", col = "gray", alpha = 0.5) +
+#     geom_point(shape = 21, col = "black")
+```
+
+```{r Proportion of variance explained & cumulative PVE}
+# Proportion of variance explained & cumulative PVE
+# pcapop$sdev
+# pr.var=pcapop$sdev^2 
+# pve=pr.var/sum(pr.var)
+# pve
+# 
+# plot(pve, xlab="PCA", ylab="PVE", ylim=c(0,1), type='b')
+# plot(cumsum(pve), xlab="PCA", ylab="Cumulative PVE", ylim=c(0,1), type='b')
+```
+
+```{r Kmean}
+# kmean trial
+# km.out=kmeans(pca_pop_town[subs,2:5], 5, nstart=50)
+# plot(pca_pop_town[subs,2:5], col=(km.out$cluster), pch=20, cex=1)
+```
+
+```{r H-cluster}
+#hierarchical clustering
+# sd.data=scale(pca_pop_town)
+# par(mfrow=c(1,3))
+# data.dist=dist(sd.data)
+# plot(hclust(data.dist), labels=pca_pop_town$CODGEO, main="complete", xlab="", sub="", ylab="")
+
+# hc_pop=hclust(dist(pca_pop_town), method="complete")
+# plot(hc_pop, labels=pca_pop_town$CODGEO, main="Complete Linkage", xlab="", ylab="", sub="", cex =.9)
+```
+
+## What we have learned 
+...
+
+## How to use these data 
+...
 
 # Produce consistent datasets
 
@@ -1449,58 +1697,12 @@ print(paste("The new dataset has", nrow(salaryNEW), "units and",
       ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
 ```
 
-## Pre-processing population data before merging
-```{r Pre-processing-Population data before merging}
-# preliminary checks
-names(population)
-summary(population)
-
-# Drop unnecessary columns (NIVGEO is the same for all)
-population <- subset(population, select = -c(NIVGEO, LIBGEO))
-
-# converting CODGEO to numeric
-population$CODGEO <- as.numeric(as.character(population$CODGEO))
-
-
-# Refactor sex and MOCO
-population$MOCO <- factor(population$MOCO, levels = c(11,12,21,22,23,31,32),
-                          labels = c("children_living_with_two_parents", "children living with one parent",
-                                     "adults_living_in_couple_without_child", "adults_living_in_couple_with_children",
-                                     "adults_living_alone_with_children","persons not from family living in the home",
-                                     "persons_living_alone"))
-population$sex <- factor(population$sex, levels = c(1,2), labels = c("Male", "Female"))
-head(population)
-# Take out rows with NB (number of people in this category) equal to 0
-# population <- population[population$peopleCategNum != 0,]
-
-head(population)
-summary(population)
-
-```
-
-```{r Create cleaned population dataset by CODGEO before merging other dataset}
-pop_by_codgeo <- ddply(population, .(CODGEO), function(population) {
-  data.frame(total_population = sum(population$peopleCategNum),
-             male = sum(population[population$sex == "Male",]$peopleCategNum),
-             female = sum(population[population$sex == "Female",]$peopleCategNum),
-             child = sum(population[population$ageCateg5 %in% seq(0, 10, by=5),]$peopleCategNum),
-             elderly = sum(population[population$ageCateg5 %in% seq(65, 80, by=5),]$peopleCategNum),
-             workforce = sum(population[population$ageCateg5 %in% seq(15, 60, by=5),]$peopleCategNum) 
-  )})
-
-pop_by_codgeo$dependent <- pop_by_codgeo$child + pop_by_codgeo$elderly
-pop_by_codgeo$sex_ratio <- ifelse(pop_by_codgeo$female==0, 0, pop_by_codgeo$male / pop_by_codgeo$female)
-pop_by_codgeo$dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$dependent / pop_by_codgeo$workforce)
-pop_by_codgeo$aged_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$elderly / pop_by_codgeo$workforce)
-pop_by_codgeo$child_dependency_ratio <- ifelse(pop_by_codgeo$workforce==0, 0, pop_by_codgeo$child / pop_by_codgeo$workforce)
-```
-
 
 ## merge the data:
 ```{r Merge the data and create csv file}
 # merging
 population$CODGEO = as.integer(population$CODGEO)
-newDat = merge(firmsNEW, pop_by_codgeo, by="CODGEO")
+newDat = merge(firmsNEW, population, by="CODGEO")
 names(newDat)
 head(newDat)
 newDat = merge(newDat, salaryNEW, by="CODGEO")
@@ -1513,197 +1715,6 @@ newDat = subset(newDat, select = -town.y)
 
 # NewDat CSV file created
 # write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
-```
-
-# Analyze population data 
-
-## Pre-processing 
-
-```{r Pre-processing}
-#Pre-processing phase is completed before merging the dataset
-```
-
-
-## Descriptive statistics 
-
-```{r Descriptive statistics}
-# #Compare age categories:
-# #library(ggplot2)
-# #  number of units
-# n_cat <- length(population$CODGEO)
-# # extract unique categories
-# uniq_cat <- unique(population$ageCateg5!=5)
-# # vector representing sex for each category
-# Label <- c(rep(c('Male', 'Female'), n_cat))
-# # vector representing the variable considered
-# Variable <- rep(uniq_cat, n_cat/length(uniq_cat))
-# Value=population$peopleCategNum
-# merge these data
-#pop_categ = cbind.data.frame(Label = Label, 
-#             value = Value,
-#             Variable = Variable)
-#p <- ggplot(data = pop_categ, aes(x=Label, y=value)) 
-#p <- p + geom_boxplot(aes(fill = Label))
-# if you want color for points replace group with colour=Label
-#p <- p + geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75))
-#p <- p + facet_wrap( ~ Variable, scales="free")
-#p <- p + xlab("x-axis") + ylab("y-axis") + ggtitle("Category comparison")
-# p <- p + guides(fill=guide_legend(title="Legend"))
-#p
-```
-
-
-```{r Restructuring population data}
-# Restructure population data to produce the demographic profile per town
-# install.packages("plyr")
-library(plyr)
-population=populationNEW
-summary(pop_by_codgeo)
-```
-
-```{r Scaling population data to log}
-# Scale population to log
-pop_by_codgeo$total_population_log <- log10(pop_by_codgeo$total_population)
-
-# Histogram of total population per town
-hist(pop_by_codgeo$total_population, ylim=c(0,40000), breaks = seq(0, 2500000, by=250000), xlab="", main = "", labels=T, col ="light blue")
-
-hist(pop_by_codgeo$total_population_log, xlab="Total Population in log", main = "Total population per CODGEO", col ="light blue")
-
-hist(pop_by_codgeo$dependency_ratio, xlab="", main = "dependency ratio", col ="light blue")
-hist(pop_by_codgeo$sex_ratio, xlab="", main = "sex ratio", col ="light blue")
-```
-
-
-```{r Merge geography and population data}
-# # Merge geo and pop
-geo_pop_by_codgeo <- merge(geoNEW, pop_by_codgeo)
-summary(geo_pop_by_codgeo)
-```
-
-```{r Plot distribution of population for each CODGEO}
-# Plot "Distribution of Population for each CODGEO"
-#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-sc <- scale_colour_gradientn(colours =palette(rainbow(6)), limits=c(min(geo_pop_by_codgeo$total_population_log), max(geo_pop_by_codgeo$total_population_log)))
-population_distribution <-
-  FraMap +
-  geom_point(aes(x=geo_pop_by_codgeo$longitude, y=geo_pop_by_codgeo$latitude, colour=geo_pop_by_codgeo$total_population_log),
-             data=geo_pop_by_codgeo, alpha=0.8, size=0.6) +
-  sc +
-  labs(color='Total Population in Log') +
-  ggtitle("Distribution of Population for each CODGEO")
-population_distribution
-```
-
-```{r Plot distribution of aged dependency ratio}
-# Plot "Distribution of aged dependency ratio for each CODGEO"
-#myPalette(low = "white", high = c("green", "red"), mid=NULL, k =50)-Need "GLAD" package
-sc <- scale_colour_gradientn(colours =palette(rainbow(6)), limits=c(min(geo_pop_by_codgeo$aged_dependency_ratio), max(geo_pop_by_codgeo$aged_dependency_ratio)))
-aged_ratio_distribution <-
-  FraMap +
-  geom_point(aes(x=geo_pop_by_codgeo$longitude, y=geo_pop_by_codgeo$latitude, colour=geo_pop_by_codgeo$aged_dependency_ratio),
-             data=geo_pop_by_codgeo, alpha=0.8, size=0.6) +
-  sc +
-  labs(color='') +
-  ggtitle("Aged dependency ratio per CODGEO")
-aged_ratio_distribution
-```
-
-
-
-```{r Population pyramide}
-# Population pyramide
-population_data2 <- ddply(population, .(sex, ageCateg5), function(population) {
-  data.frame(total_population = sum(population$peopleCategNum))
-  })
-pop_pyramid <- ggplot(data = population_data2, 
-       mapping = aes(x = ageCateg5, fill = sex, 
-                     y = ifelse(test = sex == "Male", 
-                                yes = -total_population, no = total_population))) +
-  geom_bar(stat = "identity") +
-  scale_y_continuous(labels = abs, limits = max(population_data2$total_population) * c(-1,1)) + ggtitle("Pyramid of Population") + theme(plot.title = element_text(hjust = 0.5)) + labs(x= "Age")+ labs(y = "Population") + coord_flip()
-print(pop_pyramid)
-```
-
-
-
-## Unsupervised learning 
-```{r PCA population-Create clean dataset}
-# PCA trial 
-# create a clean dataset with only necessary variables inside.
-pca_pop_town <- ddply(pop_by_codgeo, .(CODGEO), function(pop_by_codgeo) {
-  data.frame(pop_by_codgeo$sex_ratio, pop_by_codgeo$dependency_ratio, pop_by_codgeo$aged_dependency_ratio, pop_by_codgeo$child_dependency_ratio)})
-
-# rename the variables 
-names(pca_pop_town)[1:ncol(pca_pop_town)] <-
-  c("CODGEO",
-    "sex_ratio",
-    "dependency_ratio",
-    "aged_dep_ratio",
-    "child_dep_ratio")
-
-summary(pca_pop_town)
-```
-
-
-```{r PCA population }
-# PCA population
-set.seed(3)
-subs = sample(1:nrow(pca_pop_town), size = round(nrow(pca_pop_town)*0.2))
-summary(pca_pop_town)
-
-pcapop <- prcomp(pca_pop_town[subs, 2:5])
-# pcapop$rotation
-
-plot(pcapop, type = "l")
-biplot(pcapop, scale = 0, cex = 0.5)
-# fviz_pca_ind(pcapop) + labs(title="PCA", x="PC1", y="PC2")
-# scale_color_gradient2(low="blue", mid="white",high="red", midpoint=4)
-# fviz_pca_ind(pcapop, col.ind="contrib") + scale_color_gradient2(low="blue", mid="white", high="red", midpoint=4) + theme_minimal()
-str(pcapop)
-
-ggbiplot(pcapop, obs.scale = 1, var.scale = 1, varname.size = 4.5, varname.adjust = 1) +
-  ggtitle("Biplot for dependency ratios") + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-#pcapop$x #checking principal component scores
-pca_pop_town2 <- cbind(pca_pop_town[subs,], pcapop$x[, 1:2])
-# head(pca_pop_town2)
-```
-
-```{r Plot PCA}
-#plot with ggplot...
-ggplot(pca_pop_town2, aes(PC1, PC2)) +
-    stat_ellipse(geom = "polygon", col = "gray", alpha = 0.5) +
-    geom_point(shape = 21, col = "black")
-```
-
-```{r Proportion of variance explained & cumulative PVE}
-# Proportion of variance explained & cumulative PVE
-pcapop$sdev
-pr.var=pcapop$sdev^2 
-pve=pr.var/sum(pr.var)
-pve
-
-plot(pve, xlab="PCA", ylab="PVE", ylim=c(0,1), type='b')
-plot(cumsum(pve), xlab="PCA", ylab="Cumulative PVE", ylim=c(0,1), type='b')
-```
-
-```{r Kmean}
-# kmean trial
-km.out=kmeans(pca_pop_town[subs,2:5], 5, nstart=50)
-plot(pca_pop_town[subs,2:5], col=(km.out$cluster), pch=20, cex=1)
-```
-
-```{r H-cluster}
-#hierarchical clustering
-sd.data=scale(pca_pop_town)
-par(mfrow=c(1,3))
-data.dist=dist(sd.data)
-plot(hclust(data.dist), labels=pca_pop_town$CODGEO, main="complete", xlab="", sub="", ylab="")
-
-# hc_pop=hclust(dist(pca_pop_town), method="complete")
-# plot(hc_pop, labels=pca_pop_town$CODGEO, main="Complete Linkage", xlab="", ylab="", sub="", cex =.9)
 ```
 
 
@@ -1744,13 +1755,15 @@ Firms and geo:
 
 # Import dataset
 ```{r Load additional datasets}
+
 # loading data
-require(readr)
-educ        <- read.csv("./data/level_education.csv", sep =";")
-immig       <- read.csv("./data/Immig.csv", sep =";")
-categ_socio <- read.csv("./data/Categorie_socioprofessionnelle.csv", sep =";")
-status_work <- read.csv("./data/Emplois_lieu_travail.csv", sep =";")
-ineq        <- read.csv("./data/Comparateur_territoires.csv", sep =";")
+setwd("./data/New_data")
+educ        <- read.csv("level_education.csv", sep =";")
+immig       <- read.csv("Immig.csv", sep =";")
+categ_socio <- read.csv("Categorie_socioprofessionnelle.csv", sep =";")
+status_work <- read.csv("Emplois_lieu_travail.csv", sep =";")
+ineq        <- read.csv("Comparateur_territoires.csv", sep =";")
+
 ```
 
 # Pre-processing
@@ -1764,6 +1777,7 @@ ineq        <- read.csv("./data/Comparateur_territoires.csv", sep =";")
 
 To better understand the data we assign meaningful names and drop some variables which are not needed (at the moment):
 ```{r Educ-rename variables}
+# Have not finished 
 names(educ)[3:11] <-
   c("M_NoDip_Age15",
     "F_NoDip_Age15",
@@ -1775,9 +1789,12 @@ names(educ)[3:11] <-
     "F_univ_Age15")
 ```
 
-```{r Ineq-Drop unnecessary columns and rename them }
+```{r Ineq-Drop unnecessary columns and rename them}
+
+# Drop unnecessary variables
 ineq <- subset(ineq, select = -c(P09_POP, NAISD16, DECESD16, P14_RP_PROP, P09_EMPLT,ETTOT15, ETAZ15, ETBE15, ETFZ15, ETGU15, ETGZ15, ETOQ15, ETTEF115, ETTEFP1015))
 
+# rename variables 
 names(ineq)[5:ncol(ineq)] <-
   c("pop_2014",
     "Superficie",
@@ -1834,12 +1851,27 @@ names(categ_socio)[3:ncol(categ_socio)] <-
     "M_NoImmi_noAct",
     "F_NoImmi_noAct")
 
-#total number immigrants (male/female) per CODGEO
-tot_immig<- ddply(categ_socio, .(CODGEO), function(categ_socio) {
+# Drop unnecessary columns (code/num and name represents same thing) 
+categ_socio <- subset(categ_socio, select = -c(LIBGEO))
+
+# Create new variables: total number immigrants per town generated by summation
+# categ_socio$total_immig <- sum(categ_socio$M_immi_agri, categ_socio$F_immi_agri, categ_socio$M_immi_comm, categ_socio$F_immi_comm, categ_socio$M_immi_exec, categ_socio$F_immi_exec, categ_socio$M_immi_midman, categ_socio$F_immi_midman, categ_socio$M_immi_noAct, categ_socio$F_immi_noAct, categ_socio$M_immi_retired, categ_socio$F_immi_retired, categ_socio$M_immi_emp, categ_socio$F_immi_emp, categ_socio$M_immi_worker, categ_socio$F_immi_worker)
+# 
+# # total number of male immigrants per town 
+# categ_socio$male_immig <- sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker)
+# 
+# # total number of female immigrants per town
+# categ_socio$female_immig <- sum(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct, categ_socio$F_immi_retired, categ_socio$F_immi_worker)
+
+# TRY FINDING A DIFFERENT WAY OF DOING THIS INSTEAD OF CREATING A NEW FILE AND MERGE THEM, JUST ADD THEM ON THE ORIGINAL FILE
+# total number of immigrants and its number per gender, per town created
+total_immigration <- ddply(categ_socio, .(CODGEO), function(categ_socio) {
   data.frame(total_immig = sum(categ_socio$M_immi_agri, categ_socio$F_immi_agri, categ_socio$M_immi_comm, categ_socio$F_immi_comm, categ_socio$M_immi_exec, categ_socio$F_immi_exec, categ_socio$M_immi_midman, categ_socio$F_immi_midman, categ_socio$M_immi_noAct, categ_socio$F_immi_noAct, categ_socio$M_immi_retired, categ_socio$F_immi_retired, categ_socio$M_immi_emp, categ_socio$F_immi_emp, categ_socio$M_immi_worker, categ_socio$F_immi_worker),
-             male_immig = sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker),
-             female_immig = sum(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct, categ_socio$F_immi_retired, categ_socio$F_immi_worker)
+             female_immig = sum(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct, categ_socio$F_immi_retired, categ_socio$F_immi_worker),
+             male_immig = sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker)
   )})
 
+# merge the total immigrants' number with categ_socio
+categ_socio <- merge(categ_socio, total_immigration)
 ```
 
