@@ -1777,14 +1777,9 @@ educ <- subset(educ, select= -c(LIBGEO))
 
 # rename variables
 names(educ)[2:ncol(educ)] <-
-  c("Age15_NoDip_M","Age15_NoDip_F", "Age15_Sec_M", "Age15_Sec_F", "Age15_Hi_M","Age15_Hi_F", "Age15_Univ_M","Age15_Univ_F",
-    "Age20_NoDip_M", "Age20_NoDip_F", "Age20_Sec_M","Age20_Sec_F", "Age20_Hi_M", "Age20_Hi_F","Age20_Univ_M", "Age20_Univ_F",       "Age25_NoDip_M", "Age25_NoDip_F","Age25_Sec_M","Age25_Sec_F", "Age25_Hi_M", "Age25_Hi_F","Age25_Univ_M","Age25_Univ_F",         "Age30_NoDip_M", "Age30_NoDip_F","Age30_Sec_M","Age30_Sec_F", "Age30_Hi_M", "Age30_Hi_F","Age30_Univ_M","Age30_Univ_F",         "Age35_NoDip_M", "Age35_NoDip_F","Age35_Sec_M","Age35_Sec_F", "Age35_Hi_M", "Age35_Hi_F",
-    "Age35_Univ_M","Age35_Univ_F", "Age40_NoDip_M", "Age40_NoDip_F","Age40_Sec_M","Age40_Sec_F", "Age40_Hi_M", "Age40_Hi_F",        "Age40_Univ_M","Age40_Univ_F", "Age45_NoDip_M", "Age45_NoDip_F","Age45_Sec_M","Age45_Sec_F", "Age45_Hi_M", "Age45_Hi_F",
-    "Age45_Univ_M","Age45_Univ_F", "Age50_NoDip_M", "Age50_NoDip_F","Age50_Sec_M","Age50_Sec_F", "Age50_Hi_M", "Age50_Hi_F",
-    "Age50_Univ_M","Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age55_Sec_M", "Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F",
-    "Age55_Univ_M","Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age60_Sec_M","Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F",
-    "Age60_Univ_M","Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age65_Sec_M","Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F",
-    "Age65_Univ_M","Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F")
+  c("Age15_NoDip_M","Age15_NoDip_F", "Age15_Sec_M", "Age15_Sec_F", "Age15_Hi_M","Age15_Hi_F", "Age15_Univ_M", "Age15_Univ_F", "Age20_NoDip_M", "Age20_NoDip_F", "Age20_Sec_M","Age20_Sec_F", "Age20_Hi_M", "Age20_Hi_F", "Age20_Univ_M", "Age20_Univ_F","Age25_NoDip_M", "Age25_NoDip_F","Age25_Sec_M","Age25_Sec_F", "Age25_Hi_M", "Age25_Hi_F","Age25_Univ_M","Age25_Univ_F", "Age30_NoDip_M", "Age30_NoDip_F", "Age30_Sec_M", "Age30_Sec_F", "Age30_Hi_M", "Age30_Hi_F","Age30_Univ_M","Age30_Univ_F", "Age35_NoDip_M", "Age35_NoDip_F", "Age35_Sec_M", "Age35_Sec_F", "Age35_Hi_M", "Age35_Hi_F", "Age35_Univ_M","Age35_Univ_F", "Age40_NoDip_M", "Age40_NoDip_F", "Age40_Sec_M","Age40_Sec_F", "Age40_Hi_M", "Age40_Hi_F", "Age40_Univ_M","Age40_Univ_F", "Age45_NoDip_M", "Age45_NoDip_F","Age45_Sec_M","Age45_Sec_F", "Age45_Hi_M", "Age45_Hi_F", "Age45_Univ_M","Age45_Univ_F", "Age50_NoDip_M", "Age50_NoDip_F","Age50_Sec_M","Age50_Sec_F", "Age50_Hi_M", "Age50_Hi_F", "Age50_Univ_M", "Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age55_Sec_M", "Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F",
+"Age55_Univ_M", "Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age60_Sec_M","Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F", "Age60_Univ_M", "Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age65_Sec_M","Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F", "Age65_Univ_M", "Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F")
+
 ```
 
 ```{r Ineq-Drop unnecessary columns and rename them}
@@ -1815,6 +1810,7 @@ names(ineq)[5:ncol(ineq)] <-
 ```
 
 ```{r Categ_socio-rename variables }
+
 names(categ_socio)[3:ncol(categ_socio)] <-
   c("M_immi_agri",
     "F_immi_agri",
@@ -1856,10 +1852,20 @@ categ_socio <- subset(categ_socio, select = -c(LIBGEO))
 categ_socio$total_immig <- rowSums(cbind(categ_socio$M_immi_agri, categ_socio$F_immi_agri, categ_socio$M_immi_comm, categ_socio$F_immi_comm, categ_socio$M_immi_exec, categ_socio$F_immi_exec, categ_socio$M_immi_midman, categ_socio$F_immi_midman, categ_socio$M_immi_noAct, categ_socio$F_immi_noAct, categ_socio$M_immi_retired, categ_socio$F_immi_retired, categ_socio$M_immi_emp, categ_socio$F_immi_emp, categ_socio$M_immi_worker, categ_socio$F_immi_worker))
  
 # total number of male immigrants per town 
-categ_socio$male_immig<-rowSums(cbind(categ_socio$male_immig <- sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker))
+categ_socio$male_immig<-rowSums(cbind(categ_socio$male_immig <- sum(categ_socio$M_immi_agri, categ_socio$M_immi_comm,categ_socio$M_immi_emp, categ_socio$M_immi_emp, categ_socio$M_immi_exec, categ_socio$M_immi_midman, categ_socio$M_immi_noAct, categ_socio$M_immi_retired, categ_socio$M_immi_worker)))
  
 # total number of female immigrants per town
-categ_socio$female_immig <- rowSums(cbind(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct,categ_socio$F_immi_retired, categ_socio$F_immi_worker))
+categ_socio$female_immig <- rowSums(cbind(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct, categ_socio$F_immi_retired, categ_socio$F_immi_worker))
 
+```
+
+```{r Status drop and rename variables}
+
+# Drop unnecessary variables
+status_work <- subset(status_work, select = -c(LIBGEO))
+
+# rename variables
+names(status_work)[2:ncol(status_work)] <-
+  c("Less20_M_Empl_Full", "Less20_M_Empl_Half", "Less20_M_Indp1_Full", "Less20_M_Indp1_Half", "Less20_M_Indp2_Ful", "Less20_M_Indp2_Half", "Less20_M_Indp3_Full", "Less20_M_Indp3_Half", "Less20_F_Empl_Full", "Less20_F_Empl_Half", "Less20_F_Indp1_Full", "Less20_F_Indp1_Half", "Less20_F_Indp2_Full", "Less20_F_Indp2_Half", "Less20_F_Indp3_Full", "Less20_F_Indp3_Half", "24_M_Empl_Full", "24_M_Empl_Half", "24_M_Indp1_Full", "24_M_Indp1_Half", "24_M_Indp2_Full", "24_M_Indp2_Half", "24_M_Indp3_Full", "24_M_Indp3_Half", "24_F_Empl_Full", "24_F_Empl_Half", "24_F_Indp1_Full", "24_F_Indp1_Half", "24_F_Indp2_Full", "24_F_Indp2_Half", "24_F_Indp3_Full", "24_F_Indp3_Half", "29_M_Empl_Full", "29_M_Empl_Half", "29_M_Indp1_Full", "29_M_Indp1_Half", "29_M_Indp2_Full", "29_M_Indp2_Half", "29_M_Indp3_Full", "29_M_Indp3_Half", "29_F_Empl_Full", "29_F_Empl_Half", "29_F_Indp1_Full", "29_F_Indp1_Half", "29_F_Indp2_Full", "29_F_Indp2_Half", "29_F_Indp3_Full", "29_F_Indp3_Half", "34_M_Empl_Full", "34_M_Empl_Half", "34_M_Indp1_Full", "34_M_Indp1_Half", "34_M_Indp2_Full", "34_M_Indp2_Half", "34_M_Indp3_Full", "34_M_Indp3_Half", "34_F_Empl_Full", "34_F_Empl_Half", "34_F_Indp1_Full", "34_F_Indp1_Half", "34_F_Indp2_Full", "34_F_Indp2_Half", "34_F_Indp3_Full", "34_F_Indp3_Half", "39_M_Empl_Full", "39_M_Empl_Half", "39_M_Indp1_Full", "39_M_Indp1_Half", "39_M_Indp2_Full", "39_M_Indp2_Half", "39_M_Indp3_Full", "39_M_Indp3_Half", "39_F_Empl_Full", "39_F_Empl_Half", "39_F_Indp1_Full", "39_F_Indp1_Half", "39_F_Indp2_Full", "39_F_Indp2_Half", "39_F_Indp3_Full", "39_F_Indp3_Half", "44_M_Empl_Full", "44_M_Empl_Half", "44_M_Indp1_Full", "44_M_Indp1_Half", "44_M_Indp2_Full", "44_M_Indp2_Half", "44_M_Indp3_Full", "44_M_Indp3_Half", "44_F_Empl_Full", "44_F_Empl_Half", "44_F_Indp1_Full", "44_F_Indp1_Half", "44_F_Indp2_Full", "44_F_Indp2_Half", "44_F_Indp3_Full", "44_F_Indp3_Half", "49_M_Empl_Full", "49_M_Empl_Half", "49_M_Indp1_Full", "49_M_Indp1_Half", "49_M_Indp2_Full", "49_M_Indp2_Half", "49_M_Indp3_Full", "49_M_Indp3_Half", "49_F_Empl_Full", "49_F_Empl_Half", "49_F_Indp1_Full", "49_F_Indp1_Half", "49_F_Indp2_Full", "49_F_Indp2_Half", "49_F_Indp3_Full", "49_F_Indp3_Half", "54_M_Empl_Full", "54_M_Empl_Half", "54_M_Indp1_Full", "54_M_Indp1_Half", "54_M_Indp2_Full", "54_M_Indp2_Half", "54_M_Indp3_Full", "54_M_Indp3_Half", "54_F_Empl_Full", "54_F_Empl_Half", "54_F_Indp1_Full", "54_F_Indp1_Half", "54_F_Indp2_Full", "54_F_Indp2_Half", "54_F_Indp3_Full", "54_F_Indp3_Half", "59_M_Empl_Full", "59_M_Empl_Half", "59_M_Indp1_Full", "59_M_Indp1_Half", "59_M_Indp2_Full", "59_M_Indp2_Half", "59_M_Indp3_Full", "59_M_Indp3_Half", "59_F_Empl_Full", "59_F_Empl_Half", "59_F_Indp1_Full", "59_F_Indp1_Half", "59_F_Indp2_Full", "59_F_Indp2_Half", "59_F_Indp3_Full", "59_F_Indp3_Half", "64_M_Empl_Full", "64_M_Empl_Half", "64_M_Indp1_Full", "64_M_Indp1_Half", "64_M_Indp2_Full", "64_M_Indp2_Half", "64_M_Indp3_Full", "64_M_Indp3_Half", "64_F_Empl_Full", "64_F_Empl_Half", "64_F_Indp1_Full", "64_F_Indp1_Half", "64_F_Indp2_Full", "64_F_Indp2_Half", "64_F_Indp3_Full", "64_F_Indp3_Half", "69_M_Empl_Full", "69_M_Empl_Half", "69_M_Indp1_Full", "69_M_Indp1_Half", "69_M_Indp2_Full", "69_M_Indp2_Half", "69_M_Indp3_Full", "69_M_Indp3_Half", "69_F_Empl_Full", "69_F_Empl_Half", "69_F_Indp1_Full", "69_F_Indp1_Half", "69_F_Indp2_Full", "69_F_Indp2_Half", "69_F_Indp3_Full", "69_F_Indp3_Half")
 ```
 
