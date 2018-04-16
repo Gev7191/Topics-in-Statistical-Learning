@@ -93,6 +93,7 @@ if(!require(ggbiplot)){
   library(ggbiplot)}
 if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
 if(!require(zoo)){install.packages("zoo"); library(zoo)}
+if(!require(plotly)){install.packages("plotly"); library(plotly)} # interactive plotting
 # Mclust clustering
 if(!require(mclust)){install.packages("mclust"); library(mclust)}
 # plot design matrix
@@ -103,9 +104,13 @@ if(!require(boot)){install.packages("boot"); library(boot)}
 if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
 # group Lasso
 if(!require(gglasso)){install.packages("gglasso"); library(gglasso)}
+# robust fit
+if(!require(robustbase)){install.packages("robustbase"); library(robustbase)}
+# box-cox tranformation (in ANOVA) and standardized residuals
+if(!require(MASS)){install.packages("MASS"); library(MASS)}
+# best subset selection
+if(!require(leaps)){install.packages("leaps"); library(leaps)}
 
-# box-cox tranformation (in ANOVA)
-# if(!require(MASS)){install.packages("MASS"); library(MASS)}
 # plot for PCA
 # if(!require(factoextra)){install.packages("factoextra"); library(factoextra)}
 
@@ -594,12 +599,6 @@ indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
 sum(indNA_coord)
 # exclude those towns
 geo = geo[!indNA_coord,]
-
-sum(duplicated.data.frame(geo)) 
-# retaing unique postal cities
-geo <- unique(geo, by = "CODGEO")
-# DF[!duplicated(DF$ID), ] 
-
 
 summary(geo)
 
@@ -1694,36 +1693,43 @@ print(paste("The new dataset has", nrow(salaryNEW), "units and",
 ```{r Merge the data and create csv file}
 
 # exclude same CODGEO and different postal code in geo data
-
+# skip cities with multiple postal code
+sum(duplicated.data.frame(as.data.frame(geoNEW$CODGEO)))
+# retaing unique postal cities
+geoNEW <- geoNEW[!duplicated.data.frame(as.data.frame(geoNEW$CODGEO)),]
 
 # merging
-population$CODGEO = as.integer(population$CODGEO)
 newDat = merge(firmsNEW, populationNEW, by="CODGEO")
-names(newDat)
-head(newDat)
 newDat = merge(newDat, salaryNEW, by="CODGEO")
-names(newDat)
-head(newDat)
 newDat = merge(newDat, geoNEW, by="CODGEO")
+# newDat = subset(newDat, select = -town.y)
+
+# check
 names(newDat)
 head(newDat)
-newDat = subset(newDat, select = -town.y)
 
-# NewDat CSV file created
-# write.csv(newDat[,2:ncol(newDat)], "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
+# NewDat csv file created
+# write.csv(newDat, "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
 ```
+
+Spatial plot of the data to spot possible patterns:
+....
+```{r}
+
+```
+
 
 
 # Analysis 
 
 General:
 ```{r Correlation plot with new merged data}
-corrplot(cor(newDat[, 3:20]), method = "circle", title = "Correlation matrix for firms", 
-         diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
-         tl.col = "black", type = "lower", mar=c(0,0,1.5,0))
-corrplot(cor(newDat[, 21:41]), method = "circle", title = "Correlation matrix for firms", 
-         diag = F, tl.cex=1, type = "lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
-         tl.col = "black", mar=c(0,0,1.5,0))
+# corrplot(cor(newDat[, 3:20]), method = "circle", title = "Correlation matrix for firms", 
+#          diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
+#          tl.col = "black", type = "lower", mar=c(0,0,1.5,0))
+# corrplot(cor(newDat[, 21:41]), method = "circle", title = "Correlation matrix for firms", 
+#          diag = F, tl.cex=1, type = "lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+#          tl.col = "black", mar=c(0,0,1.5,0))
 ```
 
 
@@ -1867,5 +1873,354 @@ status_work <- subset(status_work, select = -c(LIBGEO))
 # rename variables
 names(status_work)[2:ncol(status_work)] <-
   c("Less20_M_Empl_Full", "Less20_M_Empl_Half", "Less20_M_Indp1_Full", "Less20_M_Indp1_Half", "Less20_M_Indp2_Ful", "Less20_M_Indp2_Half", "Less20_M_Indp3_Full", "Less20_M_Indp3_Half", "Less20_F_Empl_Full", "Less20_F_Empl_Half", "Less20_F_Indp1_Full", "Less20_F_Indp1_Half", "Less20_F_Indp2_Full", "Less20_F_Indp2_Half", "Less20_F_Indp3_Full", "Less20_F_Indp3_Half", "24_M_Empl_Full", "24_M_Empl_Half", "24_M_Indp1_Full", "24_M_Indp1_Half", "24_M_Indp2_Full", "24_M_Indp2_Half", "24_M_Indp3_Full", "24_M_Indp3_Half", "24_F_Empl_Full", "24_F_Empl_Half", "24_F_Indp1_Full", "24_F_Indp1_Half", "24_F_Indp2_Full", "24_F_Indp2_Half", "24_F_Indp3_Full", "24_F_Indp3_Half", "29_M_Empl_Full", "29_M_Empl_Half", "29_M_Indp1_Full", "29_M_Indp1_Half", "29_M_Indp2_Full", "29_M_Indp2_Half", "29_M_Indp3_Full", "29_M_Indp3_Half", "29_F_Empl_Full", "29_F_Empl_Half", "29_F_Indp1_Full", "29_F_Indp1_Half", "29_F_Indp2_Full", "29_F_Indp2_Half", "29_F_Indp3_Full", "29_F_Indp3_Half", "34_M_Empl_Full", "34_M_Empl_Half", "34_M_Indp1_Full", "34_M_Indp1_Half", "34_M_Indp2_Full", "34_M_Indp2_Half", "34_M_Indp3_Full", "34_M_Indp3_Half", "34_F_Empl_Full", "34_F_Empl_Half", "34_F_Indp1_Full", "34_F_Indp1_Half", "34_F_Indp2_Full", "34_F_Indp2_Half", "34_F_Indp3_Full", "34_F_Indp3_Half", "39_M_Empl_Full", "39_M_Empl_Half", "39_M_Indp1_Full", "39_M_Indp1_Half", "39_M_Indp2_Full", "39_M_Indp2_Half", "39_M_Indp3_Full", "39_M_Indp3_Half", "39_F_Empl_Full", "39_F_Empl_Half", "39_F_Indp1_Full", "39_F_Indp1_Half", "39_F_Indp2_Full", "39_F_Indp2_Half", "39_F_Indp3_Full", "39_F_Indp3_Half", "44_M_Empl_Full", "44_M_Empl_Half", "44_M_Indp1_Full", "44_M_Indp1_Half", "44_M_Indp2_Full", "44_M_Indp2_Half", "44_M_Indp3_Full", "44_M_Indp3_Half", "44_F_Empl_Full", "44_F_Empl_Half", "44_F_Indp1_Full", "44_F_Indp1_Half", "44_F_Indp2_Full", "44_F_Indp2_Half", "44_F_Indp3_Full", "44_F_Indp3_Half", "49_M_Empl_Full", "49_M_Empl_Half", "49_M_Indp1_Full", "49_M_Indp1_Half", "49_M_Indp2_Full", "49_M_Indp2_Half", "49_M_Indp3_Full", "49_M_Indp3_Half", "49_F_Empl_Full", "49_F_Empl_Half", "49_F_Indp1_Full", "49_F_Indp1_Half", "49_F_Indp2_Full", "49_F_Indp2_Half", "49_F_Indp3_Full", "49_F_Indp3_Half", "54_M_Empl_Full", "54_M_Empl_Half", "54_M_Indp1_Full", "54_M_Indp1_Half", "54_M_Indp2_Full", "54_M_Indp2_Half", "54_M_Indp3_Full", "54_M_Indp3_Half", "54_F_Empl_Full", "54_F_Empl_Half", "54_F_Indp1_Full", "54_F_Indp1_Half", "54_F_Indp2_Full", "54_F_Indp2_Half", "54_F_Indp3_Full", "54_F_Indp3_Half", "59_M_Empl_Full", "59_M_Empl_Half", "59_M_Indp1_Full", "59_M_Indp1_Half", "59_M_Indp2_Full", "59_M_Indp2_Half", "59_M_Indp3_Full", "59_M_Indp3_Half", "59_F_Empl_Full", "59_F_Empl_Half", "59_F_Indp1_Full", "59_F_Indp1_Half", "59_F_Indp2_Full", "59_F_Indp2_Half", "59_F_Indp3_Full", "59_F_Indp3_Half", "64_M_Empl_Full", "64_M_Empl_Half", "64_M_Indp1_Full", "64_M_Indp1_Half", "64_M_Indp2_Full", "64_M_Indp2_Half", "64_M_Indp3_Full", "64_M_Indp3_Half", "64_F_Empl_Full", "64_F_Empl_Half", "64_F_Indp1_Full", "64_F_Indp1_Half", "64_F_Indp2_Full", "64_F_Indp2_Half", "64_F_Indp3_Full", "64_F_Indp3_Half", "69_M_Empl_Full", "69_M_Empl_Half", "69_M_Indp1_Full", "69_M_Indp1_Half", "69_M_Indp2_Full", "69_M_Indp2_Half", "69_M_Indp3_Full", "69_M_Indp3_Half", "69_F_Empl_Full", "69_F_Empl_Half", "69_F_Indp1_Full", "69_F_Indp1_Half", "69_F_Indp2_Full", "69_F_Indp2_Half", "69_F_Indp3_Full", "69_F_Indp3_Half")
+```
+
+
+
+# Chiaromonte's part
+
+## Supervised
+
+Function for interactive plotting:
+```{r}
+# This function ....
+RegressionPlots <- function(fit, textlabels, robust=F){
+  
+  # number of units
+  n = length(fit$fitted.values)
+  
+  # original response
+  y = fit$y
+  
+  # Extract fitted values from lm() object
+  Fitted.Values <-  fit$fitted.values
+  
+  # Extract residuals from lm() object
+  Residuals <-  fit$residuals
+  
+  if (robust == F){
+    # Extract standardized residuals from lm() object
+    Standardized.Residuals <- MASS::stdres(fit)  
+    
+    # Calculate Leverage
+    Leverage <- lm.influence(fit)$hat
+    
+    # text for the labels of the plots
+    tt = "OLS"
+  } else{
+    # standardized residuals based on a robust scale estimate
+    Standardized.Residuals <- fit$residuals/fit$scale
+    
+    # get the robust distances based on mahalanobis distance from the robust output 
+    # (it has to be specified in the call to lmrob using: control = lmrob.control(compute.rd = T))
+    Leverage <- fit$MD
+    
+    # text for the labels of the plots
+    tt = "Robust"
+  }
+  
+  # Extract fitted values for lm() object
+  Theoretical.Quantiles <- qqnorm(Residuals, plot.it = F)$x
+  
+  # Create data frame 
+  # Will be used as input to plot_ly
+  regMat <- data.frame(Fitted.Values, 
+                       Residuals, 
+                       Standardized.Residuals, 
+                       Theoretical.Quantiles,
+                       Leverage, 
+                       textlabels)
+  
+  # Plot using Plotly
+  
+  # text info
+  t <- list(
+    family = "sans serif",
+    size = 14,
+    color = toRGB("grey50"))
+  
+  
+  # Plot 1: Fitted vs Residuals
+  # For scatter plot smoother
+  LOESS <- loess.smooth(Fitted.Values, Residuals)
+  
+  plt1 <- regMat %>% 
+    plot_ly(x = Fitted.Values, y = Residuals, 
+            type = "scatter", mode = "markers", hoverinfo = "text",
+            name = "Data", marker = list(size = 10, opacity = 0.5),
+            text = paste('</br> Unit: ', 1:n,
+                         '</br> Town: ', as.character(textlabels),
+                         '</br> x: ', Fitted.Values,
+                         '</br> y: ', Residuals)) %>% 
+    
+    add_trace(x = LOESS$x, y = LOESS$y, type = "scatter", mode = "lines", name = "Smooth",
+              inherit = F, line = list(width = 2)) %>% 
+
+    layout(title = paste(tt, " Residuals vs Fitted Values"), plot_bgcolor = "#e6e6e6",
+           xaxis = list(title = "Fitted Values"),
+           yaxis = list(title = "Residuals"))
+  
+  # Plot 2: Fitted vs Standardized Residuals
+  # For scatter plot smoother
+  LOESS <- loess.smooth(Fitted.Values, Standardized.Residuals)
+  
+  plt2 <- regMat %>% 
+    plot_ly(x = Fitted.Values, y = Standardized.Residuals, 
+            type = "scatter", mode = "markers", hoverinfo = "text",
+            name = "Data", marker = list(size = 10, opacity = 0.5),
+            text = paste('town: ', as.character(textlabels))) %>% 
+    
+    add_trace(x = LOESS$x, y = LOESS$y, type = "scatter", mode = "lines", name = "Smooth",
+              inherit = F, line = list(width = 2)) %>% 
+    
+    layout(title = paste(tt, " Standardized residuals vs Fitted Values"), plot_bgcolor = "#e6e6e6",
+           xaxis = list(title = "Fitted Values"),
+           yaxis = list(title = "Standardized residuals"))  
+
+  # Plot 3: Residuals index
+  plt3 <- regMat %>% 
+    plot_ly(x = 1:n, y = Standardized.Residuals, 
+            type = "scatter", mode = "markers", hoverinfo = "text",
+            name = "Data", marker = list(size = 10, opacity = 0.5),
+            text = paste('town: ', as.character(textlabels))) %>% 
+    
+    add_segments(x = -5, xend = n+5, y = 0, yend = 0, mode = "line", inherit = F, 
+                 name = "Null line", line = list(width = 2)) %>%
+    
+    layout(title = paste(tt, " Standardized Residuals' index"), plot_bgcolor = "#e6e6e6", 
+             xaxis = list(title = "Index"),
+             yaxis = list(title = "Standardized.Residuals")) 
+
+  
+  # Plot 4: QQ Pot
+  plt4 <- regMat %>% 
+    plot_ly(x = Theoretical.Quantiles, y = Standardized.Residuals, 
+            type = "scatter", mode = "markers", hoverinfo = "text", 
+            name = "Data", marker = list(size = 10, opacity = 0.5),
+            text = paste('town: ', as.character(textlabels))) %>% 
+    
+    add_trace(x = Theoretical.Quantiles, y = Theoretical.Quantiles, type = "scatter", 
+              mode = "lines", name = "Theoretical", line = list(width = 2), 
+              inherit = F) %>%
+    
+    layout(title = paste(tt, " Q-Q Plot"), plot_bgcolor = "#e6e6e6",
+             xaxis = list(title = "Normal theoretical quantiles"),
+             yaxis = list(title = "Data quantiles"))  
+
+  
+  # Plot5: Residuals vs Leverage
+  # For scatter plot smoother
+  LOESS <- loess.smooth(Leverage, Residuals)
+  
+  plt5 <- regMat %>% 
+    plot_ly(x = Leverage, y = Residuals, 
+            type = "scatter", mode = "markers", hoverinfo = "text", 
+            name = "Data", marker = list(size = 10, opacity = 0.5), 
+            text = paste('town: ', as.character(textlabels))) %>%
+    
+    add_trace(x = LOESS$x, y = LOESS$y, type = "scatter", mode = "lines", name = "Smooth",
+              line = list(width = 2), inherit = F) %>%
+    
+    layout(title = paste(tt, " Leverage vs Residuals"), plot_bgcolor = "#e6e6e6", 
+             xaxis = list(title = "Leverage values"),
+             yaxis = list(title = "Residuals"))  
+
+
+  # Plot 6: Fitted vs response
+  # For scatter plot smoother
+  LOESS <- loess.smooth(y, Fitted.Values)
+  
+  plt6 <- regMat %>% 
+    plot_ly(x = y, y = Fitted.Values, 
+            type = "scatter", mode = "markers", hoverinfo = "text",
+            name = "Data", marker = list(size = 10, opacity = 0.5),
+            text = paste('town: ', as.character(textlabels))) %>% 
+    
+    add_trace(x = LOESS$x, y = LOESS$y, type = "scatter", mode = "lines", name = "Smooth",
+              inherit = F, line = list(width = 2)) %>% 
+  
+    layout(title = paste(tt, " Fitted Values vs response"), plot_bgcolor = "#e6e6e6",
+             xaxis = list(title = "Response values"),
+             yaxis = list(title = "Fitted Values"))
+
+  # # Plot 7: MISSING: sqrt(abs(Residuals))
+  # # For scatter plot smoother
+  # LOESS2 <- loess.smooth(Fitted.Values, Root.Residuals)
+  # 
+  # plt3 <- regMat %>% 
+  #   plot_ly(x = Fitted.Values, y = Root.Residuals, 
+  #           type = "scatter", mode = "markers", hoverinfo = "text", 
+  #           name = "Data", marker = list(size = 10, opacity = 0.5),
+  #           text = paste('town: ', as.character(textlabels))) %>%
+  #   
+  #   add_trace(x = LOESS2$x, y = LOESS2$y, type = "scatter", mode = "lines", name = "Smooth",
+  #             line = list(width = 2), inherit = F) %>% 
+  #   
+  #   layout(title = "Scale Location", plot_bgcolor = "#e6e6e6")
+  
+  plt = list(plt1, plt2, plt3, plt4, plt5, plt6)
+  return(plt)
+}
+
+```
+
+
+The focus of this part is on the delta between males and females salaries.
+```{r linear model for delta M-F salary, fig.keep='all'}
+
+# response variable
+y = newDat$sal_Males - newDat$sal_Females
+# original response variable histogram
+ggplot(data=as.data.frame(y), aes(y)) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 35) +
+  geom_density(col="black") +
+  labs(x="Male-Female salary", y="Density") +
+  ggtitle("Original response variable") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+x = cbind.data.frame(pop = newDat$total_population, 
+                     firms = newDat$total,
+                     # small_firms = newDat$small,
+                     # small_firms = newDat$medium,
+                     # small_firms = newDat$large,
+                     ratio_pop_firms = newDat$total/newDat$total_population,
+                     # delta_18_25 = newDat$sal_M_18_25 - newDat$sal_F_18_25,
+                     # delta_26_50 = newDat$sal_M_26_50 - newDat$sal_F_26_50,
+                     # delta_51plus = newDat$sal_M_51plus - newDat$sal_F_51plus,
+                     delta_exec = newDat$sal_M_executive - newDat$sal_F_executive,
+                     delta_midMan = newDat$sal_M_midManager - newDat$sal_F_midManager,
+                     delta_empl = newDat$sal_M_employee - newDat$sal_F_employee,
+                     delta_worker = newDat$sal_M_worker - newDat$sal_F_worker)
+# merge variables
+mod = cbind.data.frame(y, x)
+
+# scatter plot matrix
+# pairs(mod)
+# correlations
+corrplot(cor(mod), method = "number", title = "Correlation matrix",
+         diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+         tl.col = "black")  # , mar=c(0,0,1.5,0)
+plot(newDat$sal_M_26_50 - newDat$sal_F_26_50,y)
+
+# linear model
+ols = lm(y ~ ., data = mod, y=T)
+summary(ols)
+plot(ols, cex = 0.6)
+RegressionPlots(ols, newDat$town_name, robust = F)
+
+# robust fit
+# MM estimator
+# 
+mm = lmrob(y~., data = mod, intercept = TRUE, y=T, setting = "KS2014", control = lmrob.control(compute.rd = T))
+summary(mm)
+names(mm)
+plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
+RegressionPlots(mm, newDat$town_name, robust = T)
+# 
+# # LTS estimator
+# lts = ltsReg(x, y, intercept = TRUE, alpha=0.9, y.ret=T)
+# summary(lts)
+# names(lts)
+# plot(lts, cex = 0.6, id.n = 10) # , labels.id = newDat$town_name, sub.caption="LTS"
+
+
+
+```
+
+
+Model selection:
+```{r}
+# mod = cbind.data.frame(y, x)
+mod = cbind.data.frame(mod, mod[,2:ncol(mod)]^2, mod[,2:ncol(mod)]^3)
+namesdataBS = names(mod)
+lll = ((dim(mod)[2]-1)/3)
+
+# for (i in 1:lll+1){
+#   str = namesdataBS[i]
+#   namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1]
+# }
+namesdataBS[(lll+2):(lll*2+1)] = paste(namesdataBS[1:lll+1], rep("^2", lll), sep="")
+namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll), sep="")
+# namesdataBS[(lll*3+2):(lll*4+1)] = paste(namesdataBS[1:lll+1], rep("log", lll))
+names(mod) = namesdataBS
+
+# Elastic net
+x = as.matrix(mod[, 2:ncol(mod)])
+y = mod[, 1]
+par(mfrow =c(3,2))
+for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
+  # set.seed (3)
+  cv.out = cv.glmnet(x, y, alpha = j)
+  plot(cv.out)
+  title(paste("alpha = ", j), line = 2.3)
+}
+mtext(expression("Best lambda for salary 18-25 using elastic and 10-folds CV"), outer=TRUE,  cex=1, line=-1.4)
+
+
+# split the date leaving the 20% for CV
+par(mfrow =c(1,1))
+train = sample(1:nrow(x), floor(nrow(x)*0.8))
+test = -train
+y.test = y[test]
+x = as.matrix(x)
+itercol = 1
+for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
+  # set.seed (3)
+  lasso.mod = glmnet(x[train,], y[train], alpha = j, thresh = 1e-10)
+  err.i = rep("NA", length(lasso.mod$lambda))
+  for (i in 1:length(lasso.mod$lambda)){
+    lasso.pred = predict(lasso.mod, s = lasso.mod$lambda[i], newx = x[test,], alpha = j)
+    err.i[i] = mean((lasso.pred - y.test)^2)
+  }
+  if (itercol == 1){
+    plot(log(lasso.mod$lambda), err.i, xlab = 'log Lambda', ylab = 'test set MSE',
+         main = 'Test MSE among different Lambdas', type = "b", col = itercol)
+  } else{
+    lines(log(lasso.mod$lambda), err.i, type = "b", col = itercol)
+  }
+  bestlam = which.min(err.i)
+  points(log(lasso.mod$lambda)[bestlam], err.i[bestlam], col = 3, cex=2, pch=20)
+  itercol = itercol +1
+}
+
+
+# best subset selection
+best.sub = regsubsets(y ~ ., data = mod, nvmax = ncol(mod))
+best.sub.summary = summary(best.sub)
+# manual plotting
+par(mfrow =c(2,2))
+# rsq
+plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l")
+ind_Rsq = which.max(best.sub.summary$rsq)
+points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20)
+# adjRsq
+plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l")
+ind_adjRsq = which.max(best.sub.summary$adjr2)
+points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20)
+# Cp
+plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l")
+ind_Cp = which.min(best.sub.summary$cp)
+points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20)
+# bic
+plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
+ind_bic = which.min(best.sub.summary$bic)
+points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
+# mtext("My 'Title' in a strange place", line=15)
+mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5)
+# built-in plots
+par(mfrow=c(1,1))
+plot(best.sub, scale = "r2")
+plot(best.sub, scale = "adjr2")
+plot(best.sub, scale = "Cp")
+plot(best.sub, scale = "bic")
+# plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.9)
+# mtext("Best subset selection for salary 18-25 using BIC", outer=TRUE,  cex=1.4, line=-3.5)
+
+# retrieve the model with min BIC
+coefficients(best.sub, which.min(best.sub.summary$bic))
+names(coefficients(best.sub, 10))
+# nnn = names(coefficients(best.sub, which.min(best.sub.summary$bic)))
+
+
 ```
 
