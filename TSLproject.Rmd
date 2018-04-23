@@ -2027,7 +2027,10 @@ RegressionPlots <- function(fit, textlabels, robust=F){
     plot_ly(x = Fitted.Values, y = Standardized.Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text",
             name = "Data", marker = list(size = 10, opacity = 0.5),
-            text = paste('town: ', as.character(textlabels))) %>% 
+            text = paste('</br> Unit: ', 1:n,
+                         '</br> Town: ', as.character(textlabels),
+                         '</br> x: ', Fitted.Values,
+                         '</br> y: ', Standardized.Residuals)) %>% 
     
     add_trace(x = LOESS$x, y = LOESS$y, type = "scatter", mode = "lines", name = "Smooth",
               inherit = F, line = list(width = 2)) %>% 
@@ -2041,7 +2044,10 @@ RegressionPlots <- function(fit, textlabels, robust=F){
     plot_ly(x = 1:n, y = Standardized.Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text",
             name = "Data", marker = list(size = 10, opacity = 0.5),
-            text = paste('town: ', as.character(textlabels))) %>% 
+           text = paste('</br> Unit: ', 1:n,
+                         '</br> Town: ', as.character(textlabels),
+                         '</br> x: ', 1:n,
+                         '</br> y: ', Standardized.Residuals)) %>% 
     
     add_segments(x = -5, xend = n+5, y = 0, yend = 0, mode = "line", inherit = F, 
                  name = "Null line", line = list(width = 2)) %>%
@@ -2056,7 +2062,10 @@ RegressionPlots <- function(fit, textlabels, robust=F){
     plot_ly(x = Theoretical.Quantiles, y = Standardized.Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text", 
             name = "Data", marker = list(size = 10, opacity = 0.5),
-            text = paste('town: ', as.character(textlabels))) %>% 
+           text = paste('</br> Unit: ', 1:n,
+                         '</br> Town: ', as.character(textlabels),
+                         '</br> x: ', Theoretical.Quantiles,
+                         '</br> y: ', Standardized.Residuals)) %>% 
     
     add_trace(x = Theoretical.Quantiles, y = Theoretical.Quantiles, type = "scatter", 
               mode = "lines", name = "Theoretical", line = list(width = 2), 
@@ -2075,7 +2084,10 @@ RegressionPlots <- function(fit, textlabels, robust=F){
     plot_ly(x = Leverage, y = Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text", 
             name = "Data", marker = list(size = 10, opacity = 0.5), 
-            text = paste('town: ', as.character(textlabels))) %>%
+           text = paste('</br> Unit: ', 1:n,
+                         '</br> Town: ', as.character(textlabels),
+                         '</br> x: ', Leverage,
+                         '</br> y: ', Residuals)) %>% 
     
     add_trace(x = LOESS$x, y = LOESS$y, type = "scatter", mode = "lines", name = "Smooth",
               line = list(width = 2), inherit = F) %>%
@@ -2087,20 +2099,23 @@ RegressionPlots <- function(fit, textlabels, robust=F){
 
   # Plot 6: Fitted vs response
   # For scatter plot smoother
-  LOESS <- loess.smooth(y, Fitted.Values)
+  LOESS <- loess.smooth(Fitted.Values, y)
   
   plt6 <- regMat %>% 
-    plot_ly(x = y, y = Fitted.Values, 
+    plot_ly(x = Fitted.Values, y =y, 
             type = "scatter", mode = "markers", hoverinfo = "text",
             name = "Data", marker = list(size = 10, opacity = 0.5),
-            text = paste('town: ', as.character(textlabels))) %>% 
+           text = paste('</br> Unit: ', 1:n,
+                         '</br> Town: ', as.character(textlabels),
+                         '</br> x: ', Fitted.Values,
+                         '</br> y: ', y)) %>% 
     
     add_trace(x = LOESS$x, y = LOESS$y, type = "scatter", mode = "lines", name = "Smooth",
               inherit = F, line = list(width = 2)) %>% 
   
     layout(title = paste(tt, " Fitted Values vs response"), plot_bgcolor = "#e6e6e6",
-             xaxis = list(title = "Response values"),
-             yaxis = list(title = "Fitted Values"))
+             xaxis = list(title = "Fitted Values"),
+             yaxis = list(title = "Response values"))
 
   # # Plot 7: MISSING: sqrt(abs(Residuals))
   # # For scatter plot smoother
@@ -2164,7 +2179,7 @@ plot(newDat$sal_M_26_50 - newDat$sal_F_26_50,y)
 # linear model
 ols = lm(y ~ ., data = mod, y=T)
 summary(ols)
-plot(ols, cex = 0.6)
+plot(ols)
 RegressionPlots(ols, newDat$town_name, robust = F)
 
 # robust fit
@@ -2175,13 +2190,6 @@ summary(mm)
 names(mm)
 plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
 RegressionPlots(mm, newDat$town_name, robust = T)
-# 
-# # LTS estimator
-# lts = ltsReg(x, y, intercept = TRUE, alpha=0.9, y.ret=T)
-# summary(lts)
-# names(lts)
-# plot(lts, cex = 0.6, id.n = 10) # , labels.id = newDat$town_name, sub.caption="LTS"
-
 
 
 ```
