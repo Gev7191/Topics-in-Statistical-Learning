@@ -1421,6 +1421,9 @@ population$sex <- factor(population$sex, levels = c(1,2), labels = c("Male", "Fe
 head(population)
 summary(population)
 
+# total number of population= 65mil
+sum(population$total_population)
+
 ```
 
 Understand the distribution of population according to different age categories using population pyramide:
