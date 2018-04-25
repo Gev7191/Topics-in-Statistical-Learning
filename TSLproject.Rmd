@@ -93,7 +93,12 @@ if(!require(ggbiplot)){
   library(ggbiplot)}
 if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
 if(!require(zoo)){install.packages("zoo"); library(zoo)}
-if(!require(plotly)){install.packages("plotly"); library(plotly)} # interactive plotting
+if(!require(plotly)){install.packages("plotly"); library(plotly)} 
+if(!require(lattice)){install.packages("lattice"); library(lattice)}
+if(!require(MVA)){install.packages("lattice"); library(MVA)}
+if(!require(ape)){install.packages("ape"); library(ape)}
+
+# interactive plotting
 # Mclust clustering
 if(!require(mclust)){install.packages("mclust"); library(mclust)}
 # plot design matrix
@@ -1940,6 +1945,248 @@ for (i in dataset){
 ```
 
 # Chiaromonte's part
+
+## Unsupervised
+
+Preliminary multivariate salary data visualisation to better conduct the unsupervised learning  
+```{r}
+
+# add region variable to the salary dataset
+salary_with_dep <- cbind(geoNEW[1], salaryNEW)
+#check
+ncol(salary_with_dep)
+head(salary_with_dep)
+# extract continuous variables
+salary_variables <- salary_with_dep[, 4:35]
+
+#scatterplot to visually see the correlations between variables
+pairs(salary_variables[1:8], 
+      panel = function (x, y, ...) {
+          points(x, y, ...)
+          abline(lm(y ~ x), col = "red")
+      }, pch = ".", cex = 0.5)
+
+#scatterplot between variables of major interest
+pairs(salary_variables[, c("salary_ratio_FvsM", "sal_general", "sal_Females","sal_Males")], 
+      panel = function (x, y, ...) {
+          points(x, y, ...)
+          abline(lm(y ~ x), col = "red")
+      }, pch = ".", cex = 0.5)
+
+#bivariate densities among general, males and females salaries
+pairs(salary_variables[, c("salary_ratio_FvsM", "sal_general", "sal_Females","sal_Males")],
+      diag.panel = panel.hist,
+      panel = function (x,y) {
+        data <- data.frame(cbind(x,y))
+        par(new = TRUE)
+        den <- bkde2D(data, 
+                      bandwidth=sapply(data,dpik))
+        contour(x = den$x1, y = den$x2, 
+                z = den$fhat, axes = FALSE)
+      })
+
+#scale the data
+salary_variables_scaled <- as.data.frame(scale(salary_variables))
+#divide sal_general into 4 parts
+salary_levels <- with(salary_variables_scaled, 
+                  equal.count(sal_general,4))
+#make a 3D plot of salary_ratio_FvsM against sal_26_50 and sal_employee given salary_levels
+plot(cloud(salary_ratio_FvsM ~ sal_26_50 * sal_employee | salary_levels, 
+           panel.aspect = 0.5,
+           data = salary_variables_scaled))
+
+#plot sal_worker against sal_midManager given 3 partitions of sal_general
+plot(xyplot(sal_worker ~ sal_midManager| cut(sal_general, 3), 
+            data = salary_variables, 
+            layout = c(3, 1), 
+            xlab = "Worker Salary", 
+            ylab = "Midmanager salary"))
+
+#multidimesnional plot of midManager salary against worker salary, given 4 partitions of F/M salary ratio, and grayscale intensities of general salary
+M_F_salary_ratio  <- with(salary_variables, equal.count(salary_ratio_FvsM, 4))
+general_salary.ord <- with(salary_variables, rev(order(sal_general)))
+salary_variables.ordered <- salary_variables[general_salary.ord,]
+sal_general.breaks <- with(salary_variables.ordered, 
+                     do.breaks(range(sal_general),50))
+salary_variables.ordered$color<-level.colors(salary_variables.ordered$sal_general,
+                                   at=sal_general.breaks,
+                                   col.regions=grey.colors)
+plot(xyplot(sal_worker ~ sal_midManager | M_F_salary_ratio, 
+            data = salary_variables.ordered,
+            aspect = "iso", 
+            groups = color, 
+            cex = 1, col = "black",
+       panel = function(x, y, groups, ..., subscripts) {
+           fill <- groups[subscripts]
+           panel.grid(h = -1, v = -1)
+           panel.xyplot(x, y, pch = 21, 
+                        fill = fill, ...)
+       },
+       legend =
+       list(right =
+            list(fun = draw.colorkey,
+                 args=list(key=list(col=gray.colors,
+                                    at = sal_general.breaks),
+                           draw = FALSE))),
+            xlab = "Worker Salary", 
+            ylab = "Midmanager salary"))
+
+
+#plot(cloud(sal_general ~ sal_worker * salary_ratio_FvsM | sal_26_50, 
+#           data = salary_variables,
+#           zlim = rev(range(salary_variables$sal_general)),
+#           screen = list(z = 5, x = -3), 
+#           panel.aspect = 0.9,
+#           xlab = "Worker salary", 
+#           ylab = "M_F_salary_ratio", 
+#           zlab = "General salary"))
+
+
+
+```
+
+Multi-dimensional scaling (MDS) on salary data
+```{r}
+# produces a list with covariance matrix
+# for each region as component:
+salary_var <- tapply(1:nrow(salary_with_dep), salary_with_dep$region, 
+                     function(i) var(salary_with_dep[i,4:35]))
+str(salary_var)
+
+salary_var <- salary_var[-c(11, 12, 15, 19, 20, 28)]
+str(salary_var)
+
+
+
+#create dataframe with the counts of towns per region
+regions_count <- data.frame(table(salary_with_dep$region))
+regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
+#check total sum
+row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+sum(regions_count_sub$Freq)
+
+
+
+# initializes common covariance matrix var:
+S <- regions_count_sub$Freq[1] * as.matrix(salary_var[[1]])
+# creates common covariance matrix S
+s <- 0
+for (v in c(1:22)) S <- S + regions_count_sub$Freq[v] * as.matrix(salary_var[[v]]) 
+S <- S / 5021
+
+# finds center of each variable (sal_general, etc)
+# for each region
+salary_cen <- tapply(1:nrow(salary_with_dep), salary_with_dep$region, 
+    function(i) apply(salary_with_dep[i,-c(1:3)], 2, mean))
+salary_cen
+salary_cen <- salary_cen[-c(11, 12, 15, 19, 20, 28)]
+str(salary_cen)
+
+# create a matrix out of each components, each
+# mean measurement for all variables by region
+salary_cen <- matrix(unlist(salary_cen), 
+    nrow = length(salary_cen), byrow = TRUE)
+salary_cen
+
+# compute the mahalanobis distances:
+salary_mah <- apply(salary_cen, 1, 
+    function(cen) mahalanobis(salary_cen, cen, S))
+salary_mah
+
+# run classic MDS function on distances
+cmdscale(salary_mah, k = nrow(salary_mah) - 1, 
+         eig = TRUE)$eig
+
+#only 9 of the first 21 eigenvalues are > 0
+
+# run it on two dimensions
+salary_mds <- cmdscale(salary_mah)
+
+# draw a scatterplot of two-dimensional solution
+# from classical MDS applied to Mahalanobis
+# distances:
+lim <- range(salary_mds) * 1.2
+plot(salary_mds, xlab = "Coordinate 1", 
+     ylab = "Coordinate 2",
+     xlim = lim, ylim = lim, type = "n")
+text(salary_mds, labels = levels(salary_with_dep$region), 
+     cex = 0.5)
+
+# But here, as the two-dimensional fit may not
+# explain what is needed to represent the observed
+# distances, we shall investigate the solution 
+# in a little more detail using the "minimum
+# spanning tree".
+
+# The minimum spanning tree is defined as follows. 
+# Suppose n points are given (possibly in many
+# dimensions). Then a tree spanning these points 
+# (that is, a spanning tree) is any set of straight 
+# line segments joining pairs of points such that
+# - 0 closed loops occur,
+# - every point is visited at least one time, and
+# - the tree is connected (has paths between each
+# pair of points)
+
+# We use function mst() from package ape to plot
+# minimum spanning tree on the two-dimensional
+# scaling solution:
+
+#
+st <- mst(salary_mah)
+plot(x, y, xlab = "Coordinate 1", 
+     ylab = "Coordinate 2",
+     xlim = range(x)*1.2, type = "n")
+for (i in 1:nrow(salary_mah)) {
+  w1 <- which(st[i, ] == 1)
+  segments(x[i], y[i], x[w1], y[w1])
+}
+text(x, y, labels = colnames(salary_mah), 
+     cex = 1.5)
+
+```
+
+
+PCA on salary data and delta M-F
+```{r}
+
+pca_salary <- prcomp(salary_variables)
+autoplot(pca_salary, data = salary_with_dep, colour = 'region',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+plot(pca_salary, type = "l")
+pca_salary
+summary(pca_salary)
+
+#create dataset with M-F differences
+salary_var_delta <- data.frame("?? M-F" = salary_variables$sal_Males -                                                           salary_variables$sal_Females,
+                     "?? Executive M-F" = salary_variables$sal_M_executive -
+                                         salary_variables$sal_F_executive,
+                    "?? midManager M-F" = salary_variables$sal_M_midManager -
+                                         salary_variables$sal_F_midManager,
+                      "?? employee M-F" = salary_variables$sal_M_employee -
+                                         salary_variables$sal_F_employee,
+                        "?? worker M-F" = salary_variables$sal_M_worker -
+                                         salary_variables$sal_F_worker,
+                         "?? 18-25 M-F" = salary_variables$sal_M_18_25 -
+                                         salary_variables$sal_F_18_25,
+                         "?? 26-50 M-F" = salary_variables$sal_M_26_50 -
+                                         salary_variables$sal_F_26_50,
+                       "?? 51 plus M-F" = salary_variables$sal_M_51plus -
+                                         salary_variables$sal_F_51plus)
+pca_salary_delta <- prcomp(salary_var_delta)
+autoplot(pca_salary_delta, data = salary_with_dep, colour = 'region',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+plot(pca_salary_delta, type = "l")
+pca_salary_delta
+summary(pca_salary_delta)
+
+
+
+```
+
+
 
 ## Supervised
 
