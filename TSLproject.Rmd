@@ -2053,6 +2053,7 @@ salary_var <- tapply(1:nrow(salary_with_dep), salary_with_dep$region,
                      function(i) var(salary_with_dep[i,4:35]))
 str(salary_var)
 
+#remove regions with null values
 salary_var <- salary_var[-c(11, 12, 15, 19, 20, 28)]
 str(salary_var)
 
