@@ -9,3 +9,7 @@ load all librares at the begin
 delete useless ouput (or at least comment it)
 start working on the paper and search bibliography
 add chunks' name: e.g., ```{r your title} (at the begin of the chunk)
+
+
+ask Prof:
+- how to perform log transfromation with data with negative values? shift them to be positive and that's it?

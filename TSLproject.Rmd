@@ -95,7 +95,7 @@ if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
 if(!require(zoo)){install.packages("zoo"); library(zoo)}
 if(!require(plotly)){install.packages("plotly"); library(plotly)} 
 if(!require(lattice)){install.packages("lattice"); library(lattice)}
-if(!require(MVA)){install.packages("lattice"); library(MVA)}
+if(!require(MVA)){install.packages("MVA"); library(MVA)}
 if(!require(ape)){install.packages("ape"); library(ape)}
 
 # interactive plotting
@@ -554,7 +554,7 @@ summary(geo)
 
 
 Assign latitude and longitude values for missing data (almost 3000):
-```{r assign NA}
+```{r assign NA, warning=FALSE}
 
 # index of NAs and their total
 indNA_coord = is.na(geo$latitude) | is.na(geo$longitude)
@@ -2193,7 +2193,7 @@ summary(pca_salary_delta)
 
 Function for interactive plotting:
 ```{r}
-# This function ....
+# This function is used to obtain interactive regression diagnostic plots
 RegressionPlots <- function(fit, textlabels, robust=F){
   
   # number of units
@@ -2430,16 +2430,16 @@ plot(newDat$sal_M_26_50 - newDat$sal_F_26_50,y)
 # linear model
 ols = lm(y ~ ., data = mod, y=T)
 summary(ols)
-plot(ols)
+# plot(ols)
 RegressionPlots(ols, newDat$town_name, robust = F)
 
 # robust fit
 # MM estimator
 # 
-mm = lmrob(y~., data = mod, intercept = TRUE, y=T, setting = "KS2014", control = lmrob.control(compute.rd = T))
+mm = lmrob(y~., data = mod, y=T, setting = "KS2014", control = lmrob.control(compute.rd = T))
 summary(mm)
 names(mm)
-plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
+# plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
 RegressionPlots(mm, newDat$town_name, robust = T)
 
 
@@ -2448,6 +2448,29 @@ RegressionPlots(mm, newDat$town_name, robust = T)
 
 Model selection:
 ```{r}
+# outliers identified
+indd = c(165,170,188,193,206,208,209,365,367,371,377,444,448,735,1184,1193,1226,1247,1251,1385,1477,1495,1710,1711,1729,1759,1786,1796,2450,2757,2942,2999,3091,3277,3463,3554,3557,3565,3566,3580,3588,3602,3621,3781,3891,3896,3904,4027,4091,4118,4123,4124,4128,4129,4131,4132,4133,4137,4142,4143,4148,4158,4161,4164,4167,4168,4169,4172,4173,4177,4179,4181,4182,4184,4185,4191,4193,4198,4199,4209,4210,4211,4214,4215,4725,4757,4792,4803,4805,4806,4825,4834,4843,4846,4847,4848,4849,4852,4853,4918,4919,4931,4966,4985,5011)
+
+# copy of the prrevious options
+y = newDat$sal_Males - newDat$sal_Females
+x = cbind.data.frame(pop = newDat$total_population, 
+                     firms = newDat$total,
+                     # small_firms = newDat$small,
+                     # small_firms = newDat$medium,
+                     # small_firms = newDat$large,
+                     ratio_pop_firms = newDat$total/newDat$total_population,
+                     # delta_18_25 = newDat$sal_M_18_25 - newDat$sal_F_18_25,
+                     # delta_26_50 = newDat$sal_M_26_50 - newDat$sal_F_26_50,
+                     # delta_51plus = newDat$sal_M_51plus - newDat$sal_F_51plus,
+                     delta_exec = newDat$sal_M_executive - newDat$sal_F_executive,
+                     delta_midMan = newDat$sal_M_midManager - newDat$sal_F_midManager,
+                     delta_empl = newDat$sal_M_employee - newDat$sal_F_employee,
+                     delta_worker = newDat$sal_M_worker - newDat$sal_F_worker)
+
+# merge variables
+mod = cbind.data.frame(y, x)
+# mod = mod[indd,]
+
 # mod = cbind.data.frame(y, x)
 mod = cbind.data.frame(mod, mod[,2:ncol(mod)]^2, mod[,2:ncol(mod)]^3)
 namesdataBS = names(mod)
@@ -2468,39 +2491,39 @@ y = mod[, 1]
 par(mfrow =c(3,2))
 for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
   # set.seed (3)
-  cv.out = cv.glmnet(x, y, alpha = j)
+  cv.out = cv.glmnet(x, y, alpha = j) # , parallel = T
   plot(cv.out)
   title(paste("alpha = ", j), line = 2.3)
 }
-mtext(expression("Best lambda for salary 18-25 using elastic and 10-folds CV"), outer=TRUE,  cex=1, line=-1.4)
+mtext(expression("Best lambda for delta gender salary using elastic-net and 10-folds CV"), outer=TRUE,  cex=1, line=-1.4)
 
 
-# split the date leaving the 20% for CV
-par(mfrow =c(1,1))
-train = sample(1:nrow(x), floor(nrow(x)*0.8))
-test = -train
-y.test = y[test]
-x = as.matrix(x)
-itercol = 1
-for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
-  # set.seed (3)
-  lasso.mod = glmnet(x[train,], y[train], alpha = j, thresh = 1e-10)
-  err.i = rep("NA", length(lasso.mod$lambda))
-  for (i in 1:length(lasso.mod$lambda)){
-    lasso.pred = predict(lasso.mod, s = lasso.mod$lambda[i], newx = x[test,], alpha = j)
-    err.i[i] = mean((lasso.pred - y.test)^2)
-  }
-  if (itercol == 1){
-    plot(log(lasso.mod$lambda), err.i, xlab = 'log Lambda', ylab = 'test set MSE',
-         main = 'Test MSE among different Lambdas', type = "b", col = itercol)
-  } else{
-    lines(log(lasso.mod$lambda), err.i, type = "b", col = itercol)
-  }
-  bestlam = which.min(err.i)
-  points(log(lasso.mod$lambda)[bestlam], err.i[bestlam], col = 3, cex=2, pch=20)
-  itercol = itercol +1
-}
-
+# # split the date leaving the 20% for CV
+# par(mfrow =c(1,1))
+# train = sample(1:nrow(x), floor(nrow(x)*0.8))
+# test = -train
+# y.test = y[test]
+# x = as.matrix(x)
+# itercol = 1
+# for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
+#   # set.seed (3)
+#   lasso.mod = glmnet(x[train,], y[train], alpha = j, thresh = 1e-10)
+#   err.i = rep("NA", length(lasso.mod$lambda))
+#   for (i in 1:length(lasso.mod$lambda)){
+#     lasso.pred = predict(lasso.mod, s = lasso.mod$lambda[i], newx = x[test,], alpha = j)
+#     err.i[i] = mean((lasso.pred - y.test)^2)
+#   }
+#   if (itercol == 1){
+#     plot(log(lasso.mod$lambda), err.i, xlab = 'log Lambda', ylab = 'test set MSE',
+#          main = 'Test MSE among different Lambdas', type = "b", col = itercol)
+#   } else{
+#     lines(log(lasso.mod$lambda), err.i, type = "b", col = itercol)
+#   }
+#   bestlam = which.min(err.i)
+#   points(log(lasso.mod$lambda)[bestlam], err.i[bestlam], col = 3, cex=2, pch=20)
+#   itercol = itercol +1
+# }
+# 
 
 # best subset selection
 best.sub = regsubsets(y ~ ., data = mod, nvmax = ncol(mod))
@@ -2524,7 +2547,7 @@ plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
 ind_bic = which.min(best.sub.summary$bic)
 points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
 # mtext("My 'Title' in a strange place", line=15)
-mtext("Best subset selection for salary 18-25", outer=TRUE,  cex=1.2, line=-2.5)
+mtext("Best subset selection for delta gender salary", outer=TRUE,  cex=1.2, line=-2.5)
 # built-in plots
 par(mfrow=c(1,1))
 plot(best.sub, scale = "r2")
@@ -2536,9 +2559,8 @@ plot(best.sub, scale = "bic")
 
 # retrieve the model with min BIC
 coefficients(best.sub, which.min(best.sub.summary$bic))
-names(coefficients(best.sub, 10))
 # nnn = names(coefficients(best.sub, which.min(best.sub.summary$bic)))
-
+# names(mod) %in% nnn 
 
 ```
 
