@@ -85,6 +85,7 @@ if(!require(plyr)){install.packages("dplyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
 # plotting
 if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
+if(!require(ggfortify)){install.packages("ggplot2"); library(ggfortify)}
 if(!require(ggmap)){install.packages("ggmap"); library(ggmap)}
 if(!require(ggbiplot)){
   if(!require(devtools)){
@@ -1769,7 +1770,7 @@ Import additional dataset needed:
 ```{r Load additional datasets, warning=FALSE}
 
 # loading data
-setwd("./data/New_data")
+setwd("./data/Add_data")
 educ        <- read.csv("level_education.csv", sep =";")
 categ_socio <- read.csv("Categorie_socioprofessionnelle.csv", sep =";")
 status_work <- read.csv("Emplois_lieu_travail.csv", sep =";")
@@ -1954,8 +1955,8 @@ Preliminary multivariate salary data visualisation to better conduct the unsuper
 # add region variable to the salary dataset
 salary_with_dep <- cbind(geoNEW[1], salaryNEW)
 #check
-ncol(salary_with_dep)
-head(salary_with_dep)
+#ncol(salary_with_dep)
+#head(salary_with_dep)
 # extract continuous variables
 salary_variables <- salary_with_dep[, 4:35]
 
@@ -1972,6 +1973,18 @@ pairs(salary_variables[, c("salary_ratio_FvsM", "sal_general", "sal_Females","sa
           points(x, y, ...)
           abline(lm(y ~ x), col = "red")
       }, pch = ".", cex = 0.5)
+
+
+panel.hist <- function(x, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks; nB <- length(breaks)
+  y <- h$counts; y <- y/max(y)
+  rect(breaks[-nB], 0, 
+       breaks[-1], y, col="grey", ...)
+}
 
 #bivariate densities among general, males and females salaries
 pairs(salary_variables[, c("salary_ratio_FvsM", "sal_general", "sal_Females","sal_Males")],
@@ -2094,11 +2107,7 @@ salary_mah <- apply(salary_cen, 1,
     function(cen) mahalanobis(salary_cen, cen, S))
 salary_mah
 
-# run classic MDS function on distances
-cmdscale(salary_mah, k = nrow(salary_mah) - 1, 
-         eig = TRUE)$eig
 
-#only 9 of the first 21 eigenvalues are > 0
 
 # run it on two dimensions
 salary_mds <- cmdscale(salary_mah)
@@ -2134,6 +2143,13 @@ text(salary_mds, labels = levels(salary_with_dep$region),
 # scaling solution:
 
 #
+# run classic MDS function on distances
+salary_mds <- cmdscale(salary_mah, k = nrow(salary_mah) - 1, 
+         eig = TRUE)
+
+#only 9 of the first 21 eigenvalues are > 0
+x <- salary_mds$points[,1]
+y <- salary_mds$points[,2]
 st <- mst(salary_mah)
 plot(x, y, xlab = "Coordinate 1", 
      ylab = "Coordinate 2",
@@ -2156,8 +2172,8 @@ autoplot(pca_salary, data = salary_with_dep, colour = 'region',
          loadings = TRUE, loadings.colour = 'blue',
          loadings.label = TRUE, loadings.label.size = 3)
 plot(pca_salary, type = "l")
-pca_salary
-summary(pca_salary)
+#pca_salary
+#summary(pca_salary)
 
 #create dataset with M-F differences
 salary_var_delta <- data.frame("?? M-F" = salary_variables$sal_Males -                                                           salary_variables$sal_Females,
@@ -2180,13 +2196,71 @@ autoplot(pca_salary_delta, data = salary_with_dep, colour = 'region',
          loadings = TRUE, loadings.colour = 'blue',
          loadings.label = TRUE, loadings.label.size = 3)
 plot(pca_salary_delta, type = "l")
-pca_salary_delta
-summary(pca_salary_delta)
+#pca_salary_delta
+#summary(pca_salary_delta)
 
 
 
 ```
 
+Cluster Analysis on salary and delta M-F
+```{r}
+
+#create dataframe with first two principal components scores as variables
+salary_pca_scores<- as.data.frame(pca_salary$x[,1:2])
+
+#sample data
+set.seed(123)
+salary_scores_sampled <- sample_n(salary_pca_scores, 1000)
+
+#renumber rows
+row.names(salary_scores_sampled) <- 1:nrow(salary_scores_sampled)
+
+#create distance matrix for hclust
+dm <- dist(salary_scores_sampled)
+#round to two decimals
+dm <- round(dm, 2)
+
+# Below we show the cluster solutions for
+# salary data. The top row gives the cluster
+# dendograms along with the cutoff used to
+# derive the classes presented (in the space
+# of the two principal components) in the
+# bottom row:
+
+
+salary_pc <- princomp(dm, cor = TRUE)
+layout(matrix(1:6, nr = 2), height = c(2, 1))
+plot(cs <- hclust(dm, method = "single"), 
+     main = "Single")
+abline(h = 3.8, col = "lightgrey")
+xlim <- range(salary_pc$scores[,1])
+plot(salary_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cs, h = 3.8)
+text(salary_pc$scores[,1:2], labels = lab, 
+     cex=0.6)
+plot(cc <- hclust(dm, method = "complete"), 
+     main = "Complete")
+abline(h = 7, col = "lightgrey")
+plot(salary_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cc, h = 7)  
+text(salary_pc$scores[,1:2], labels = lab, 
+     cex=0.6)     
+plot(ca <- hclust(dm, method = "average"), 
+     main = "Average")
+abline(h = 7.8, col = "lightgrey")
+plot(salary_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(ca, h = 7.8)                             
+text(salary_pc$scores[,1:2], labels = lab, 
+     cex=0.6)  
+
+```
 
 
 ## Supervised
