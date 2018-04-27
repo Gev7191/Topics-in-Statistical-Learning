@@ -98,6 +98,8 @@ if(!require(plotly)){install.packages("plotly"); library(plotly)}
 if(!require(lattice)){install.packages("lattice"); library(lattice)}
 if(!require(MVA)){install.packages("MVA"); library(MVA)}
 if(!require(ape)){install.packages("ape"); library(ape)}
+if(!require(KernSmooth)){install.packages("KernSmooth"); library(KernSmooth)}
+
 
 # interactive plotting
 # Mclust clustering
@@ -1974,7 +1976,7 @@ pairs(salary_variables[, c("salary_ratio_FvsM", "sal_general", "sal_Females","sa
           abline(lm(y ~ x), col = "red")
       }, pch = ".", cex = 0.5)
 
-
+#bivariate densities among general, males and females salaries
 panel.hist <- function(x, ...)
 {
   usr <- par("usr"); on.exit(par(usr))
@@ -1986,7 +1988,7 @@ panel.hist <- function(x, ...)
        breaks[-1], y, col="grey", ...)
 }
 
-#bivariate densities among general, males and females salaries
+
 pairs(salary_variables[, c("salary_ratio_FvsM", "sal_general", "sal_Females","sal_Males")],
       diag.panel = panel.hist,
       panel = function (x,y) {
@@ -2206,8 +2208,24 @@ plot(pca_salary_delta, type = "l")
 Cluster Analysis on salary and delta M-F
 ```{r}
 
+
 #create dataframe with first two principal components scores as variables
 salary_pca_scores<- as.data.frame(pca_salary$x[,1:2])
+salary_pca_scores <- as.data.frame(scale(salary_pca_scores))
+sapply(salary_pca_scores, var)
+#scatterplot between PC1 and PC2 to see if there are outliers
+pairs(salary_pca_scores, 
+      panel = function (x, y, ...) {
+          points(x, y, ...)
+          abline(lm(y ~ x), col = "red")
+      }, pch = ".", cex = 0.5)
+
+#after visually identifying thresholds, get rid of outliers
+outliers <- subset(salary_pca_scores, PC1 > 8 | PC2 > 13)
+outliers_names <- unlist(as.numeric(rownames(outliers)))
+salary_pca_scores <- salary_pca_scores[-outliers_names,]
+#renumber rows
+row.names(salary_pca_scores) <- 1:nrow(salary_pca_scores)
 
 #sample data
 set.seed(123)
@@ -2259,6 +2277,25 @@ plot(salary_pc$scores[,1:2], type = "n",
 lab <- cutree(ca, h = 7.8)                             
 text(salary_pc$scores[,1:2], labels = lab, 
      cex=0.6)  
+
+# K-means clustering
+n <- nrow(salary_pca_scores)
+wss <- rep(0, 22)
+wss[1] <- (n - 1) * sum(sapply(salary_pca_scores, var))
+for (i in 2:22)
+    wss[i] <- sum(kmeans(salary_pca_scores,
+                         centers = i)$withinss)
+#we can see from the plot that optimal number of cluster is 5
+plot(1:22, wss, type = "b", 
+     xlab = "Number of groups",
+     ylab = "Within groups sum of squares")
+
+#plotting in PC space shows us that there are indeed distinguishable 5 groups 
+plot(salary_pca_scores, 
+     pch = kmeans(salary_pca_scores, 
+                  centers = 5)$cluster)
+
+#now we have to see whether these groups correspond to geographical regions...
 
 ```
 
