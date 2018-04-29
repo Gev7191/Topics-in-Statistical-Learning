@@ -1777,6 +1777,7 @@ educ        <- read.csv("level_education.csv", sep =";")
 categ_socio <- read.csv("Categorie_socioprofessionnelle.csv", sep =";")
 status_work <- read.csv("Emplois_lieu_travail.csv", sep =";")
 ineq        <- read.csv("Comparateur_territoires.csv", sep =";")
+commune     <- read.csv("insee_commune.csv")
 
 ```
 
@@ -1789,25 +1790,125 @@ Check variables' names:
 # names(ineq)
 # names(status_work)
 
+#rename CODGEO in commune dataset
+names(commune)[1] <- c("CODGEO")
 ```
+
+
+```{r match CODGEO}
+
+educ$CODGEO            <- sub("A", "0", educ$CODGEO)
+educ$CODGEO            <- sub("B", "0", educ$CODGEO)
+categ_socio$CODGEO     <- sub("A", "0", categ_socio$CODGEO)
+categ_socio$CODGEO     <- sub("B", "0", categ_socio$CODGEO)
+ineq$CODGEO            <- sub("A", "0", ineq$CODGEO)
+ineq$CODGEO            <- sub("B", "0", ineq$CODGEO)
+status_work$CODGEO     <- sub("A", "0", status_work$CODGEO)
+status_work$CODGEO     <- sub("B", "0", status_work$CODGEO)
+commune$CODGEO         <- sub("A", "0", commune$CODGEO)
+commune$CODGEO         <- sub("B", "0", commune$CODGEO)
+
+# Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
+# use only integer values
+status_work$CODGEO = as.integer(status_work$CODGEO)  
+ineq$CODGEO = as.integer(ineq$CODGEO)
+educ$CODGEO = as.integer(educ$CODGEO)
+categ_socio$CODGEO = as.integer(categ_socio$CODGEO)
+commune$CODGEO = as.integer(commune$CODGEO)
+
+# store datasets' names to loop on them
+dataset = c("ineq", "commune", "educ", "categ_socio", "status_work")
+
+# obtain sommon IDs for all datasets
+for (i in dataset){
+  # get i-th name and create a new variable concateneting "NEW" at the end
+  nam <- paste(i, "NEW", sep = "")
+  # initialize counter to identify the number of iteration in j
+  iter = 1
+  for (j in dataset){
+    if (j != i){
+      # for each dataset different from the i-th
+      if (iter == 1){
+        # 1st iteration: use the original dataset (e.g., geo)
+        assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
+      } else{
+        # successive iteration: use the new dataset (e.g., geoNEW)
+        assign(nam, semi_join(get(nam), get(j), by = "CODGEO"))
+      }
+      iter = iter + 1
+    }
+  }
+}
+
+# check how many observation have been deleted
+for (i in dataset){
+  del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
+  del_prop = del_rows / nrow(get(i))
+  del_obs = paste("For", i, del_rows, "units have been deleted.",
+                  "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
+  print(paste(del_obs))
+}
+
+```
+
 
 To better understand the data, assign meaningful names and drop unnecessary variables (at the moment):
 ```{r Educ-rename and drop variables}
 
 # drop unnecessary variable 
-educ <- subset(educ, select= -c(LIBGEO))
+educ <- subset(educNEW, select= -c(LIBGEO))
 
 # rename variables
 names(educ)[2:ncol(educ)] <-
   c("Age15_NoDip_M","Age15_NoDip_F", "Age15_Sec_M", "Age15_Sec_F", "Age15_Hi_M","Age15_Hi_F", "Age15_Univ_M", "Age15_Univ_F", "Age20_NoDip_M", "Age20_NoDip_F", "Age20_Sec_M","Age20_Sec_F", "Age20_Hi_M", "Age20_Hi_F", "Age20_Univ_M", "Age20_Univ_F","Age25_NoDip_M", "Age25_NoDip_F","Age25_Sec_M","Age25_Sec_F", "Age25_Hi_M", "Age25_Hi_F","Age25_Univ_M","Age25_Univ_F", "Age30_NoDip_M", "Age30_NoDip_F", "Age30_Sec_M", "Age30_Sec_F", "Age30_Hi_M", "Age30_Hi_F","Age30_Univ_M","Age30_Univ_F", "Age35_NoDip_M", "Age35_NoDip_F", "Age35_Sec_M", "Age35_Sec_F", "Age35_Hi_M", "Age35_Hi_F", "Age35_Univ_M","Age35_Univ_F", "Age40_NoDip_M", "Age40_NoDip_F", "Age40_Sec_M","Age40_Sec_F", "Age40_Hi_M", "Age40_Hi_F", "Age40_Univ_M","Age40_Univ_F", "Age45_NoDip_M", "Age45_NoDip_F","Age45_Sec_M","Age45_Sec_F", "Age45_Hi_M", "Age45_Hi_F", "Age45_Univ_M","Age45_Univ_F", "Age50_NoDip_M", "Age50_NoDip_F","Age50_Sec_M","Age50_Sec_F", "Age50_Hi_M", "Age50_Hi_F", "Age50_Univ_M", "Age50_Univ_F", "Age55_NoDip_M", "Age55_NoDip_F","Age55_Sec_M", "Age55_Sec_F", "Age55_Hi_M", "Age55_Hi_F",
 "Age55_Univ_M", "Age55_Univ_F", "Age60_NoDip_M", "Age60_NoDip_F","Age60_Sec_M","Age60_Sec_F", "Age60_Hi_M", "Age60_Hi_F", "Age60_Univ_M", "Age60_Univ_F", "Age65_NoDip_M", "Age65_NoDip_F","Age65_Sec_M","Age65_Sec_F", "Age65_Hi_M", "Age65_Hi_F", "Age65_Univ_M", "Age65_Univ_F")
 
+# Aggregate variables by grouping all the education level categories by gender
+# total number of females with no diploma
+educ$female_NoDip <- rowSums(cbind(educ$Age15_NoDip_F, educ$Age20_NoDip_F, educ$Age25_NoDip_F, educ$Age30_NoDip_F, educ$Age35_NoDip_F,educ$Age40_NoDip_F,educ$Age45_NoDip_F, educ$Age50_NoDip_F, educ$Age55_NoDip_F, educ$Age60_NoDip_F, educ$Age65_NoDip_F))
+
+# total number of males with no diploma
+educ$male_NoDip <- rowSums(cbind(educ$Age15_NoDip_M, educ$Age20_NoDip_M, educ$Age25_NoDip_M, educ$Age30_NoDip_M, educ$Age35_NoDip_M,educ$Age40_NoDip_M,educ$Age45_NoDip_M, educ$Age50_NoDip_M, educ$Age55_NoDip_M, educ$Age60_NoDip_M, educ$Age65_NoDip_M))
+
+# total number of females with secondary education level
+educ$female_Sec <- rowSums(cbind(educ$Age15_Sec_F, educ$Age20_Sec_F, educ$Age25_Sec_F, educ$Age30_Sec_F, educ$Age35_Sec_F,educ$Age40_Sec_F,educ$Age45_Sec_F, educ$Age50_Sec_F, educ$Age55_Sec_F, educ$Age60_Sec_F, educ$Age65_Sec_F))
+
+# total number of males with secondary education level
+educ$male_Sec <- rowSums(cbind(educ$Age15_Sec_M, educ$Age20_Sec_M, educ$Age25_Sec_M, educ$Age30_Sec_M, educ$Age35_Sec_M,educ$Age40_Sec_M,educ$Age45_Sec_M, educ$Age50_Sec_M, educ$Age55_Sec_M, educ$Age60_Sec_M, educ$Age65_Sec_M))
+
+# total number of females with high-school education level
+educ$female_Hi <- rowSums(cbind(educ$Age15_Hi_F, educ$Age20_Hi_F, educ$Age25_Hi_F, educ$Age30_Hi_F, educ$Age35_Hi_F,educ$Age40_Hi_F,educ$Age45_Hi_F, educ$Age50_Hi_F, educ$Age55_Hi_F, educ$Age60_Hi_F, educ$Age65_Hi_F))
+
+# total number of males with high-school education level
+educ$male_Hi <- rowSums(cbind(educ$Age15_Hi_M, educ$Age20_Hi_M, educ$Age25_Hi_M, educ$Age30_Hi_M, educ$Age35_Hi_M,educ$Age40_Hi_M,educ$Age45_Hi_M, educ$Age50_Hi_M, educ$Age55_Hi_M, educ$Age60_Hi_M, educ$Age65_Hi_M))
+
+# total number of females with university degree
+educ$female_Univ <- rowSums(cbind(educ$Age15_Univ_F, educ$Age20_Univ_F, educ$Age25_Univ_F, educ$Age30_Univ_F, educ$Age35_Univ_F,educ$Age40_Univ_F,educ$Age45_Univ_F, educ$Age50_Univ_F, educ$Age55_Univ_F, educ$Age60_Univ_F, educ$Age65_Univ_F))
+
+# total number of males with university degree
+educ$male_Univ <- rowSums(cbind(educ$Age15_Univ_M, educ$Age20_Univ_M, educ$Age25_Univ_M, educ$Age30_Univ_M, educ$Age35_Univ_M,educ$Age40_Univ_M,educ$Age45_Univ_M, educ$Age50_Univ_M, educ$Age55_Univ_M, educ$Age60_Univ_M, educ$Age65_Univ_M))
+
+# drop all the unnecessary variables 
+educ <- subset(educ, select= -c(Age15_NoDip_M,Age15_NoDip_F, Age15_Sec_M, Age15_Sec_F, Age15_Hi_M,Age15_Hi_F, Age15_Univ_M, Age15_Univ_F, Age20_NoDip_M, Age20_NoDip_F, Age20_Sec_M,Age20_Sec_F, Age20_Hi_M, Age20_Hi_F, Age20_Univ_M, Age20_Univ_F,Age25_NoDip_M, Age25_NoDip_F,Age25_Sec_M,Age25_Sec_F, Age25_Hi_M, Age25_Hi_F,Age25_Univ_M,Age25_Univ_F, Age30_NoDip_M, Age30_NoDip_F, Age30_Sec_M, Age30_Sec_F, Age30_Hi_M, Age30_Hi_F,Age30_Univ_M,Age30_Univ_F, Age35_NoDip_M, Age35_NoDip_F, Age35_Sec_M, Age35_Sec_F, Age35_Hi_M, Age35_Hi_F, Age35_Univ_M,Age35_Univ_F, Age40_NoDip_M, Age40_NoDip_F, Age40_Sec_M,Age40_Sec_F, Age40_Hi_M, Age40_Hi_F, Age40_Univ_M,Age40_Univ_F, Age45_NoDip_M, Age45_NoDip_F,Age45_Sec_M,Age45_Sec_F, Age45_Hi_M, Age45_Hi_F, Age45_Univ_M,Age45_Univ_F, Age50_NoDip_M, Age50_NoDip_F,Age50_Sec_M,Age50_Sec_F, Age50_Hi_M, Age50_Hi_F, Age50_Univ_M, Age50_Univ_F, Age55_NoDip_M, Age55_NoDip_F,Age55_Sec_M, Age55_Sec_F, Age55_Hi_M, Age55_Hi_F,
+Age55_Univ_M, Age55_Univ_F, Age60_NoDip_M, Age60_NoDip_F,Age60_Sec_M,Age60_Sec_F, Age60_Hi_M, Age60_Hi_F, Age60_Univ_M, Age60_Univ_F, Age65_NoDip_M, Age65_NoDip_F,Age65_Sec_M,Age65_Sec_F, Age65_Hi_M, Age65_Hi_F, Age65_Univ_M, Age65_Univ_F))
+
+# total number of population without a diploma
+educ$nodip <-rowSums(cbind(educ$female_NoDip, educ$male_NoDip))
+
+# total number of population with secondary level of education
+educ$sec <-rowSums(cbind(educ$female_Sec, educ$male_NoDip))
+
+# total number of population with highschool diploma
+educ$hi <-rowSums(cbind(educ$female_Hi, educ$male_Hi))
+
+# total number of poopulation with university diploma
+educ$univ <- rowSums(cbind(educ$female_Univ, educ$male_Univ))
 ```
 
 ```{r Ineq-Drop unnecessary columns and rename them}
 
 # Drop unnecessary variables
-ineq <- subset(ineq, select = -c(P09_POP, NAISD16, DECESD16, P14_RP_PROP, P09_EMPLT,ETTOT15, ETAZ15, ETBE15, ETFZ15, ETGU15, ETGZ15, ETOQ15, ETTEF115, ETTEFP1015))
+ineq <- subset(ineqNEW, select = -c(P09_POP, NAISD16, DECESD16, P14_RP_PROP, P09_EMPLT,ETTOT15, ETAZ15, ETBE15, ETFZ15, ETGU15, ETGZ15, ETOQ15, ETTEF115, ETTEFP1015))
 
 # rename variables 
 names(ineq)[5:ncol(ineq)] <-
@@ -1829,12 +1930,15 @@ names(ineq)[5:ncol(ineq)] <-
     "pop15_64",
     "unemp15_64",
     "act15_64")
+
+# Drop unnecessary variables 
+ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14))
 ```
 
 ```{r Categ_socio-rename variables }
 
 # rename variables
-names(categ_socio)[3:ncol(categ_socio)] <-
+names(categ_socioNEW)[3:ncol(categ_socioNEW)] <-
   c("M_immi_agri",
     "F_immi_agri",
     "M_NoImmi_agri",
@@ -1869,7 +1973,7 @@ names(categ_socio)[3:ncol(categ_socio)] <-
     "F_NoImmi_noAct")
 
 # Drop unnecessary columns (code/num and name represents same thing) 
-categ_socio <- subset(categ_socio, select = -c(LIBGEO))
+categ_socio <- subset(categ_socioNEW, select = -c(LIBGEO))
 
 # Create new variables: total number immigrants per town generated by summing up each categories
 categ_socio$total_immig <- rowSums(cbind(categ_socio$M_immi_agri, categ_socio$F_immi_agri, categ_socio$M_immi_comm, categ_socio$F_immi_comm, categ_socio$M_immi_exec, categ_socio$F_immi_exec, categ_socio$M_immi_midman, categ_socio$F_immi_midman, categ_socio$M_immi_noAct, categ_socio$F_immi_noAct, categ_socio$M_immi_retired, categ_socio$F_immi_retired, categ_socio$M_immi_emp, categ_socio$F_immi_emp, categ_socio$M_immi_worker, categ_socio$F_immi_worker))
@@ -1885,67 +1989,148 @@ categ_socio$female_immig <- rowSums(cbind(categ_socio$F_immi_agri,categ_socio$F_
 ```{r Status drop and rename variables}
 
 # Drop unnecessary variables
-status_work <- subset(status_work, select = -c(LIBGEO))
+status_work <- subset(status_workNEW, select = -c(LIBGEO))
 
 # rename variables
 names(status_work)[2:ncol(status_work)] <-
-  c("Less20_M_Empl_Full", "Less20_M_Empl_Half", "Less20_M_Indp1_Full", "Less20_M_Indp1_Half", "Less20_M_Indp2_Ful", "Less20_M_Indp2_Half", "Less20_M_Indp3_Full", "Less20_M_Indp3_Half", "Less20_F_Empl_Full", "Less20_F_Empl_Half", "Less20_F_Indp1_Full", "Less20_F_Indp1_Half", "Less20_F_Indp2_Full", "Less20_F_Indp2_Half", "Less20_F_Indp3_Full", "Less20_F_Indp3_Half", "24_M_Empl_Full", "24_M_Empl_Half", "24_M_Indp1_Full", "24_M_Indp1_Half", "24_M_Indp2_Full", "24_M_Indp2_Half", "24_M_Indp3_Full", "24_M_Indp3_Half", "24_F_Empl_Full", "24_F_Empl_Half", "24_F_Indp1_Full", "24_F_Indp1_Half", "24_F_Indp2_Full", "24_F_Indp2_Half", "24_F_Indp3_Full", "24_F_Indp3_Half", "29_M_Empl_Full", "29_M_Empl_Half", "29_M_Indp1_Full", "29_M_Indp1_Half", "29_M_Indp2_Full", "29_M_Indp2_Half", "29_M_Indp3_Full", "29_M_Indp3_Half", "29_F_Empl_Full", "29_F_Empl_Half", "29_F_Indp1_Full", "29_F_Indp1_Half", "29_F_Indp2_Full", "29_F_Indp2_Half", "29_F_Indp3_Full", "29_F_Indp3_Half", "34_M_Empl_Full", "34_M_Empl_Half", "34_M_Indp1_Full", "34_M_Indp1_Half", "34_M_Indp2_Full", "34_M_Indp2_Half", "34_M_Indp3_Full", "34_M_Indp3_Half", "34_F_Empl_Full", "34_F_Empl_Half", "34_F_Indp1_Full", "34_F_Indp1_Half", "34_F_Indp2_Full", "34_F_Indp2_Half", "34_F_Indp3_Full", "34_F_Indp3_Half", "39_M_Empl_Full", "39_M_Empl_Half", "39_M_Indp1_Full", "39_M_Indp1_Half", "39_M_Indp2_Full", "39_M_Indp2_Half", "39_M_Indp3_Full", "39_M_Indp3_Half", "39_F_Empl_Full", "39_F_Empl_Half", "39_F_Indp1_Full", "39_F_Indp1_Half", "39_F_Indp2_Full", "39_F_Indp2_Half", "39_F_Indp3_Full", "39_F_Indp3_Half", "44_M_Empl_Full", "44_M_Empl_Half", "44_M_Indp1_Full", "44_M_Indp1_Half", "44_M_Indp2_Full", "44_M_Indp2_Half", "44_M_Indp3_Full", "44_M_Indp3_Half", "44_F_Empl_Full", "44_F_Empl_Half", "44_F_Indp1_Full", "44_F_Indp1_Half", "44_F_Indp2_Full", "44_F_Indp2_Half", "44_F_Indp3_Full", "44_F_Indp3_Half", "49_M_Empl_Full", "49_M_Empl_Half", "49_M_Indp1_Full", "49_M_Indp1_Half", "49_M_Indp2_Full", "49_M_Indp2_Half", "49_M_Indp3_Full", "49_M_Indp3_Half", "49_F_Empl_Full", "49_F_Empl_Half", "49_F_Indp1_Full", "49_F_Indp1_Half", "49_F_Indp2_Full", "49_F_Indp2_Half", "49_F_Indp3_Full", "49_F_Indp3_Half", "54_M_Empl_Full", "54_M_Empl_Half", "54_M_Indp1_Full", "54_M_Indp1_Half", "54_M_Indp2_Full", "54_M_Indp2_Half", "54_M_Indp3_Full", "54_M_Indp3_Half", "54_F_Empl_Full", "54_F_Empl_Half", "54_F_Indp1_Full", "54_F_Indp1_Half", "54_F_Indp2_Full", "54_F_Indp2_Half", "54_F_Indp3_Full", "54_F_Indp3_Half", "59_M_Empl_Full", "59_M_Empl_Half", "59_M_Indp1_Full", "59_M_Indp1_Half", "59_M_Indp2_Full", "59_M_Indp2_Half", "59_M_Indp3_Full", "59_M_Indp3_Half", "59_F_Empl_Full", "59_F_Empl_Half", "59_F_Indp1_Full", "59_F_Indp1_Half", "59_F_Indp2_Full", "59_F_Indp2_Half", "59_F_Indp3_Full", "59_F_Indp3_Half", "64_M_Empl_Full", "64_M_Empl_Half", "64_M_Indp1_Full", "64_M_Indp1_Half", "64_M_Indp2_Full", "64_M_Indp2_Half", "64_M_Indp3_Full", "64_M_Indp3_Half", "64_F_Empl_Full", "64_F_Empl_Half", "64_F_Indp1_Full", "64_F_Indp1_Half", "64_F_Indp2_Full", "64_F_Indp2_Half", "64_F_Indp3_Full", "64_F_Indp3_Half", "69_M_Empl_Full", "69_M_Empl_Half", "69_M_Indp1_Full", "69_M_Indp1_Half", "69_M_Indp2_Full", "69_M_Indp2_Half", "69_M_Indp3_Full", "69_M_Indp3_Half", "69_F_Empl_Full", "69_F_Empl_Half", "69_F_Indp1_Full", "69_F_Indp1_Half", "69_F_Indp2_Full", "69_F_Indp2_Half", "69_F_Indp3_Full", "69_F_Indp3_Half")
+  c("Less20_M_wagearner_Full", "Less20_M_wagearner_Half", "Less20_M_Indp1_Full", "Less20_M_Indp1_Half", "Less20_M_empl_Full", "Less20_M_empl_Half", "Less20_M_trans_Full", "Less20_M_trans_Half", "Less20_F_wagearner_Full", "Less20_F_wagearner_Half", "Less20_F_Indp1_Full", "Less20_F_Indp1_Half", "Less20_F_empl_Full", "Less20_F_empl_Half", "Less20_F_trans_Full", "Less20_F_trans_Half", "t4_M_wagearner_Full", "t4_M_wagearner_Half", "t4_M_Indp1_Full", "t4_M_Indp1_Half", "t4_M_empl_Full", "t4_M_empl_Half", "t4_M_trans_Full", "t4_M_trans_Half", "t4_F_wagearner_Full", "t4_F_wagearner_Half", "t4_F_Indp1_Full", "t4_F_Indp1_Half", "t4_F_empl_Full", "t4_F_empl_Half", "t4_F_trans_Full", "t4_F_trans_Half", "t9_M_wagearner_Full", "t9_M_wagearner_Half", "t9_M_Indp1_Full", "t9_M_Indp1_Half", "t9_M_empl_Full", "t9_M_empl_Half", "t9_M_trans_Full", "t9_M_trans_Half", "t9_F_wagearner_Full", "t9_F_wagearner_Half", "t9_F_Indp1_Full", "t9_F_Indp1_Half", "t9_F_empl_Full", "t9_F_empl_Half", "t9_F_trans_Full", "t9_F_trans_Half", "T4_M_wagearner_Full", "T4_M_wagearner_Half", "T4_M_Indp1_Full", "T4_M_Indp1_Half", "T4_M_empl_Full", "T4_M_empl_Half", "T4_M_trans_Full", "T4_M_trans_Half", "T4_F_wagearner_Full", "T4_F_wagearner_Half", "T4_F_Indp1_Full", "T4_F_Indp1_Half", "T4_F_empl_Full", "T4_F_empl_Half", "T4_F_trans_Full", "T4_F_trans_Half", "T9_M_wagearner_Full", "T9_M_wagearner_Half", "T9_M_Indp1_Full", "T9_M_Indp1_Half", "T9_M_empl_Full", "T9_M_empl_Half", "T9_M_trans_Full", "T9_M_trans_Half", "T9_F_wagearner_Full", "T9_F_wagearner_Half", "T9_F_Indp1_Full", "T9_F_Indp1_Half", "T9_F_empl_Full", "T9_F_empl_Half", "T9_F_trans_Full", "T9_F_trans_Half", "FF_M_wagearner_Full", "FF_M_wagearner_Half", "FF_M_Indp1_Full", "FF_M_Indp1_Half", "FF_M_empl_Full", "FF_M_empl_Half", "FF_M_trans_Full", "FF_M_trans_Half", "FF_F_wagearner_Full", "FF_F_wagearner_Half", "FF_F_Indp1_Full", "FF_F_Indp1_Half", "FF_F_empl_Full", "FF_F_empl_Half", "FF_F_trans_Full", "FF_F_trans_Half", "F9_M_wagearner_Full", "F9_M_wagearner_Half", "F9_M_Indp1_Full", "F9_M_Indp1_Half", "F9_M_empl_Full", "F9_M_empl_Half", "F9_M_trans_Full", "F9_M_trans_Half", "F9_F_wagearner_Full", "F9_F_wagearner_Half", "F9_F_Indp1_Full", "F9_F_Indp1_Half", "F9_F_empl_Full", "F9_F_empl_Half", "F9_F_trans_Full", "F9_F_trans_Half", "f4_M_wagearner_Full", "f4_M_wagearner_Half", "f4_M_Indp1_Full", "f4_M_Indp1_Half", "f4_M_empl_Full", "f4_M_empl_Half", "f4_M_trans_Full", "f4_M_trans_Half", "f4_F_wagearner_Full", "f4_F_wagearner_Half", "f4_F_Indp1_Full", "f4_F_Indp1_Half", "f4_F_empl_Full", "f4_F_empl_Half", "f4_F_trans_Full", "f4_F_trans_Half", "f9_M_wagearner_Full", "f9_M_wagearner_Half", "f9_M_Indp1_Full", "f9_M_Indp1_Half", "f9_M_empl_Full", "f9_M_empl_Half", "f9_M_trans_Full", "f9_M_trans_Half", "f9_F_wagearner_Full", "f9_F_wagearner_Half", "f9_F_Indp1_Full", "f9_F_Indp1_Half", "f9_F_empl_Full", "f9_F_empl_Half", "f9_F_trans_Full", "f9_F_trans_Half", "s4_M_wagearner_Full", "s4_M_wagearner_Half", "s4_M_Indp1_Full", "s4_M_Indp1_Half", "s4_M_empl_Full", "s4_M_empl_Half", "s4_M_trans_Full", "s4_M_trans_Half", "s4_F_wagearner_Full", "s4_F_wagearner_Half", "s4_F_Indp1_Full", "s4_F_Indp1_Half", "s4_F_empl_Full", "s4_F_empl_Half", "s4_F_trans_Full", "s4_F_trans_Half", "s9_M_wagearner_Full", "s9_M_wagearner_Half", "s9_M_Indp1_Full", "s9_M_Indp1_Half", "s9_M_empl_Full", "s9_M_empl_Half", "s9_M_trans_Full", "s9_M_trans_Half", "s9_F_wagearner_Full", "s9_F_wagearner_Half", "s9_F_Indp1_Full", "s9_F_Indp1_Half", "s9_F_empl_Full", "s9_F_empl_Half", "s9_F_trans_Full", "s9_F_trans_Half")
+
+# Simplify the variables by summing up by categories
+# total number of wage earners for males and females.
+nam.M = rep(0, ncol(status_work))
+nam.F = rep(0, ncol(status_work))
+for (i in 1:ncol(status_work)){
+  sol = grepl('wagearner', names(status_work)[i])
+  if (sol==1){
+    if (grepl('M', names(status_work)[i])){
+      nam.M[i] = i  
+    }else{nam.F[i]=i}
+  }else{
+    nam.F[i]=0
+    nam.M[i]=0}
+}
+# names(status_work[nam.M])
+# names(status_work[nam.F])
+status_work$wagearner_M=rowSums(status_work[,nam.M])
+status_work$wagearner_F=rowSums(status_work[,nam.F])
+                                               
+# same but for independent workers by gender
+nam.M = rep(0, ncol(status_work))
+nam.F = rep(0, ncol(status_work))
+for (i in 1:ncol(status_work)){
+  sol = grepl('Indp1', names(status_work)[i])
+  if (sol==1){
+    if (grepl('M', names(status_work)[i])){
+      nam.M[i] = i  
+    }else{nam.F[i]=i}
+  }else{
+    nam.F[i]=0
+    nam.M[i]=0}
+}
+# names(status_work[nam.M])
+# names(status_work[nam.F])
+status_work$independent_M=rowSums(status_work[,nam.M])
+status_work$independent_F=rowSums(status_work[,nam.F])
+
+# same but for government transfer receivers
+nam.M = rep(0, ncol(status_work))
+nam.F = rep(0, ncol(status_work))
+for (i in 1:ncol(status_work)){
+  sol = grepl('trans', names(status_work)[i])
+  if (sol==1){
+    if (grepl('M', names(status_work)[i])){
+      nam.M[i] = i  
+    }else{nam.F[i]=i}
+  }else{
+    nam.F[i]=0
+    nam.M[i]=0}
+}
+# names(status_work[nam.M])
+# names(status_work[nam.F])
+status_work$transfer_M=rowSums(status_work[,nam.M])
+status_work$transfer_F=rowSums(status_work[,nam.F])
+
+# same but for employers
+nam.M = rep(0, ncol(status_work))
+nam.F = rep(0, ncol(status_work))
+for (i in 1:ncol(status_work)){
+  sol = grepl('empl', names(status_work)[i])
+  if (sol==1){
+    if (grepl('M', names(status_work)[i])){
+      nam.M[i] = i  
+    }else{nam.F[i]=i}
+  }else{
+    nam.F[i]=0
+    nam.M[i]=0}
+}
+# names(status_work[nam.M])
+# names(status_work[nam.F])
+status_work$employer_M=rowSums(status_work[,nam.M])
+status_work$employer_F=rowSums(status_work[,nam.F])
+
+# same but for full-time contracts
+nam.M = rep(0, ncol(status_work))
+nam.F = rep(0, ncol(status_work))
+for (i in 1:ncol(status_work)){
+  sol = grepl('Full', names(status_work)[i])
+  if (sol==1){
+    if (grepl('M', names(status_work)[i])){
+      nam.M[i] = i  
+    }else{nam.F[i]=i}
+  }else{
+    nam.F[i]=0
+    nam.M[i]=0}
+}
+# names(status_work[nam.M])
+# names(status_work[nam.F])
+status_work$full_M=rowSums(status_work[,nam.M])
+status_work$full_F=rowSums(status_work[,nam.F])
+
+# same but for half-time contracts
+nam.M = rep(0, ncol(status_work))
+nam.F = rep(0, ncol(status_work))
+for (i in 1:ncol(status_work)){
+  sol = grepl('Half', names(status_work)[i])
+  if (sol==1){
+    if (grepl('M', names(status_work)[i])){
+      nam.M[i] = i  
+    }else{nam.F[i]=i}
+  }else{
+    nam.F[i]=0
+    nam.M[i]=0}
+}
+#names(status_work[nam.M])
+#names(status_work[nam.F])
+status_work$half_M=rowSums(status_work[,nam.M])
+status_work$half_F=rowSums(status_work[,nam.F])
+
+# drop unnecessary variables
+status_work <- subset(status_work, select = -c(Less20_M_wagearner_Full, Less20_M_wagearner_Half, Less20_M_Indp1_Full, Less20_M_Indp1_Half, Less20_M_empl_Full, Less20_M_empl_Half, Less20_M_trans_Full, Less20_M_trans_Half, Less20_F_wagearner_Full, Less20_F_wagearner_Half, Less20_F_Indp1_Full, Less20_F_Indp1_Half, Less20_F_empl_Full, Less20_F_empl_Half, Less20_F_trans_Full, Less20_F_trans_Half, t4_M_wagearner_Full, t4_M_wagearner_Half, t4_M_Indp1_Full, t4_M_Indp1_Half, t4_M_empl_Full, t4_M_empl_Half, t4_M_trans_Full, t4_M_trans_Half, t4_F_wagearner_Full, t4_F_wagearner_Half, t4_F_Indp1_Full, t4_F_Indp1_Half, t4_F_empl_Full, t4_F_empl_Half, t4_F_trans_Full, t4_F_trans_Half, t9_M_wagearner_Full, t9_M_wagearner_Half, t9_M_Indp1_Full, t9_M_Indp1_Half, t9_M_empl_Full, t9_M_empl_Half, t9_M_trans_Full, t9_M_trans_Half, t9_F_wagearner_Full, t9_F_wagearner_Half, t9_F_Indp1_Full, t9_F_Indp1_Half, t9_F_empl_Full, t9_F_empl_Half, t9_F_trans_Full, t9_F_trans_Half, T4_M_wagearner_Full, T4_M_wagearner_Half, T4_M_Indp1_Full, T4_M_Indp1_Half, T4_M_empl_Full, T4_M_empl_Half, T4_M_trans_Full, T4_M_trans_Half, T4_F_wagearner_Full, T4_F_wagearner_Half, T4_F_Indp1_Full, T4_F_Indp1_Half, T4_F_empl_Full, T4_F_empl_Half, T4_F_trans_Full, T4_F_trans_Half, T9_M_wagearner_Full, T9_M_wagearner_Half, T9_M_Indp1_Full, T9_M_Indp1_Half, T9_M_empl_Full, T9_M_empl_Half, T9_M_trans_Full, T9_M_trans_Half, T9_F_wagearner_Full, T9_F_wagearner_Half, T9_F_Indp1_Full, T9_F_Indp1_Half, T9_F_empl_Full, T9_F_empl_Half, T9_F_trans_Full, T9_F_trans_Half, FF_M_wagearner_Full, FF_M_wagearner_Half, FF_M_Indp1_Full, FF_M_Indp1_Half, FF_M_empl_Full, FF_M_empl_Half, FF_M_trans_Full, FF_M_trans_Half, FF_F_wagearner_Full, FF_F_wagearner_Half, FF_F_Indp1_Full, FF_F_Indp1_Half, FF_F_empl_Full, FF_F_empl_Half, FF_F_trans_Full, FF_F_trans_Half, F9_M_wagearner_Full, F9_M_wagearner_Half, F9_M_Indp1_Full, F9_M_Indp1_Half, F9_M_empl_Full, F9_M_empl_Half, F9_M_trans_Full, F9_M_trans_Half, F9_F_wagearner_Full, F9_F_wagearner_Half, F9_F_Indp1_Full, F9_F_Indp1_Half, F9_F_empl_Full, F9_F_empl_Half, F9_F_trans_Full, F9_F_trans_Half, f4_M_wagearner_Full, f4_M_wagearner_Half, f4_M_Indp1_Full, f4_M_Indp1_Half, f4_M_empl_Full, f4_M_empl_Half, f4_M_trans_Full, f4_M_trans_Half, f4_F_wagearner_Full, f4_F_wagearner_Half, f4_F_Indp1_Full, f4_F_Indp1_Half, f4_F_empl_Full, f4_F_empl_Half, f4_F_trans_Full, f4_F_trans_Half, f9_M_wagearner_Full, f9_M_wagearner_Half, f9_M_Indp1_Full, f9_M_Indp1_Half, f9_M_empl_Full, f9_M_empl_Half, f9_M_trans_Full, f9_M_trans_Half, f9_F_wagearner_Full, f9_F_wagearner_Half, f9_F_Indp1_Full, f9_F_Indp1_Half, f9_F_empl_Full, f9_F_empl_Half, f9_F_trans_Full, f9_F_trans_Half, s4_M_wagearner_Full, s4_M_wagearner_Half, s4_M_Indp1_Full, s4_M_Indp1_Half, s4_M_empl_Full, s4_M_empl_Half, s4_M_trans_Full, s4_M_trans_Half, s4_F_wagearner_Full, s4_F_wagearner_Half, s4_F_Indp1_Full, s4_F_Indp1_Half, s4_F_empl_Full, s4_F_empl_Half, s4_F_trans_Full, s4_F_trans_Half, s9_M_wagearner_Full, s9_M_wagearner_Half, s9_M_Indp1_Full, s9_M_Indp1_Half, s9_M_empl_Full, s9_M_empl_Half, s9_M_trans_Full, s9_M_trans_Half, s9_F_wagearner_Full, s9_F_wagearner_Half, s9_F_Indp1_Full, s9_F_Indp1_Half, s9_F_empl_Full, s9_F_empl_Half, s9_F_trans_Full, s9_F_trans_Half))
 ```
 
 
-```{r match CODGEO}
 
-educ$CODGEO            <- sub("A", "0", educ$CODGEO)
-educ$CODGEO            <- sub("B", "0", educ$CODGEO)
-categ_socio$CODGEO     <- sub("A", "0", categ_socio$CODGEO)
-categ_socio$CODGEO     <- sub("B", "0", categ_socio$CODGEO)
-ineq$CODGEO            <- sub("A", "0", ineq$CODGEO)
-ineq$CODGEO            <- sub("B", "0", ineq$CODGEO)
-status_work$CODGEO     <- sub("A", "0", status_work$CODGEO)
-status_work$CODGEO     <- sub("B", "0", status_work$CODGEO)
+## Descriptive statistics
 
+```{r}
 
-# Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
-# use only integer values
-status_work$CODGEO = as.integer(status_work$CODGEO)  
-ineq$CODGEO = as.integer(ineq$CODGEO)
-educ$CODGEO = as.integer(educ$CODGEO)
-categ_socio$CODGEO = as.integer(categ_socio$CODGEO)
+summary(status_work)
 
-# store datasets' names to loop on them
-dataset = c("educ", "categ_socio", "ineq", "status_work")
+ggplot(data=status_work, aes(ifelse(full_F!=0, log(full_F), 0))) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
+  geom_density(col="black") +
+  labs(x="", y="Density") +
+  ggtitle("") +
+  theme(plot.title = element_text(hjust = 0.5))
 
-# obtain sommon IDs for all datasets
-for (i in dataset){
-  # get i-th name and create a new variable concateneting "NEW" at the end
-  nam <- paste(i, "NEW", sep = "")
-  # initialize counter to identify the number of iteration in j
-  iter = 1
-  for (j in dataset){
-    if (j != i){
-      # for each dataset different from the i-th
-      if (iter == 1){
-        # 1st iteration: use the original dataset (e.g., geo)
-        assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
-      } else{
-        # successive iteration: use the new dataset (e.g., geoNEW)
-        assign(nam, semi_join(get(nam), get(j), by = "CODGEO"))
-      }
-      iter = iter + 1
-    }
-  }
-}
-
-# check how many observation have been deleted
-for (i in dataset){
-  del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
-  del_prop = del_rows / nrow(get(i))
-  del_obs = paste("For", i, del_rows, "units have been deleted.",
-                  "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
-  print(paste(del_obs))
-}
-
+ggplot(data=status_work, aes(ifelse(full_M!=0, log(full_M), 0))) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
+  geom_density(col="black") +
+  labs(x="", y="Density") +
+  ggtitle("") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
+
 
 # Chiaromonte's part
 
