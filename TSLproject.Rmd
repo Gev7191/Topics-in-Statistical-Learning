@@ -2266,6 +2266,108 @@ plot(xyplot(sal_worker ~ sal_midManager | M_F_salary_ratio,
 
 ```
 
+Preliminary multivariate firms data visualisation to better conduct the unsupervised learning 
+```{r}
+# add region variable to the salary dataset
+firms_with_dep <- cbind(geoNEW[1], firmsNEW)
+#check
+#ncol(salary_with_dep)
+#head(salary_with_dep)
+# extract continuous variables
+firms_variables <- firms_with_dep[, 4:9]
+
+#scatterplot to visually see the correlations between variables
+pairs(firms_variables[, 2:5], 
+      panel = function (x, y, ...) {
+          points(x, y, ...)
+          abline(lm(y ~ x), col = "red")
+      }, pch = ".", cex = 0.5)
+
+
+#bivariate densities among general, males and females salaries
+panel.hist <- function(x, ...)
+{
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks; nB <- length(breaks)
+  y <- h$counts; y <- y/max(y)
+  rect(breaks[-nB], 0, 
+       breaks[-1], y, col="grey", ...)
+}
+
+
+pairs(firms_variables[, 2:5],
+      diag.panel = panel.hist,
+      panel = function (x,y) {
+        data <- data.frame(cbind(x,y))
+        par(new = TRUE)
+        den <- bkde2D(data, 
+                      bandwidth=sapply(data,dpik))
+        contour(x = den$x1, y = den$x2, 
+                z = den$fhat, axes = FALSE)
+      })
+
+#scale the data
+firms_variables_scaled <- as.data.frame(scale(firms_variables))
+#divide firms total into 4 parts
+firms_levels <- with(firms_variables_scaled, 
+                  equal.count(total,4))
+#make a 3D plot of large against micro and small given firms_levels
+plot(cloud(large ~ micro * small | firms_levels, 
+           panel.aspect = 0.5,
+           data = firms_variables))
+
+#plot sal_worker against sal_midManager given 3 partitions of sal_general
+plot(xyplot(medium ~ large| cut(total, 3), 
+            data = firms_variables, 
+            layout = c(3, 1), 
+            xlab = "medium firms", 
+            ylab = "large firms"))
+
+#multidimesnional plot of large firms against micro firms, given 4 partitions of medium, and grayscale intensities of total
+#medium_firms  <- with(firms_variables, equal.count(medium, 4))
+#total.ord <- with(firms_variables, rev(order(total)))
+#firms_variables.ordered <- firms_variables[total.ord,]
+#total.breaks <- with(firms_variables.ordered, 
+                     #do.breaks(range(total),10))
+#firms_variables.ordered$color<-level.colors(firms_variables.ordered$total,
+                                  # at=total.breaks,
+                                   #col.regions=grey.colors)
+#plot(xyplot(large ~ micro | medium, 
+            #data = firms_variables.ordered,
+            #aspect = "iso", 
+            #groups = color, 
+            #cex = 1, col = "black",
+       #panel = function(x, y, groups, ..., subscripts) {
+           #fill <- groups[subscripts]
+          #panel.grid(h = -1, v = -1)
+           #panel.xyplot(x, y, pch = 11, 
+                       #fill = fill, ...)
+       #},
+       #legend =
+       #list(right =
+            #list(fun = draw.colorkey,
+                 #args=list(key=list(col=gray.colors,
+                                    #at = total.breaks),
+                           #draw = FALSE))),
+            #xlab = "micro firms", 
+            #ylab = "large firms"))
+
+
+#plot(cloud(sal_general ~ sal_worker * salary_ratio_FvsM | sal_26_50, 
+#           data = salary_variables,
+#           zlim = rev(range(salary_variables$sal_general)),
+#           screen = list(z = 5, x = -3), 
+#           panel.aspect = 0.9,
+#           xlab = "Worker salary", 
+#           ylab = "M_F_salary_ratio", 
+#           zlab = "General salary"))
+
+
+```
+
+
 Multi-dimensional scaling (MDS) on salary data
 ```{r}
 # produces a list with covariance matrix
@@ -2371,6 +2473,113 @@ text(x, y, labels = colnames(salary_mah),
 
 ```
 
+Multi-dimensional scaling (MDS) on firms data
+```{r}
+firms_with_dep <- firms_with_dep[, -9]
+# produces a list with covariance matrix
+# for each region as component:
+firms_var <- tapply(1:nrow(firms_with_dep), firms_with_dep$region, 
+                     function(i) var(firms_with_dep[i,5:8]))
+#str(firms_var)
+
+#remove regions with null values
+firms_var <- firms_var[-c(11, 12, 15, 19, 20, 28)]
+#check
+#str(firms_var)
+
+
+
+#create dataframe with the counts of towns per region
+regions_count <- data.frame(table(firms_with_dep$region))
+regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
+#check total sum
+row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+sum(regions_count_sub$Freq)
+
+
+
+# initializes common covariance matrix var:
+S <- regions_count_sub$Freq[1] * as.matrix(firms_var[[1]])
+
+# creates common covariance matrix S
+s <- 0
+for (v in c(1:5)) S <- S + regions_count_sub$Freq[v] * as.matrix(firms_var[[v]]) 
+S <- S / 5021
+
+# finds center of each variable (micro, etc)
+# for each region
+firms_cen <- tapply(1:nrow(firms_with_dep), firms_with_dep$region, 
+    function(i) apply(firms_with_dep[i,-c(1:4)], 2, mean))
+firms_cen
+firms_cen <- firms_cen[-c(11, 12, 15, 19, 20, 28)]
+str(firms_cen)
+
+# create a matrix out of each components, each
+# mean measurement for all variables by region
+firms_cen <- matrix(unlist(firms_cen), 
+    nrow = length(firms_cen), byrow = TRUE)
+firms_cen
+
+# compute the mahalanobis distances:
+firms_mah <- apply(firms_cen, 1, 
+    function(cen) mahalanobis(firms_cen, cen, S))
+firms_mah
+
+
+
+# run it on two dimensions
+firms_mds <- cmdscale(firms_mah)
+
+# draw a scatterplot of two-dimensional solution
+# from classical MDS applied to Mahalanobis
+# distances:
+lim <- range(firms_mds) * 1.2
+plot(firms_mds, xlab = "Coordinate 1", 
+     ylab = "Coordinate 2",
+     xlim = lim, ylim = lim, type = "n")
+text(firms_mds, labels = levels(firms_with_dep$region), 
+     cex = 0.5)
+
+# But here, as the two-dimensional fit may not
+# explain what is needed to represent the observed
+# distances, we shall investigate the solution 
+# in a little more detail using the "minimum
+# spanning tree".
+
+# The minimum spanning tree is defined as follows. 
+# Suppose n points are given (possibly in many
+# dimensions). Then a tree spanning these points 
+# (that is, a spanning tree) is any set of straight 
+# line segments joining pairs of points such that
+# - 0 closed loops occur,
+# - every point is visited at least one time, and
+# - the tree is connected (has paths between each
+# pair of points)
+
+# We use function mst() from package ape to plot
+# minimum spanning tree on the two-dimensional
+# scaling solution:
+
+#
+# run classic MDS function on distances
+firms_mds <- cmdscale(firms_mah, k = nrow(firms_mah) - 1, 
+         eig = TRUE)
+
+#only 5 of the first 21 eigenvalues are > 0
+x <- firms_mds$points[,1]
+y <- firms_mds$points[,2]
+st <- mst(firms_mah)
+plot(x, y, xlab = "Coordinate 1", 
+     ylab = "Coordinate 2",
+     xlim = range(x)*1.2, type = "n")
+for (i in 1:nrow(firms_mah)) {
+  w1 <- which(st[i, ] == 1)
+  segments(x[i], y[i], x[w1], y[w1])
+}
+text(x, y, labels = colnames(firms_mah), 
+     cex = 1.5)
+```
+
 
 PCA on salary data and delta M-F
 ```{r}
@@ -2410,6 +2619,7 @@ plot(pca_salary_delta, type = "l")
 
 
 ```
+
 
 Cluster Analysis on salary and delta M-F
 ```{r}
