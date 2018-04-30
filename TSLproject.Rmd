@@ -2007,6 +2007,9 @@ lab <- cutree(ca, h = 7.8)
 text(salary_pc$scores[,1:2], labels = lab, 
      cex=0.6)  
 
+# restore layout 
+layout(matrix(1, nr = 1)) 
+ 
 # K-means clustering
 n <- nrow(salary_pca_scores)
 wss <- rep(0, 22)
@@ -2028,6 +2031,92 @@ plot(salary_pca_scores,
 
 ```
 
+#MAPPING THE CLUSTERS
+```{r}
+ 
+#now we have to see whether these groups correspond to geographical regions...
+clusters <- kmeans(salary_pca_scores, 5)
+salary_with_dep$cluster <- clusters$cluster
+geoNEW$cluster <- clusters$cluster
+ 
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+salary_geo <-
+  FraMap +
+  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
+             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on salary")
+salary_geo
+ 
+ 
+#salary_with_dep$cluster <- clusters$cluster
+#data("world.cities")
+#France <- world.cities %>% filter(country.etc == "France")
+#EPS <- 0.15
+#clusters <- dbscan(France[, 4:5], eps = EPS)
+#+France$cluster <- clusters$cluster
+ 
+#groups  <- France %>% filter(cluster != 0)
+#noise  <- France %>% filter(cluster == 0)
+ 
+#ggplot(France, aes(x = long, y = lat, alpha = 0.5)) + 
+#  geom_point(aes(fill = "grey"), noise) +
+#  geom_point(aes(colour = as.factor(cluster)), groups,
+ #            size = 3) +
+#  coord_map() +
+#  theme(legend.position = "none")
+ 
+```
+
+new trial
+```{r}
+ 
+# geo styling
+g <- list(
+  scope = 'france',
+  showland = TRUE,
+  landcolor = plotly::toRGB("grey86"),
+  subunitcolor = plotly::toRGB("white"),
+  countrycolor = plotly::toRGB("black"),
+  showlakes = TRUE,
+  lakecolor = plotly::toRGB("white"),
+  showsubunits = TRUE,
+  showcountries = TRUE,
+  resolution = 50,
+  projection = list(
+    type = 'conic conformal',
+    rotation = list(lon = 1)
+  ),
+  lonaxis = list(
+    showgrid = TRUE,
+    gridwidth = 0.5,
+    range = c(-5, 10),
+    dtick = 5
+  ),
+  lataxis = list(
+    showgrid = TRUE,
+    gridwidth = 0.5,
+    range = c(40, 55),
+    dtick = 5
+  )
+)
+ 
+ 
+p <- plotly::plot_geo(geoNEW, lat = ~latitude, lon = ~longitude) %>%
+  plotly::add_markers(
+    # text = ~paste(town_name, paste("Firms tot:", total), 
+    #               paste("Population:", total_population),
+    #               paste("Mean salary:", sal_general), 
+    #               paste("Salary ratio FvsM:", round(salary_ratio_FvsM, 4)),
+    #               sep = "<br />"),
+    color = ~cluster,  size = I(2), hoverinfo = "text", opacity = 0.8 #, colors = 'Purples'
+  ) %>%
+  plotly::colorbar(title = "Total population<br />in 2014") %>%
+  plotly::layout(title = 'Geographic information about France', geo = g)
+p
+ 
+ 
+```
 
 ## Supervised
 
