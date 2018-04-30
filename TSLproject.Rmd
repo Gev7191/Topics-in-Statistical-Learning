@@ -94,7 +94,7 @@ if(!require(ggbiplot)){
   library(ggbiplot)}
 if(!require(corrplot)){install.packages("corrplot"); library(corrplot)}
 if(!require(zoo)){install.packages("zoo"); library(zoo)}
-if(!require(plotly)){install.packages("plotly"); library(plotly)} 
+if(!require(plotly)){install.packages("plotly"); library(plotly)} # interactive plotting
 if(!require(lattice)){install.packages("lattice"); library(lattice)}
 if(!require(MVA)){install.packages("MVA"); library(MVA)}
 if(!require(ape)){install.packages("ape"); library(ape)}
