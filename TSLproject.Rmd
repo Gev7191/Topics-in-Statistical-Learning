@@ -327,7 +327,7 @@ sum(grep(",", newLong))                         # total commas
 ind_long_err  <- grep(",", newLong)             # indexing them
 newLong       <- gsub(",", ".", newLong)        # substituting them with dots
 indNA_Long    <- is.na(as.numeric((newLong)))   # spot NA
-geo$longitude[indNA_Long]                       # verify that they were actually missing
+# geo$longitude[indNA_Long]                       # verify that they were actually missing
 geo$longitude <- as.numeric(newLong)            # overwrite the longitude variable with the new one
 
 # Check for duplicated data (e.g., cities with different postal codes, that we dropped):
@@ -337,7 +337,7 @@ geo$longitude <- as.numeric(newLong)            # overwrite the longitude variab
   # geo[ind_duplic,]
 sum(duplicated.data.frame(geo)) 
 # retaing unique postal cities
-geo <- unique(geo, by = "CODGEO")
+geo <- geo[!duplicated(geo$CODGEO),]
 
 # check again
 summary(geo)
@@ -878,27 +878,33 @@ Understand which towns have the highest concentration of population and ratios.
 ```{r geo plot for each town}
 
 # Merge geography and population data
-geo_population <- merge(geo, population, by="CODGEO")
+# geo_population <- merge(geo, population, by="CODGEO")
+geo_population <- cbind.data.frame(geo[unique(geo$CODGEO) %in% unique(population$CODGEO),],
+                                   population[unique(population$CODGEO) %in% unique(geo$CODGEO),])
 
 # France map
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
 
 # Plot "Distribution of total population for each town" 
-sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$total_population), max(geo_population$total_population)))
+sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$total_population),
+                                                                    max(geo_population$total_population)))
 population_distribution <-
   FraMap +
-  geom_point(aes(x=geo_population$longitude, y=geo_population$latitude, colour=geo_population$total_population),
+  geom_point(aes(x=geo_population$longitude, y=geo_population$latitude,
+                 colour=geo_population$total_population),
              data=geo_population, alpha=0.2, size=0.01) +
-  sc + labs(color='') + ggtitle("Distribution of Population for each town")
+             sc + labs(color='') + ggtitle("Distribution of Population for each town")
 population_distribution
 
 # Plot "Distribution of aged dependency ratio for each town"
-sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$aged_dependency_ratio), max(geo_population$aged_dependency_ratio)))
+sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$aged_dependency_ratio),
+                                                                  max(geo_population$aged_dependency_ratio)))
 aged_ratio_distribution <-
   FraMap +
-  geom_point(aes(x=geo_population$longitude, y=geo_population$latitude, colour=geo_population$aged_dependency_ratio),
+  geom_point(aes(x=geo_population$longitude, y=geo_population$latitude,
+                 colour=geo_population$aged_dependency_ratio),
              data=geo_population, alpha=0.2, size=0.01) +
-  sc + labs(color='') + ggtitle("Aged dependency ratio per town")
+             sc + labs(color='') + ggtitle("Aged dependency ratio per town")
 aged_ratio_distribution
 
 
@@ -973,7 +979,8 @@ educ$male_Univ <- rowSums(cbind(educ$Age15_Univ_M, educ$Age20_Univ_M, educ$Age25
                                 educ$Age55_Univ_M, educ$Age60_Univ_M, educ$Age65_Univ_M))
 
 # drop all the unnecessary variables 
-educ <- subset(educ, select= c(female_NoDip, male_NoDip, 
+educ <- subset(educ, select= c(CODGEO, LIBGEO,
+                               female_NoDip, male_NoDip, 
                                female_Sec, male_Sec, 
                                female_Hi, male_Hi, 
                                female_Univ, male_Univ))
@@ -1211,7 +1218,8 @@ status_work$half_M=rowSums(status_work[,nam.M])
 status_work$half_F=rowSums(status_work[,nam.F])
 
 # drop unnecessary variables
-status_work <- subset(status_work, select = c(wagearner_M, wagearner_F, 
+status_work <- subset(status_work, select = c(CODGEO, LIBGEO,
+                                              wagearner_M, wagearner_F, 
                                               independent_M, independent_F, 
                                               transfer_M, transfer_F, 
                                               employer_M, employer_F, 
@@ -1222,7 +1230,7 @@ status_work <- subset(status_work, select = c(wagearner_M, wagearner_F,
 
 ## Descriptive statistics
 
-```{r}
+```{r descriptive stats status_work}
 
 summary(status_work)
 
@@ -1276,6 +1284,11 @@ ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14))
 
 # Analyze commune data
 
+```{r}
+commune$CODGEO = commune$codgeo 
+```
+
+
 # Produce consistent datasets
 
 The CODGEO variables (code_insee in the original geo data) have to be merged.
@@ -1284,25 +1297,39 @@ To do so, some already known mistakes are corrected:
 
 ```{r fix and match CODGEO}
 
-firms$CODGEO      <- sub("A", "0", firms$CODGEO)
-firms$CODGEO      <- sub("B", "0", firms$CODGEO)
-salary$CODGEO     <- sub("A", "0", salary$CODGEO)
-salary$CODGEO     <- sub("B", "0", salary$CODGEO)
-population$CODGEO <- sub("A", "0", population$CODGEO)
-population$CODGEO <- sub("B", "0", population$CODGEO)
-geo$CODGEO        <- sub("A", "0", geo$CODGEO)
-geo$CODGEO        <- sub("B", "0", geo$CODGEO)
-
+firms$CODGEO       <- sub("A", "0", firms$CODGEO)
+firms$CODGEO       <- sub("B", "0", firms$CODGEO)
+salary$CODGEO      <- sub("A", "0", salary$CODGEO)
+salary$CODGEO      <- sub("B", "0", salary$CODGEO)
+population$CODGEO  <- sub("A", "0", population$CODGEO)
+population$CODGEO  <- sub("B", "0", population$CODGEO)
+geo$CODGEO         <- sub("A", "0", geo$CODGEO)
+geo$CODGEO         <- sub("B", "0", geo$CODGEO)
+educ$CODGEO        <- sub("A", "0", educ$CODGEO)
+educ$CODGEO        <- sub("B", "0", educ$CODGEO)
+categ_socio$CODGEO <- sub("A", "0", categ_socio$CODGEO)
+categ_socio$CODGEO <- sub("B", "0", categ_socio$CODGEO)
+ineq$CODGEO        <- sub("A", "0", ineq$CODGEO)
+ineq$CODGEO        <- sub("B", "0", ineq$CODGEO)
+status_work$CODGEO <- sub("A", "0", status_work$CODGEO)
+status_work$CODGEO <- sub("B", "0", status_work$CODGEO)
+commune$CODGEO     <- sub("A", "0", commune$CODGEO)
+commune$CODGEO     <- sub("B", "0", commune$CODGEO)
 
 # Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
 # use only integer values
-geo$CODGEO = as.integer(geo$CODGEO)  
-population$CODGEO = as.integer(population$CODGEO)
-firms$CODGEO = as.integer(firms$CODGEO)
-salary$CODGEO = as.integer(salary$CODGEO)
+geo$CODGEO         <- as.integer(geo$CODGEO)  
+population$CODGEO  <- as.integer(population$CODGEO)
+firms$CODGEO       <- as.integer(firms$CODGEO)
+salary$CODGEO      <- as.integer(salary$CODGEO)
+status_work$CODGEO <- as.integer(status_work$CODGEO)  
+ineq$CODGEO        <- as.integer(ineq$CODGEO)
+educ$CODGEO        <- as.integer(educ$CODGEO)
+categ_socio$CODGEO <- as.integer(categ_socio$CODGEO)
+commune$CODGEO     <- as.integer(commune$CODGEO)
 
 # store datasets' names to loop on them
-dataset = c("population", "salary", "firms", "geo")
+dataset = c("population", "salary", "firms", "geo", "ineq", "commune", "educ", "categ_socio", "status_work")
 
 # obtain sommon IDs for all datasets
 for (i in dataset){
@@ -1335,23 +1362,24 @@ for (i in dataset){
 }
 
 print(paste("The new dataset has", nrow(salaryNEW), "units and", 
-      ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW), "features."))
+      ncol(salaryNEW)+ncol(populationNEW)+ncol(firmsNEW)+ncol(geoNEW)+
+        ncol(status_workNEW)+ncol(ineqNEW)+ncol(educNEW)+ncol(categ_socioNEW)+ncol(communeNEW), "features."))
+
 ```
 
 
 # Merge the data:
 ```{r Merge the data and create csv file}
 
-# exclude same CODGEO and different postal code in geo data
-# skip cities with multiple postal code
-sum(duplicated.data.frame(as.data.frame(geoNEW$CODGEO)))
-# retaing unique postal cities
-geoNEW <- geoNEW[!duplicated.data.frame(as.data.frame(geoNEW$CODGEO)),]
-
 # merging
 newDat = merge(firmsNEW, populationNEW, by="CODGEO")
 newDat = merge(newDat, salaryNEW, by="CODGEO")
 newDat = merge(newDat, geoNEW, by="CODGEO")
+newDat = merge(newDat, status_workNEW, by="CODGEO")
+newDat = merge(newDat, ineqNEW, by="CODGEO")
+newDat = merge(newDat, educNEW, by="CODGEO")
+newDat = merge(newDat, categ_socioNEW, by="CODGEO")
+newDat = merge(newDat, communeNEW, by="CODGEO")
 # newDat = subset(newDat, select = -town.y)
 
 # check
@@ -1363,66 +1391,11 @@ head(newDat)
 ```
 
 
-
-```{r match CODGEO}
-
-educ$CODGEO            <- sub("A", "0", educ$CODGEO)
-educ$CODGEO            <- sub("B", "0", educ$CODGEO)
-categ_socio$CODGEO     <- sub("A", "0", categ_socio$CODGEO)
-categ_socio$CODGEO     <- sub("B", "0", categ_socio$CODGEO)
-ineq$CODGEO            <- sub("A", "0", ineq$CODGEO)
-ineq$CODGEO            <- sub("B", "0", ineq$CODGEO)
-status_work$CODGEO     <- sub("A", "0", status_work$CODGEO)
-status_work$CODGEO     <- sub("B", "0", status_work$CODGEO)
-commune$CODGEO         <- sub("A", "0", commune$CODGEO)
-commune$CODGEO         <- sub("B", "0", commune$CODGEO)
-
-# Then all CODGEO are trasformed to integers and four new datasets are created retaining only the common CODGEO:
-# use only integer values
-status_work$CODGEO = as.integer(status_work$CODGEO)  
-ineq$CODGEO = as.integer(ineq$CODGEO)
-educ$CODGEO = as.integer(educ$CODGEO)
-categ_socio$CODGEO = as.integer(categ_socio$CODGEO)
-commune$CODGEO = as.integer(commune$CODGEO)
-
-# store datasets' names to loop on them
-dataset = c("ineq", "commune", "educ", "categ_socio", "status_work")
-
-# obtain sommon IDs for all datasets
-for (i in dataset){
-  # get i-th name and create a new variable concateneting "NEW" at the end
-  nam <- paste(i, "NEW", sep = "")
-  # initialize counter to identify the number of iteration in j
-  iter = 1
-  for (j in dataset){
-    if (j != i){
-      # for each dataset different from the i-th
-      if (iter == 1){
-        # 1st iteration: use the original dataset (e.g., geo)
-        assign(nam, semi_join(get(i), get(j), by = "CODGEO"))
-      } else{
-        # successive iteration: use the new dataset (e.g., geoNEW)
-        assign(nam, semi_join(get(nam), get(j), by = "CODGEO"))
-      }
-      iter = iter + 1
-    }
-  }
-}
-
-# check how many observation have been deleted
-for (i in dataset){
-  del_rows = nrow(get(i)) - nrow(get(paste(i, "NEW", sep = "")))
-  del_prop = del_rows / nrow(get(i))
-  del_obs = paste("For", i, del_rows, "units have been deleted.",
-                  "They were the", round(del_prop*100, digits=2), "% of the total.", sep = " ")
-  print(paste(del_obs))
-}
-
-```
-
-
 Spatial plot of the data to spot possible patterns:
-```{r}
+```{r newDat spatial plot}
+
+ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
+  geom_point(aes(x=longitude, y=latitude), data=newDat, col="orange", alpha=0.2, size=0.01) 
 
 ```
 
@@ -2311,7 +2284,6 @@ RegressionPlots <- function(fit, textlabels, robust=F){
   #             line = list(width = 2), inherit = F) %>% 
   #   
   #   layout(title = "Scale Location", plot_bgcolor = "#e6e6e6")
-  
   plt = list(plt1, plt2, plt3, plt4, plt5, plt6)
   return(plt)
 }
@@ -2355,32 +2327,42 @@ corrplot(cor(mod), method = "number", title = "Correlation matrix",
          diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
          tl.col = "black")  # , mar=c(0,0,1.5,0)
 plot(newDat$sal_M_26_50 - newDat$sal_F_26_50,y)
+```
 
-# linear model
+Model fitting using OLS:
+```{r}
+
+# OLS
 ols = lm(y ~ ., data = mod, y=T)
 summary(ols)
-# plot(ols)
+
+# diagnostic plots
+# layout(matrix(1:6, nr = 2), height = c(2, 1))
 RegressionPlots(ols, newDat$town_name, robust = F)
-
-# robust fit
-# MM estimator
-# 
-mm = lmrob(y~., data = mod, y=T, setting = "KS2014", control = lmrob.control(compute.rd = T))
-summary(mm)
-names(mm)
-# plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
-RegressionPlots(mm, newDat$town_name, robust = T)
-
 
 ```
 
-
-Model selection:
+Model fitting using MM estimator:
 ```{r}
-# outliers identified
-indd = c(165,170,188,193,206,208,209,365,367,371,377,444,448,735,1184,1193,1226,1247,1251,1385,1477,1495,1710,1711,1729,1759,1786,1796,2450,2757,2942,2999,3091,3277,3463,3554,3557,3565,3566,3580,3588,3602,3621,3781,3891,3896,3904,4027,4091,4118,4123,4124,4128,4129,4131,4132,4133,4137,4142,4143,4148,4158,4161,4164,4167,4168,4169,4172,4173,4177,4179,4181,4182,4184,4185,4191,4193,4198,4199,4209,4210,4211,4214,4215,4725,4757,4792,4803,4805,4806,4825,4834,4843,4846,4847,4848,4849,4852,4853,4918,4919,4931,4966,4985,5011)
 
-# copy of the prrevious options
+# robust fit using MM estimator
+mm = lmrob(y~., data = mod, y=T, setting = "KS2014", control = lmrob.control(compute.rd = T))
+summary(mm)
+# outliers identified
+outl = mm$rweights < 2e-05
+
+# diagnostic plots
+# layout(matrix(1:6, nr = 2), height = c(2, 1))
+# plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
+RegressionPlots(mm, newDat$town_name, robust = T)
+outl = mm$rweights < 2e-05
+
+```
+
+Specify the model for model selection:
+```{r}
+
+# copy of the previous options
 y = newDat$sal_Males - newDat$sal_Females
 x = cbind.data.frame(pop = newDat$total_population, 
                      firms = newDat$total,
@@ -2398,12 +2380,13 @@ x = cbind.data.frame(pop = newDat$total_population,
 
 # merge variables
 mod = cbind.data.frame(y, x)
-# mod = mod[indd,]
+# merge variables excluding ouliers
+# mod = mod[!outl,]
 
+# add transformations on the predictors
 mod = cbind.data.frame(mod, mod[,2:ncol(mod)]^2, mod[,2:ncol(mod)]^3)
 namesdataBS = names(mod)
 lll = ((dim(mod)[2]-1)/3)
-
 # for (i in 1:lll+1){
 #   str = namesdataBS[i]
 #   namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1]
@@ -2413,19 +2396,37 @@ namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll), s
 # namesdataBS[(lll*3+2):(lll*4+1)] = paste(namesdataBS[1:lll+1], rep("log", lll))
 names(mod) = namesdataBS
 
+```
+
+
+Use 10-folds cross validation on Elastic-net:
+```{r}
+
+# initialize list to contain the variables selected and the counter
+var_selec = list()
+i = 1
+
 # Elastic net
 x = as.matrix(mod[, 2:ncol(mod)])
 y = mod[, 1]
 par(mfrow =c(3,2))
-for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
+par(oma=c(0,0,2,0))
+alp = c(0, 0.2, 0.4, 0.6, 0.8, 1)
+for (j in alp){
   # set.seed (3)
-  cv.out = cv.glmnet(x, y, alpha = j) # , parallel = T
+  cv.out = cv.glmnet(x, y, alpha = j, standardize.response = T ) # standardize.response = T , parallel = T 
   plot(cv.out)
-  title(paste("alpha = ", j), line = 2.3)
+  title(paste("alpha = ", j), line = 0.3)
+  tmp_coeffs <- coef(cv.out, s = "lambda.min") # cv.out$lambda.1se 
+  var_selec[[i]] = data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)
+  i = i + 1
 }
-mtext(expression("Best lambda for delta gender salary using elastic-net and 10-folds CV"), outer=TRUE,  cex=1, line=-1.4)
+mtext(expression("Best lambda for delta gender salary using elastic-net and 10-folds CV"), outer=TRUE,  cex=1, line=0.2)
 
+# compare the results
+print(var_selec)
 
+# Manual evaluation
 # # split the date leaving the 20% for CV
 # par(mfrow =c(1,1))
 # train = sample(1:nrow(x), floor(nrow(x)*0.8))
@@ -2453,6 +2454,79 @@ mtext(expression("Best lambda for delta gender salary using elastic-net and 10-f
 # }
 # 
 
+```
+
+Add a second step OLS estimate on the variables identified by LASSO:
+```{r}
+
+for (i in 1:6){
+  mod_red = mod[,colnames(mod) %in% var_selec[[i]]$name ] 
+  mod_red = cbind.data.frame(y, mod_red)
+  olsRed = lm(y ~ ., data = mod_red, y=T)
+  print("--------------------------------------------")
+  print(paste("Elastic net based on alpha = ", alp[i]))
+  print("--------------------------------------------")
+  print(summary(olsRed))
+}
+
+# # OLS
+# ols = lm(y ~ ., data = mod, y=T)
+# summary(ols)
+# 
+# # diagnostic plots
+# # layout(matrix(1:6, nr = 2), height = c(2, 1))
+# RegressionPlots(ols, newDat$town_name, robust = F)
+
+```
+
+
+Using best subset selection.
+
+Function to plot the results
+```{r}
+
+plot.regsubsets2 <-  
+  function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
+     "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)), ...)  
+  { 
+    obj <- x 
+    lsum <- summary(obj) 
+    par(mar = c(7, 5, 6, 3) + 0.1) 
+    nmodels <- length(lsum$rsq) 
+    np <- obj$np 
+    propscale <- FALSE 
+    sscale <- pmatch(scale[1], c("bic", "Cp", "adjr2", "r2"),  
+                     nomatch = 0) 
+    if (sscale == 0)  
+      stop(paste("Unrecognised scale=", scale)) 
+    if (propscale)  
+      stop(paste("Proportional scaling only for probabilities")) 
+    yscale <- switch(sscale, lsum$bic, lsum$cp, lsum$adjr2, lsum$rsq) 
+    up <- switch(sscale, -1, -1, 1, 1) 
+    index <- order(yscale * up) 
+    colorscale <- switch(sscale, yscale, yscale, -log(pmax(yscale,  
+                                                           1e-04)), -log(pmax(yscale, 1e-04))) 
+    image(z = t(ifelse(lsum$which[index, ], colorscale[index],  
+                       NA + max(colorscale) * 1.5)), xaxt = "n", yaxt = "n",  
+          x = (1:np), y = 1:nmodels, xlab = "", ylab = scale[1],  
+          col = col) 
+    laspar <- par("las") 
+    on.exit(par(las = laspar)) 
+    par(las = 2) 
+    axis(1, at = 1:np, labels = labels, ...) # I modified this line 
+    axis(2, at = 1:nmodels, labels = signif(yscale[index], 2), ...) 
+    # axis(2,cex.axis=0.01)
+    if (!is.null(main))  
+      title(main = main) 
+    box() 
+    invisible(NULL) 
+    
+  } 
+```
+
+BSS results:
+```{r}
+
 # best subset selection
 best.sub = regsubsets(y ~ ., data = mod, nvmax = ncol(mod))
 best.sub.summary = summary(best.sub)
@@ -2474,21 +2548,28 @@ points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20)
 plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
 ind_bic = which.min(best.sub.summary$bic)
 points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
-# mtext("My 'Title' in a strange place", line=15)
-mtext("Best subset selection for delta gender salary", outer=TRUE,  cex=1.2, line=-2.5)
+mtext("Best subset selection for delta gender salary", outer=TRUE,  cex=1.2, line=-1.5)
+
 # built-in plots
 par(mfrow=c(1,1))
-plot(best.sub, scale = "r2")
-plot(best.sub, scale = "adjr2")
-plot(best.sub, scale = "Cp")
-plot(best.sub, scale = "bic")
-# plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.9)
+plot.regsubsets2(best.sub, scale = "r2", cex.axis = 0.6, main = "Best subset selection using R squared")
+plot.regsubsets2(best.sub, scale = "adjr2", cex.axis = 0.6, main = "Best subset selection using adjusted R squared")
+plot.regsubsets2(best.sub, scale = "Cp", cex.axis = 0.6, main = "Best subset selection using Mallows' Cp")
+plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.6, main = "Best subset selection using BIC")
+
 # mtext("Best subset selection for salary 18-25 using BIC", outer=TRUE,  cex=1.4, line=-3.5)
 
 # retrieve the model with min BIC
 coefficients(best.sub, which.min(best.sub.summary$bic))
-# nnn = names(coefficients(best.sub, which.min(best.sub.summary$bic)))
-# names(mod) %in% nnn 
+nnn = names(coefficients(best.sub, which.min(best.sub.summary$bic)))
+nnn <- gsub(x = nnn,
+            pattern = "`",
+            replacement = "")
+# apply OLS
+mod_bic = mod[,colnames(mod) %in% nnn ] 
+mod_bic = cbind.data.frame(y, mod_bic)
+ols_bic = lm(y ~ ., data = mod_bic, y=T)
+summary(ols_bic)
 
 ```
 
@@ -2499,7 +2580,6 @@ France map:
 # require dev version
 # devtools::install_github('ropensci/plotly')
 # library(plotly)
-
 
 newDat$firms_over_pop = newDat$total/newDat$total_population
 m <- list(colorbar = list(title = "Total Inches"))
