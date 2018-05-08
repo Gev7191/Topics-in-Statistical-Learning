@@ -1275,6 +1275,34 @@ ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14))
 
 
 # Analyze commune data
+```{r}
+names(commune)
+
+#Drop unnecessary variables
+commune <-subset(commune, select=-c(scorefiscal, dep, reg, evolutionpop, nbpropritaire, 
+                                    nblogementsecondaireetoccasionne, scoreurbanit, scorevargion, scorepib,  
+                                    nbrsidencesprincipales, indicefiscalpartiel, nboccupantsrsidenceprincipale, 
+                                    depmoyennesalaireshoraires, depmoyennesalairescadrehoraires, 
+                                    depmoyennesalairesprofintermdiai, depmoyennesalairesemployhoraires, 
+                                    depmoyennesalairesouvrihoraires, valeurajoutergionale, 
+                                    nbindustriesdesbiensintermdiaire, nbdecommerce, nbdeservicesauxparticuliers, 
+                                    nbinstitutiondeeducationsantacti, scorevargion, scorepib, 
+                                    moyennerevenusfiscauxdpartementa, moyennerevenusfiscauxrgionaux, 
+                                    regmoyennesalaireshoraires, regmoyennesalairescadrehoraires, 
+                                    regmoyennesalairesprofintermdiai, regmoyennesalairesemployhoraires, 
+                                    regmoyennesalairesouvrihoraires, tauxtudiants, dynamiquedmographiqueinsee, 
+                                    capacitfisc, capacitfiscale, moyennerevnusfiscaux, nblogement, fidlit)) 
+# rename variables  
+names(commune)[c(1, 3:ncol(commune))] <-c("CODGEO", "LIBGEO", "demo_index", "population", "nb_household", 
+                                          "nb_female", "nb_male", "nb_minor", "nb_major", "nb_students",  
+                                          "nb_firms_service", "nb_firms_commerce", "nb_firms_construction", 
+                                          "nb_firms_ind", "nb_created_firms", "nb_created_ind", 
+                                          "nb_created_construction", "nb_created_commerce", "nb_created_services", 
+                                          "urbanRural", "nb_active", "nb_active_employees", 
+                                          "nb_active_non_employees", "dymanic_demo_prof", "profitRate", 
+                                          "regional_GDP", "demo_environment", "evol_pop_score", 
+                                          "evol_entrepreneurial_score", "demo_envir2") 
+```
 
 # Produce consistent datasets
 
