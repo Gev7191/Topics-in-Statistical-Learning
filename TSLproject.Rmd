@@ -1300,26 +1300,24 @@ commune <-subset(commune, select=-c(scorefiscal, dep, reg, evolutionpop, nbpropr
                                     regmoyennesalairesprofintermdiai, regmoyennesalairesemployhoraires, 
                                     regmoyennesalairesouvrihoraires, tauxtudiants, dynamiquedmographiqueinsee, 
                                     capacitfisc, capacitfiscale, moyennerevnusfiscaux, nblogement, fidlit)) 
-# rename variables  
-names(commune)[c(1, 3:ncol(commune))] <-c("CODGEO", "LIBGEO", "demo_index", "population", "nb_household", 
-                                          "nb_female", "nb_male", "nb_minor", "nb_major", "nb_students",  
-                                          "nb_firms_service", "nb_firms_commerce", "nb_firms_construction", 
-                                          "nb_firms_ind", "nb_created_firms", "nb_created_ind", 
-                                          "nb_created_construction", "nb_created_commerce", "nb_created_services", 
-                                          "urbanRural", "nb_active", "nb_active_employees", 
-                                          "nb_active_non_employees", "dymanic_demo_prof", "profitRate", 
-                                          "regional_GDP", "demo_environment", "evol_pop_score", 
-                                          "evol_entrepreneurial_score", "demo_envir2") 
-```
 
-```{r}
-commune$CODGEO = commune$codgeo 
+
+# rename variables  
+names(commune) <-c("CODGEO", "orient_econ", "LIBGEO", "demo_index", "population", "nb_household", 
+                    "nb_female", "nb_male", "nb_minor", "nb_major", "nb_students",  
+                    "nb_firms_service", "nb_firms_commerce", "nb_firms_construction", 
+                    "nb_firms_ind", "nb_created_firms", "nb_created_ind", 
+                    "nb_created_construction", "nb_created_commerce",
+                    "nb_created_services", "urbanRural", "nb_active", "nb_active_employees",
+                    "nb_active_non_employees", "dymanic_demo_prof", "profitRate", 
+                    "regional_GDP", "demo_environment", "evol_pop_score", 
+                    "evol_entrepreneurial_score", "demo_envir2") 
 ```
 
 
 # Produce consistent datasets
 
-The CODGEO variables (code_insee in the original geo data) have to be merged.
+The CODGEO variables have to be merged.
 However, for different reasons already identified by other kaggle users they need some pre-processing.
 To do so, some already known mistakes are corrected:
 
