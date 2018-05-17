@@ -1949,11 +1949,11 @@ pairs(salary_pca_scores,
       }, pch = ".", cex = 0.5)
 
 #after visually identifying thresholds, get rid of outliers
-outliers <- subset(salary_pca_scores, PC1 > 8 | PC2 > 13)
-outliers_names <- unlist(as.numeric(rownames(outliers)))
-salary_pca_scores <- salary_pca_scores[-outliers_names,]
+#outliers <- subset(salary_pca_scores, PC1 > 8 | PC2 > 13)
+#outliers_names <- unlist(as.numeric(rownames(outliers)))
+#salary_pca_scores <- salary_pca_scores[-outliers_names,]
 #renumber rows
-row.names(salary_pca_scores) <- 1:nrow(salary_pca_scores)
+#row.names(salary_pca_scores) <- 1:nrow(salary_pca_scores)
 
 #sample data
 set.seed(123)
@@ -2066,6 +2066,138 @@ salary_geo
 #  theme(legend.position = "none")
  
 ```
+
+#PCA on merged dataset
+```{r}
+drops <- c("CODGEO","town.x", "total", "null", "total_population", "town.y", "region", "region_capital", "department", "town_name", "postal_code", "latitude", "longitude", "LIBGEO.x", "LIBGEO.y", "REG", "DEP", "pop_2014", "transfer_M", "transfer_F", "M_immi_agri", "F_immi_agri", "male_immig", "tax_house14", "shared_tax_house14", "median_living14", "lev_ineq14")
+
+
+newDat_variables <- newDat[ , !(names(newDat) %in% drops)]
+newDat_variables <- select_if(newDat_variables, is.numeric)
+newDat_variables <- sapply(newDat_variables, as.numeric)
+newDat_variables <- as.data.frame(newDat_variables)
+
+
+
+names(which(sapply(newDat_variables, anyNA)))
+
+#str(newDat_variables)
+newDat_variables_dep <- cbind(geoNEW[1], newDat_variables)
+
+#pca_newDat <- prcomp(na.omit(newDat_variables), scale=TRUE)
+pca_newDat <- prcomp(newDat_variables)
+str(pca_newDat)
+
+
+autoplot(pca_newDat, data = newDat_variables_dep, colour = 'region',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+plot(pca_newDat, type = "l")
+
+#pca_newDat
+
+
+
+```
+#clustering on merged dataset
+```{r}
+#create dataframe with first three principal components scores as variables
+newDat_pca_scores<- as.data.frame(pca_newDat$x[,1:3])
+newDat_pca_scores <- as.data.frame(scale(newDat_pca_scores))
+sapply(newDat_pca_scores, var)
+
+#sample data
+set.seed(123)
+newDat_scores_sampled <- sample_n(newDat_variables, 1000)
+
+#renumber rows
+row.names(newDat_scores_sampled) <- 1:nrow(newDat_scores_sampled)
+
+#create distance matrix for hclust
+dm <- dist(newDat_scores_sampled)
+#round to two decimals
+dm <- round(dm, 2)
+
+# Below we show the cluster solutions for
+# the merged data. The top row gives the cluster
+# dendograms along with the cutoff used to
+# derive the classes presented (in the space
+# of the three principal components) in the
+# bottom row:
+
+
+newDat_pc <- princomp(dm, cor = TRUE)
+layout(matrix(1:6, nr = 2), height = c(2, 1))
+plot(cs <- hclust(dm, method = "single"), 
+     main = "Single")
+abline(h = 3.8, col = "lightgrey")
+xlim <- range(newDat_pc$scores[,1])
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cs, h = 3.8)
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)
+plot(cc <- hclust(dm, method = "complete"), 
+     main = "Complete")
+abline(h = 7, col = "lightgrey")
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cc, h = 7)  
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)     
+plot(ca <- hclust(dm, method = "average"), 
+     main = "Average")
+abline(h = 7.8, col = "lightgrey")
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(ca, h = 7.8)                             
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)  
+
+# restore layout 
+layout(matrix(1, nr = 1)) 
+ 
+# K-means clustering
+n <- nrow(newDat_pca_scores)
+wss <- rep(0, 15)
+wss[1] <- (n - 1) * sum(sapply(newDat_pca_scores, var))
+for (i in 2:15)
+    wss[i] <- sum(kmeans(newDat_pca_scores,
+                         centers = i)$withinss)
+#we can see from the plot that optimal number of cluster is 11
+plot(1:15, wss, type = "b", 
+     xlab = "Number of groups",
+     ylab = "Within groups sum of squares")
+
+#plotting in PC space shows us that there are indeed distinguishable 6 groups 
+plot(newDat_pca_scores, 
+     pch = kmeans(newDat_pca_scores, 
+                  centers = 6)$cluster)
+
+#now we have to see whether these groups correspond to geographical regions...
+```
+
+#mapping the clusters
+```{r}
+#now we have to see whether these groups correspond to geographical regions...
+clusters <- kmeans(newDat_pca_scores, 10)
+newDat_variables_dep$cluster <- clusters$cluster
+geoNEW$cluster <- clusters$cluster
+ 
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+newDat_geo <-
+  FraMap +
+  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
+             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
+newDat_geo
+
+```
+
 
 new trial
 ```{r}
