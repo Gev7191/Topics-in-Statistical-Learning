@@ -62,6 +62,7 @@ In particular, we are interested in:
 * PCA
 * Clustering methods (K-means/Hierarchical)
 2. Supervised learning:
+* GLM
 * Linear/Quadratic Discriminant Analysis
 * KNN
 * Cross-validation
@@ -308,7 +309,7 @@ names(geo)[c(2:11, 14)] =
     "eloignement")
 
 # drop unnecessary columns (code/num and name represents same thing) 
-geo <- subset(geo, select = -c(EU_circo, code_region, number_depart, prefecture, circons, eloignement))
+geo <- subset(geo, select = -c(EU_circo, code_region, number_depart, prefecture, circons, eloignement, town_name))
 
 # preliminary checks
 names(geo)
@@ -488,6 +489,9 @@ summary(salary)
 
 # Check for duplicated data: there are no
 sum(duplicated.data.frame(salary))
+
+# drop unnecessary variable
+salary <-subset(salary, select = -c(town))
 
 ```
 
@@ -772,7 +776,7 @@ pairs(salary[c(9:12, 14:17)], gap=0, main = "Scatter matrix of job categories fo
 Rename the variables for population and exclude the unnecessary ones:
 ```{r pre processing population}
 
-names(population)
+#names(population)
 names(population)[5:7] <-
   c("ageCateg5",
     "sex",
@@ -907,7 +911,6 @@ aged_ratio_distribution <-
              sc + labs(color='') + ggtitle("Aged dependency ratio per town")
 aged_ratio_distribution
 
-
 ```
 
 
@@ -997,18 +1000,18 @@ educ$hi <-rowSums(cbind(educ$female_Hi, educ$male_Hi))
 # total number of poopulation with university diploma
 educ$univ <- rowSums(cbind(educ$female_Univ, educ$male_Univ))
 
+# drop LIBGEO
+educ <-subset(educ, select = -c(LIBGEO))
 ```
 
 ## Descriptive statistics
-
-...
 
 
 # Analyze demographic/social profiles data
 
 ## Pre-processing
 
-```{r}
+```{r pre-processing demographic/social profiles data}
 
 # rename variables
 names(categ_socio)[3:ncol(categ_socio)] <-
@@ -1060,12 +1063,20 @@ categ_socio$male_immig<-rowSums(cbind(categ_socio$male_immig <- sum(categ_socio$
 # total number of female immigrants per town
 categ_socio$female_immig <- rowSums(cbind(categ_socio$F_immi_agri,categ_socio$F_immi_comm, categ_socio$F_immi_emp, categ_socio$F_immi_emp, categ_socio$F_immi_exec, categ_socio$F_immi_midman, categ_socio$F_immi_noAct, categ_socio$F_immi_retired, categ_socio$F_immi_worker))
 
+# total number of natives per town
+categ_socio$male_native <- rowSums(cbind(categ_socio$M_NoImmi_agri, categ_socio$M_NoImmi_comm, categ_socio$M_NoImmi_exec, categ_socio$M_NoImmi_emp, categ_socio$M_NoImmi_midman, categ_socio$M_NoImmi_noAct, categ_socio$M_NoImmi_retired, categ_socio$M_NoImmi_worker))
+
+categ_socio$female_native <- rowSums(cbind(categ_socio$F_NoImmi_agri, categ_socio$F_NoImmi_comm, categ_socio$F_NoImmi_exec, categ_socio$F_NoImmi_emp, categ_socio$F_NoImmi_midman, categ_socio$F_NoImmi_noAct, categ_socio$F_NoImmi_retired, categ_socio$F_NoImmi_worker))
+
+# drop LIBGEO
+categ_socio <- subset(categ_socio, select=-c(LIBGEO))
+
 ```
 
 
 # Analyze work status data
 
-```{r}
+```{r pre-processing work status data}
 
 # rename variables
 names(status_work)[3:ncol(status_work)] <-
@@ -1217,14 +1228,24 @@ for (i in 1:ncol(status_work)){
 status_work$half_M=rowSums(status_work[,nam.M])
 status_work$half_F=rowSums(status_work[,nam.F])
 
+# total of each variables
+status_work$full <- status_work$full_M + status_work$full_F
+status_work$half <- status_work$half_M + status_work$half_F
+status_work$wagearner <- status_work$wagearner_M + status_work$wagearner_F
+status_work$independent <- status_work$independent_M + status_work$independent_F
+status_work$transfer <- sum(status_work$transfer_F, status_work$transfer_M)
+status_work$employer <- sum(status_work$employer_F, status_work$employer_M)
+
 # drop unnecessary variables
-status_work <- subset(status_work, select = c(CODGEO, LIBGEO,
+status_work <- subset(status_work, select = c(CODGEO,
                                               wagearner_M, wagearner_F, 
                                               independent_M, independent_F, 
                                               transfer_M, transfer_F, 
                                               employer_M, employer_F, 
                                               full_M, full_F,
-                                              half_M, half_F))
+                                              half_M, half_F,
+                                              full, half,
+                                              wagearner, independent, transfer, employer))
 ```
 
 
@@ -1252,10 +1273,12 @@ ggplot(data=status_work, aes(ifelse(full_M!=0, log(full_M), 0))) +
 
 # Analyze inequality data
 
-```{r}
+```{r pre-processing inequality data}
+names(ineq)
 
 # drop unnecessary variables
-ineq <- subset(ineq, select = -c(P09_POP, NAISD16, DECESD16, P14_RP_PROP, P09_EMPLT,ETTOT15, ETAZ15, ETBE15, ETFZ15, ETGU15, ETGZ15, ETOQ15, ETTEF115, ETTEFP1015))
+ineq <- subset(ineq, select = -c(LIBGEO, P09_POP, NAISD16, DECESD16, P14_RP_PROP, P09_EMPLT,ETTOT15, ETAZ15, ETBE15, ETFZ15, ETGU15, ETGZ15, ETOQ15, ETTEF115, ETTEFP1015))
+
 # rename variables 
 names(ineq)[5:ncol(ineq)] <-
   c("pop_2014",
@@ -1276,6 +1299,7 @@ names(ineq)[5:ncol(ineq)] <-
     "pop15_64",
     "unemp15_64",
     "act15_64")
+
 # drop more unnecessary variables 
 ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14))
 
@@ -1287,7 +1311,7 @@ ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14))
 names(commune)
 
 #Drop unnecessary variables
-commune <-subset(commune, select=-c(scorefiscal, dep, reg, evolutionpop, nbpropritaire, 
+commune <-subset(commune, select=-c(libgeo, scorefiscal, dep, reg, evolutionpop, nbpropritaire, 
                                     nblogementsecondaireetoccasionne, scoreurbanit, scorevargion, scorepib,  
                                     nbrsidencesprincipales, indicefiscalpartiel, nboccupantsrsidenceprincipale, 
                                     depmoyennesalaireshoraires, depmoyennesalairescadrehoraires, 
@@ -1303,7 +1327,7 @@ commune <-subset(commune, select=-c(scorefiscal, dep, reg, evolutionpop, nbpropr
 
 
 # rename variables  
-names(commune) <-c("CODGEO", "orient_econ", "LIBGEO", "demo_index", "population", "nb_household", 
+names(commune) <-c("CODGEO", "orient_econ", "demo_index", "population", "nb_household", 
                     "nb_female", "nb_male", "nb_minor", "nb_major", "nb_students",  
                     "nb_firms_service", "nb_firms_commerce", "nb_firms_construction", 
                     "nb_firms_ind", "nb_created_firms", "nb_created_ind", 
@@ -1449,8 +1473,20 @@ Firms and geo:
 
 ```
 ## Regression
-```{r}
+```{r salary for executives}
+# average salary for executives
+average_sal_F_exec <- mean(newDat$sal_F_executive)
+average_sal_M_exec <- mean(newDat$sal_M_executive)
+# -> average salary gap between females and males (executives) are 20.20613 - 25.19371= -4.98758.
+# note that the max variable for sal_M_executive is 58 for female it is 35.5, nearly double. 
+# Strangely, for middle manager male, the max is 93.4 which is in Ile-de-France en Yvelines, Chambourcy. 
 
+# delta salary female and male
+newDat$sal_MF_exec <- newDat$sal_M_executive - newDat$sal_F_executive
+
+# linear regression
+lm=lm(sal_MF_exec~ univ + nodip + ,  data=newDat, subset=set.seed(2018))
+summary(lm)
 
 
 
@@ -1461,6 +1497,9 @@ Firms and geo:
 ```
 
 ## Supervised Learning data
+```{r}
+
+```
 
 
 
@@ -1949,11 +1988,11 @@ pairs(salary_pca_scores,
       }, pch = ".", cex = 0.5)
 
 #after visually identifying thresholds, get rid of outliers
-#outliers <- subset(salary_pca_scores, PC1 > 8 | PC2 > 13)
-#outliers_names <- unlist(as.numeric(rownames(outliers)))
-#salary_pca_scores <- salary_pca_scores[-outliers_names,]
+outliers <- subset(salary_pca_scores, PC1 > 8 | PC2 > 13)
+outliers_names <- unlist(as.numeric(rownames(outliers)))
+salary_pca_scores <- salary_pca_scores[-outliers_names,]
 #renumber rows
-#row.names(salary_pca_scores) <- 1:nrow(salary_pca_scores)
+row.names(salary_pca_scores) <- 1:nrow(salary_pca_scores)
 
 #sample data
 set.seed(123)
@@ -2066,138 +2105,6 @@ salary_geo
 #  theme(legend.position = "none")
  
 ```
-
-#PCA on merged dataset
-```{r}
-drops <- c("CODGEO","town.x", "total", "null", "total_population", "town.y", "region", "region_capital", "department", "town_name", "postal_code", "latitude", "longitude", "LIBGEO.x", "LIBGEO.y", "REG", "DEP", "pop_2014", "transfer_M", "transfer_F", "M_immi_agri", "F_immi_agri", "male_immig", "tax_house14", "shared_tax_house14", "median_living14", "lev_ineq14")
-
-
-newDat_variables <- newDat[ , !(names(newDat) %in% drops)]
-newDat_variables <- select_if(newDat_variables, is.numeric)
-newDat_variables <- sapply(newDat_variables, as.numeric)
-newDat_variables <- as.data.frame(newDat_variables)
-
-
-
-names(which(sapply(newDat_variables, anyNA)))
-
-#str(newDat_variables)
-newDat_variables_dep <- cbind(geoNEW[1], newDat_variables)
-
-#pca_newDat <- prcomp(na.omit(newDat_variables), scale=TRUE)
-pca_newDat <- prcomp(newDat_variables)
-str(pca_newDat)
-
-
-autoplot(pca_newDat, data = newDat_variables_dep, colour = 'region',
-         loadings = TRUE, loadings.colour = 'blue',
-         loadings.label = TRUE, loadings.label.size = 3)
-plot(pca_newDat, type = "l")
-
-#pca_newDat
-
-
-
-```
-#clustering on merged dataset
-```{r}
-#create dataframe with first three principal components scores as variables
-newDat_pca_scores<- as.data.frame(pca_newDat$x[,1:3])
-newDat_pca_scores <- as.data.frame(scale(newDat_pca_scores))
-sapply(newDat_pca_scores, var)
-
-#sample data
-set.seed(123)
-newDat_scores_sampled <- sample_n(newDat_variables, 1000)
-
-#renumber rows
-row.names(newDat_scores_sampled) <- 1:nrow(newDat_scores_sampled)
-
-#create distance matrix for hclust
-dm <- dist(newDat_scores_sampled)
-#round to two decimals
-dm <- round(dm, 2)
-
-# Below we show the cluster solutions for
-# the merged data. The top row gives the cluster
-# dendograms along with the cutoff used to
-# derive the classes presented (in the space
-# of the three principal components) in the
-# bottom row:
-
-
-newDat_pc <- princomp(dm, cor = TRUE)
-layout(matrix(1:6, nr = 2), height = c(2, 1))
-plot(cs <- hclust(dm, method = "single"), 
-     main = "Single")
-abline(h = 3.8, col = "lightgrey")
-xlim <- range(newDat_pc$scores[,1])
-plot(newDat_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(cs, h = 3.8)
-text(newDat_pc$scores[,1:2], labels = lab, 
-     cex=0.6)
-plot(cc <- hclust(dm, method = "complete"), 
-     main = "Complete")
-abline(h = 7, col = "lightgrey")
-plot(newDat_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(cc, h = 7)  
-text(newDat_pc$scores[,1:2], labels = lab, 
-     cex=0.6)     
-plot(ca <- hclust(dm, method = "average"), 
-     main = "Average")
-abline(h = 7.8, col = "lightgrey")
-plot(newDat_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(ca, h = 7.8)                             
-text(newDat_pc$scores[,1:2], labels = lab, 
-     cex=0.6)  
-
-# restore layout 
-layout(matrix(1, nr = 1)) 
- 
-# K-means clustering
-n <- nrow(newDat_pca_scores)
-wss <- rep(0, 15)
-wss[1] <- (n - 1) * sum(sapply(newDat_pca_scores, var))
-for (i in 2:15)
-    wss[i] <- sum(kmeans(newDat_pca_scores,
-                         centers = i)$withinss)
-#we can see from the plot that optimal number of cluster is 11
-plot(1:15, wss, type = "b", 
-     xlab = "Number of groups",
-     ylab = "Within groups sum of squares")
-
-#plotting in PC space shows us that there are indeed distinguishable 6 groups 
-plot(newDat_pca_scores, 
-     pch = kmeans(newDat_pca_scores, 
-                  centers = 6)$cluster)
-
-#now we have to see whether these groups correspond to geographical regions...
-```
-
-#mapping the clusters
-```{r}
-#now we have to see whether these groups correspond to geographical regions...
-clusters <- kmeans(newDat_pca_scores, 10)
-newDat_variables_dep$cluster <- clusters$cluster
-geoNEW$cluster <- clusters$cluster
- 
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
- 
-# Plot "Distribution of total population for each town" 
-newDat_geo <-
-  FraMap +
-  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
-             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
-newDat_geo
-
-```
-
 
 new trial
 ```{r}
