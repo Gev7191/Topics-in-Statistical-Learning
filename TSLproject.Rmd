@@ -1846,18 +1846,18 @@ salary_mds <- cmdscale(salary_mah, k = nrow(salary_mah) - 1,
          eig = TRUE)
 
 #only 9 of the first 21 eigenvalues are > 0
-x <- salary_mds$points[,1]
-y <- salary_mds$points[,2]
-st <- mst(salary_mah)
-plot(x, y, xlab = "Coordinate 1", 
-     ylab = "Coordinate 2",
-     xlim = range(x)*1.2, type = "n")
-for (i in 1:nrow(salary_mah)) {
-  w1 <- which(st[i, ] == 1)
-  segments(x[i], y[i], x[w1], y[w1])
-}
-text(x, y, labels = colnames(salary_mah), 
-     cex = 1.5)
+# x <- salary_mds$points[,1]
+# y <- salary_mds$points[,2]
+# st <- mst(salary_mah)
+# plot(x, y, xlab = "Coordinate 1", 
+#      ylab = "Coordinate 2",
+#      xlim = range(x)*1.2, type = "n")
+# for (i in 1:nrow(salary_mah)) {
+#   w1 <- which(st[i, ] == 1)
+#   segments(x[i], y[i], x[w1], y[w1])
+# }
+# text(x, y, labels = colnames(salary_mah), 
+#      cex = 1.5)
 
 ```
 
@@ -1954,18 +1954,18 @@ firms_mds <- cmdscale(firms_mah, k = nrow(firms_mah) - 1,
          eig = TRUE)
 
 #only 5 of the first 21 eigenvalues are > 0
-x <- firms_mds$points[,1]
-y <- firms_mds$points[,2]
-st <- mst(firms_mah)
-plot(x, y, xlab = "Coordinate 1", 
-     ylab = "Coordinate 2",
-     xlim = range(x)*1.2, type = "n")
-for (i in 1:nrow(firms_mah)) {
-  w1 <- which(st[i, ] == 1)
-  segments(x[i], y[i], x[w1], y[w1])
-}
-text(x, y, labels = colnames(firms_mah), 
-     cex = 1.5)
+# x <- firms_mds$points[,1]
+# y <- firms_mds$points[,2]
+# st <- mst(firms_mah)
+# plot(x, y, xlab = "Coordinate 1", 
+#      ylab = "Coordinate 2",
+#      xlim = range(x)*1.2, type = "n")
+# for (i in 1:nrow(firms_mah)) {
+#   w1 <- which(st[i, ] == 1)
+#   segments(x[i], y[i], x[w1], y[w1])
+# }
+# text(x, y, labels = colnames(firms_mah), 
+#      cex = 1.5)
 ```
 
 
@@ -2142,6 +2142,244 @@ salary_geo
 #  theme(legend.position = "none")
  
 ```
+
+#PCA on merged dataset
+```{r}
+drops <- c("CODGEO","town.x", "total", "null", "total_population", "town.y", "region", "region_capital", "department", "town_name", "postal_code", "latitude", "longitude", "LIBGEO.x", "LIBGEO.y", "REG", "DEP", "pop_2014", "transfer_M", "transfer_F", "M_immi_agri", "F_immi_agri", "male_immig", "tax_house14", "shared_tax_house14", "median_living14", "lev_ineq14")
+
+
+newDat_variables <- newDat[ , !(names(newDat) %in% drops)]
+newDat_variables <- select_if(newDat_variables, is.numeric)
+newDat_variables <- sapply(newDat_variables, as.numeric)
+newDat_variables <- as.data.frame(newDat_variables)
+
+
+
+names(which(sapply(newDat_variables, anyNA)))
+
+#str(newDat_variables)
+newDat_variables_dep <- cbind(geoNEW[1], newDat_variables)
+
+#pca_newDat <- prcomp(na.omit(newDat_variables), scale=TRUE)
+pca_newDat <- prcomp(newDat_variables)
+str(pca_newDat)
+
+
+autoplot(pca_newDat, data = newDat_variables_dep, colour = 'region',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+plot(pca_newDat, type = "l")
+
+#pca_newDat
+
+
+
+```
+#clustering on merged dataset
+```{r}
+#create dataframe with first three principal components scores as variables
+newDat_pca_scores<- as.data.frame(pca_newDat$x[,1:3])
+newDat_pca_scores <- as.data.frame(scale(newDat_pca_scores))
+sapply(newDat_pca_scores, var)
+
+#sample data
+set.seed(123)
+newDat_scores_sampled <- sample_n(newDat_variables, 1000)
+
+#renumber rows
+row.names(newDat_scores_sampled) <- 1:nrow(newDat_scores_sampled)
+
+#create distance matrix for hclust
+dm <- dist(newDat_scores_sampled)
+#round to two decimals
+dm <- round(dm, 2)
+
+# Below we show the cluster solutions for
+# the merged data. The top row gives the cluster
+# dendograms along with the cutoff used to
+# derive the classes presented (in the space
+# of the three principal components) in the
+# bottom row:
+
+
+newDat_pc <- princomp(dm, cor = TRUE)
+layout(matrix(1:6, nr = 2), height = c(2, 1))
+plot(cs <- hclust(dm, method = "single"), 
+     main = "Single")
+abline(h = 3.8, col = "lightgrey")
+xlim <- range(newDat_pc$scores[,1])
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cs, h = 3.8)
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)
+plot(cc <- hclust(dm, method = "complete"), 
+     main = "Complete")
+abline(h = 7, col = "lightgrey")
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cc, h = 7)  
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)     
+plot(ca <- hclust(dm, method = "average"), 
+     main = "Average")
+abline(h = 7.8, col = "lightgrey")
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(ca, h = 7.8)                             
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)  
+
+# restore layout 
+layout(matrix(1, nr = 1)) 
+ 
+# K-means clustering
+n <- nrow(newDat_pca_scores)
+wss <- rep(0, 15)
+wss[1] <- (n - 1) * sum(sapply(newDat_pca_scores, var))
+for (i in 2:15)
+    wss[i] <- sum(kmeans(newDat_pca_scores,
+                         centers = i)$withinss)
+#we can see from the plot that optimal number of cluster is 11
+plot(1:15, wss, type = "b", 
+     xlab = "Number of groups",
+     ylab = "Within groups sum of squares")
+
+#plotting in PC space shows us that there are indeed distinguishable 6 groups 
+plot(newDat_pca_scores, 
+     pch = kmeans(newDat_pca_scores, 
+                  centers = 6)$cluster)
+
+#now we have to see whether these groups correspond to geographical regions...
+```
+
+#mapping the clusters
+```{r}
+#now we have to see whether these groups correspond to geographical regions...
+clusters <- kmeans(newDat_pca_scores, 10)
+newDat_variables_dep$cluster <- clusters$cluster
+geoNEW$cluster <- clusters$cluster
+ 
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+newDat_geo <-
+  FraMap +
+  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
+             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
+newDat_geo
+
+```
+#Multi-Dimensional Scaling for Merged Dataset
+```{r}
+NewDat_PCA_with_dep <- cbind(geoNEW[1], newDat_pca_scores)
+# produces a list with covariance matrix
+# for each region as component:
+NewDat_PCA_var <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
+                     function(i) var(NewDat_PCA_with_dep[i,2:4]))
+
+
+#remove regions with null values
+NewDat_PCA_var <- NewDat_PCA_var[-c(11, 12, 15, 19, 20, 28)]
+#check
+#str(firms_var)
+
+
+
+#create dataframe with the counts of towns per region
+regions_count <- data.frame(table(firms_with_dep$region))
+regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
+#check total sum
+row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+sum(regions_count_sub$Freq)
+
+
+
+# initializes common covariance matrix var:
+S <- regions_count_sub$Freq[1] * as.matrix(NewDat_PCA_var[[1]])
+
+# creates common covariance matrix S
+s <- 0
+for (v in c(1:5)) S <- S + regions_count_sub$Freq[v] * as.matrix(NewDat_PCA_var[[v]]) 
+S <- S / 5024
+
+# finds center of each variable (micro, etc)
+# for each region
+NewDat_cen <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
+    function(i) apply(NewDat_PCA_with_dep[i,-1], 2, mean))
+NewDat_cen
+NewDat_cen <- NewDat_cen[-c(11, 12, 15, 19, 20, 28)]
+str(NewDat_cen)
+
+# create a matrix out of each components, each
+# mean measurement for all variables by region
+NewDat_cen <- matrix(unlist(NewDat_cen), 
+    nrow = length(NewDat_cen), byrow = TRUE)
+NewDat_cen
+
+# compute the mahalanobis distances:
+NewDat_mah <- apply(NewDat_cen, 1, 
+    function(cen) mahalanobis(NewDat_cen, cen, S))
+NewDat_mah
+
+
+
+# run it on two dimensions
+NewDat_mds <- cmdscale(NewDat_mah)
+
+# draw a scatterplot of two-dimensional solution
+# from classical MDS applied to Mahalanobis
+# distances:
+lim <- range(NewDat_mds) * 1.2
+plot(NewDat_mds, xlab = "Coordinate 1", 
+     ylab = "Coordinate 2",
+     xlim = lim, ylim = lim, type = "n")
+text(NewDat_mds, labels = levels(NewDat_PCA_with_dep$region), 
+     cex = 0.5)
+
+# But here, as the two-dimensional fit may not
+# explain what is needed to represent the observed
+# distances, we shall investigate the solution 
+# in a little more detail using the "minimum
+# spanning tree".
+
+# The minimum spanning tree is defined as follows. 
+# Suppose n points are given (possibly in many
+# dimensions). Then a tree spanning these points 
+# (that is, a spanning tree) is any set of straight 
+# line segments joining pairs of points such that
+# - 0 closed loops occur,
+# - every point is visited at least one time, and
+# - the tree is connected (has paths between each
+# pair of points)
+
+# We use function mst() from package ape to plot
+# minimum spanning tree on the two-dimensional
+# scaling solution:
+
+#
+# run classic MDS function on distances
+NewDat_mds <- cmdscale(NewDat_mah, k = nrow(NewDat_mah) - 1, 
+         eig = TRUE)
+
+#only 5 of the first 21 eigenvalues are > 0
+# x <- firms_mds$points[,1]
+# y <- firms_mds$points[,2]
+# st <- mst(firms_mah)
+# plot(x, y, xlab = "Coordinate 1", 
+#      ylab = "Coordinate 2",
+#      xlim = range(x)*1.2, type = "n")
+# for (i in 1:nrow(firms_mah)) {
+#   w1 <- which(st[i, ] == 1)
+#   segments(x[i], y[i], x[w1], y[w1])
+# }
+# text(x, y, labels = colnames(firms_mah), 
+#      cex = 1.5)
+```
+
 
 new trial
 ```{r}
