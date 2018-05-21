@@ -1451,64 +1451,11 @@ ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
 
 
 
-# Analysis 
+# Unsupervised Learning
 
-General:
-```{r Correlation plot with new merged data}
-# corrplot(cor(newDat[, 3:20]), method = "circle", title = "Correlation matrix for firms", 
-#          diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
-#          tl.col = "black", type = "lower", mar=c(0,0,1.5,0))
-# corrplot(cor(newDat[, 21:41]), method = "circle", title = "Correlation matrix for firms", 
-#          diag = F, tl.cex=1, type = "lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
-#          tl.col = "black", mar=c(0,0,1.5,0))
-```
+## Multi-Dimensional Scaling (MDS)
 
-
-Firms and geo:
-```{r}
-
-```
-## PCA 
-```{r}
-
-```
-## Regression
-```{r salary for executives}
-# average salary for executives
-average_sal_F_exec <- mean(newDat$sal_F_executive)
-average_sal_M_exec <- mean(newDat$sal_M_executive)
-# -> average salary gap between females and males (executives) are 20.20613 - 25.19371= -4.98758.
-# note that the max variable for sal_M_executive is 58 for female it is 35.5, nearly double. 
-# Strangely, for middle manager male, the max is 93.4 which is in Ile-de-France en Yvelines, Chambourcy. 
-
-# delta salary female and male
-newDat$sal_MF_exec <- newDat$sal_M_executive - newDat$sal_F_executive
-
-# linear regression
-lm=lm(sal_MF_exec~ univ + nodip + ,  data=newDat, subset=set.seed(2018))
-summary(lm)
-
-
-
-```
-## Clustering 
-```{r}
-
-```
-
-## Supervised Learning data
-```{r}
-
-```
-
-
-
-
-# Chiaromonte's part
-
-## Unsupervised
-
-Preliminary multivariate salary data visualisation to better conduct the unsupervised learning  
+### Preliminary multivariate salary data visualisation to better conduct the unsupervised learning  
 ```{r}
 
 # add region variable to the salary dataset
@@ -1617,7 +1564,7 @@ plot(xyplot(sal_worker ~ sal_midManager | M_F_salary_ratio,
 
 ```
 
-Preliminary multivariate firms data visualisation to better conduct the unsupervised learning 
+### Preliminary multivariate firms data visualisation to better conduct the unsupervised learning 
 ```{r}
 # add region variable to the salary dataset
 firms_with_dep <- cbind(geoNEW[1], firmsNEW)
@@ -1719,7 +1666,7 @@ plot(xyplot(medium ~ large| cut(total, 3),
 ```
 
 
-Multi-dimensional scaling (MDS) on salary data
+### Multi-dimensional scaling (MDS) on salary data
 ```{r}
 # produces a list with covariance matrix
 # for each region as component:
@@ -1824,7 +1771,7 @@ salary_mds <- cmdscale(salary_mah, k = nrow(salary_mah) - 1,
 
 ```
 
-Multi-dimensional scaling (MDS) on firms data
+### Multi-dimensional scaling (MDS) on firms data
 ```{r}
 firms_with_dep <- firms_with_dep[, -9]
 # produces a list with covariance matrix
@@ -1931,312 +1878,7 @@ firms_mds <- cmdscale(firms_mah, k = nrow(firms_mah) - 1,
 #      cex = 1.5)
 ```
 
-
-PCA on salary data and delta M-F
-```{r}
-
-pca_salary <- prcomp(salary_variables)
-autoplot(pca_salary, data = salary_with_dep, colour = 'region',
-         loadings = TRUE, loadings.colour = 'blue',
-         loadings.label = TRUE, loadings.label.size = 3)
-plot(pca_salary, type = "l")
-#pca_salary
-#summary(pca_salary)
-
-#create dataset with M-F differences
-salary_var_delta <- data.frame("?? M-F" = salary_variables$sal_Males -                                                           salary_variables$sal_Females,
-                     "?? Executive M-F" = salary_variables$sal_M_executive -
-                                         salary_variables$sal_F_executive,
-                    "?? midManager M-F" = salary_variables$sal_M_midManager -
-                                         salary_variables$sal_F_midManager,
-                      "?? employee M-F" = salary_variables$sal_M_employee -
-                                         salary_variables$sal_F_employee,
-                        "?? worker M-F" = salary_variables$sal_M_worker -
-                                         salary_variables$sal_F_worker,
-                         "?? 18-25 M-F" = salary_variables$sal_M_18_25 -
-                                         salary_variables$sal_F_18_25,
-                         "?? 26-50 M-F" = salary_variables$sal_M_26_50 -
-                                         salary_variables$sal_F_26_50,
-                       "?? 51 plus M-F" = salary_variables$sal_M_51plus -
-                                         salary_variables$sal_F_51plus)
-pca_salary_delta <- prcomp(salary_var_delta)
-autoplot(pca_salary_delta, data = salary_with_dep, colour = 'region',
-         loadings = TRUE, loadings.colour = 'blue',
-         loadings.label = TRUE, loadings.label.size = 3)
-plot(pca_salary_delta, type = "l")
-#pca_salary_delta
-#summary(pca_salary_delta)
-
-
-
-```
-
-
-Cluster Analysis on salary and delta M-F
-```{r}
-
-
-#create dataframe with first two principal components scores as variables
-salary_pca_scores<- as.data.frame(pca_salary$x[,1:2])
-salary_pca_scores <- as.data.frame(scale(salary_pca_scores))
-sapply(salary_pca_scores, var)
-#scatterplot between PC1 and PC2 to see if there are outliers
-pairs(salary_pca_scores, 
-      panel = function (x, y, ...) {
-          points(x, y, ...)
-          abline(lm(y ~ x), col = "red")
-      }, pch = ".", cex = 0.5)
-
-#after visually identifying thresholds, get rid of outliers
-outliers <- subset(salary_pca_scores, PC1 > 8 | PC2 > 13)
-outliers_names <- unlist(as.numeric(rownames(outliers)))
-salary_pca_scores <- salary_pca_scores[-outliers_names,]
-#renumber rows
-row.names(salary_pca_scores) <- 1:nrow(salary_pca_scores)
-
-#sample data
-set.seed(123)
-salary_scores_sampled <- sample_n(salary_pca_scores, 1000)
-
-#renumber rows
-row.names(salary_scores_sampled) <- 1:nrow(salary_scores_sampled)
-
-#create distance matrix for hclust
-dm <- dist(salary_scores_sampled)
-#round to two decimals
-dm <- round(dm, 2)
-
-# Below we show the cluster solutions for
-# salary data. The top row gives the cluster
-# dendograms along with the cutoff used to
-# derive the classes presented (in the space
-# of the two principal components) in the
-# bottom row:
-
-
-salary_pc <- princomp(dm, cor = TRUE)
-layout(matrix(1:6, nr = 2), height = c(2, 1))
-plot(cs <- hclust(dm, method = "single"), 
-     main = "Single")
-abline(h = 3.8, col = "lightgrey")
-xlim <- range(salary_pc$scores[,1])
-plot(salary_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(cs, h = 3.8)
-text(salary_pc$scores[,1:2], labels = lab, 
-     cex=0.6)
-plot(cc <- hclust(dm, method = "complete"), 
-     main = "Complete")
-abline(h = 7, col = "lightgrey")
-plot(salary_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(cc, h = 7)  
-text(salary_pc$scores[,1:2], labels = lab, 
-     cex=0.6)     
-plot(ca <- hclust(dm, method = "average"), 
-     main = "Average")
-abline(h = 7.8, col = "lightgrey")
-plot(salary_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(ca, h = 7.8)                             
-text(salary_pc$scores[,1:2], labels = lab, 
-     cex=0.6)  
-
-# restore layout 
-layout(matrix(1, nr = 1)) 
- 
-# K-means clustering
-n <- nrow(salary_pca_scores)
-wss <- rep(0, 22)
-wss[1] <- (n - 1) * sum(sapply(salary_pca_scores, var))
-for (i in 2:22)
-    wss[i] <- sum(kmeans(salary_pca_scores,
-                         centers = i)$withinss)
-#we can see from the plot that optimal number of cluster is 5
-plot(1:22, wss, type = "b", 
-     xlab = "Number of groups",
-     ylab = "Within groups sum of squares")
-
-#plotting in PC space shows us that there are indeed distinguishable 5 groups 
-plot(salary_pca_scores, 
-     pch = kmeans(salary_pca_scores, 
-                  centers = 5)$cluster)
-
-#now we have to see whether these groups correspond to geographical regions...
-
-```
-
-#MAPPING THE CLUSTERS
-```{r}
- 
-#now we have to see whether these groups correspond to geographical regions...
-clusters <- kmeans(salary_pca_scores, 5)
-salary_with_dep$cluster <- clusters$cluster
-geoNEW$cluster <- clusters$cluster
- 
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
- 
-# Plot "Distribution of total population for each town" 
-salary_geo <-
-  FraMap +
-  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
-             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on salary")
-salary_geo
- 
- 
-#salary_with_dep$cluster <- clusters$cluster
-#data("world.cities")
-#France <- world.cities %>% filter(country.etc == "France")
-#EPS <- 0.15
-#clusters <- dbscan(France[, 4:5], eps = EPS)
-#+France$cluster <- clusters$cluster
- 
-#groups  <- France %>% filter(cluster != 0)
-#noise  <- France %>% filter(cluster == 0)
- 
-#ggplot(France, aes(x = long, y = lat, alpha = 0.5)) + 
-#  geom_point(aes(fill = "grey"), noise) +
-#  geom_point(aes(colour = as.factor(cluster)), groups,
- #            size = 3) +
-#  coord_map() +
-#  theme(legend.position = "none")
- 
-```
-
-#PCA on merged dataset
-```{r}
-drops <- c("CODGEO","town.x", "total", "null", "total_population", "town.y", "region", "region_capital", "department", "town_name", "postal_code", "latitude", "longitude", "LIBGEO.x", "LIBGEO.y", "REG", "DEP", "pop_2014", "transfer_M", "transfer_F", "M_immi_agri", "F_immi_agri", "male_immig", "tax_house14", "shared_tax_house14", "median_living14", "lev_ineq14")
-
-
-newDat_variables <- newDat[ , !(names(newDat) %in% drops)]
-newDat_variables <- select_if(newDat_variables, is.numeric)
-newDat_variables <- sapply(newDat_variables, as.numeric)
-newDat_variables <- as.data.frame(newDat_variables)
-
-
-
-names(which(sapply(newDat_variables, anyNA)))
-
-#str(newDat_variables)
-newDat_variables_dep <- cbind(geoNEW[1], newDat_variables)
-
-#pca_newDat <- prcomp(na.omit(newDat_variables), scale=TRUE)
-pca_newDat <- prcomp(newDat_variables)
-str(pca_newDat)
-
-
-autoplot(pca_newDat, data = newDat_variables_dep, colour = 'region',
-         loadings = TRUE, loadings.colour = 'blue',
-         loadings.label = TRUE, loadings.label.size = 3)
-plot(pca_newDat, type = "l")
-
-#pca_newDat
-
-
-
-```
-#clustering on merged dataset
-```{r}
-#create dataframe with first three principal components scores as variables
-newDat_pca_scores<- as.data.frame(pca_newDat$x[,1:3])
-newDat_pca_scores <- as.data.frame(scale(newDat_pca_scores))
-sapply(newDat_pca_scores, var)
-
-#sample data
-set.seed(123)
-newDat_scores_sampled <- sample_n(newDat_variables, 1000)
-
-#renumber rows
-row.names(newDat_scores_sampled) <- 1:nrow(newDat_scores_sampled)
-
-#create distance matrix for hclust
-dm <- dist(newDat_scores_sampled)
-#round to two decimals
-dm <- round(dm, 2)
-
-# Below we show the cluster solutions for
-# the merged data. The top row gives the cluster
-# dendograms along with the cutoff used to
-# derive the classes presented (in the space
-# of the three principal components) in the
-# bottom row:
-
-
-newDat_pc <- princomp(dm, cor = TRUE)
-layout(matrix(1:6, nr = 2), height = c(2, 1))
-plot(cs <- hclust(dm, method = "single"), 
-     main = "Single")
-abline(h = 3.8, col = "lightgrey")
-xlim <- range(newDat_pc$scores[,1])
-plot(newDat_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(cs, h = 3.8)
-text(newDat_pc$scores[,1:2], labels = lab, 
-     cex=0.6)
-plot(cc <- hclust(dm, method = "complete"), 
-     main = "Complete")
-abline(h = 7, col = "lightgrey")
-plot(newDat_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(cc, h = 7)  
-text(newDat_pc$scores[,1:2], labels = lab, 
-     cex=0.6)     
-plot(ca <- hclust(dm, method = "average"), 
-     main = "Average")
-abline(h = 7.8, col = "lightgrey")
-plot(newDat_pc$scores[,1:2], type = "n", 
-     xlim = xlim, ylim = xlim,
-     xlab = "PC1", ylab = "PC2")
-lab <- cutree(ca, h = 7.8)                             
-text(newDat_pc$scores[,1:2], labels = lab, 
-     cex=0.6)  
-
-# restore layout 
-layout(matrix(1, nr = 1)) 
- 
-# K-means clustering
-n <- nrow(newDat_pca_scores)
-wss <- rep(0, 15)
-wss[1] <- (n - 1) * sum(sapply(newDat_pca_scores, var))
-for (i in 2:15)
-    wss[i] <- sum(kmeans(newDat_pca_scores,
-                         centers = i)$withinss)
-#we can see from the plot that optimal number of cluster is 11
-plot(1:15, wss, type = "b", 
-     xlab = "Number of groups",
-     ylab = "Within groups sum of squares")
-
-#plotting in PC space shows us that there are indeed distinguishable 6 groups 
-plot(newDat_pca_scores, 
-     pch = kmeans(newDat_pca_scores, 
-                  centers = 6)$cluster)
-
-#now we have to see whether these groups correspond to geographical regions...
-```
-
-#mapping the clusters
-```{r}
-#now we have to see whether these groups correspond to geographical regions...
-clusters <- kmeans(newDat_pca_scores, 10)
-newDat_variables_dep$cluster <- clusters$cluster
-geoNEW$cluster <- clusters$cluster
- 
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
- 
-# Plot "Distribution of total population for each town" 
-newDat_geo <-
-  FraMap +
-  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
-             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
-newDat_geo
-
-```
-#Multi-Dimensional Scaling for Merged Dataset
+### Multi-Dimensional Scaling for merged dataset
 ```{r}
 NewDat_PCA_with_dep <- cbind(geoNEW[1], newDat_pca_scores)
 # produces a list with covariance matrix
@@ -2343,58 +1985,315 @@ NewDat_mds <- cmdscale(NewDat_mah, k = nrow(NewDat_mah) - 1,
 #      cex = 1.5)
 ```
 
+## PCA
 
-new trial
+### PCA on salary data and delta M-F
+```{r}
+
+pca_salary <- prcomp(salary_variables)
+autoplot(pca_salary, data = salary_with_dep, colour = 'region',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+plot(pca_salary, type = "l")
+#pca_salary
+#summary(pca_salary)
+
+#create dataset with M-F differences
+salary_var_delta <- data.frame("?? M-F" = salary_variables$sal_Males -                                                           salary_variables$sal_Females,
+                     "?? Executive M-F" = salary_variables$sal_M_executive -
+                                         salary_variables$sal_F_executive,
+                    "?? midManager M-F" = salary_variables$sal_M_midManager -
+                                         salary_variables$sal_F_midManager,
+                      "?? employee M-F" = salary_variables$sal_M_employee -
+                                         salary_variables$sal_F_employee,
+                        "?? worker M-F" = salary_variables$sal_M_worker -
+                                         salary_variables$sal_F_worker,
+                         "?? 18-25 M-F" = salary_variables$sal_M_18_25 -
+                                         salary_variables$sal_F_18_25,
+                         "?? 26-50 M-F" = salary_variables$sal_M_26_50 -
+                                         salary_variables$sal_F_26_50,
+                       "?? 51 plus M-F" = salary_variables$sal_M_51plus -
+                                         salary_variables$sal_F_51plus)
+pca_salary_delta <- prcomp(salary_var_delta)
+autoplot(pca_salary_delta, data = salary_with_dep, colour = 'region',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+plot(pca_salary_delta, type = "l")
+#pca_salary_delta
+#summary(pca_salary_delta)
+
+```
+
+### PCA on merged dataset
+```{r}
+drops <- c("CODGEO","town.x", "total", "null", "total_population", "town.y", "region", "region_capital", "department", "town_name", "postal_code", "latitude", "longitude", "LIBGEO.x", "LIBGEO.y", "REG", "DEP", "pop_2014", "transfer_M", "transfer_F", "M_immi_agri", "F_immi_agri", "male_immig", "tax_house14", "shared_tax_house14", "median_living14", "lev_ineq14")
+
+
+newDat_variables <- newDat[ , !(names(newDat) %in% drops)]
+newDat_variables <- select_if(newDat_variables, is.numeric)
+newDat_variables <- sapply(newDat_variables, as.numeric)
+newDat_variables <- as.data.frame(newDat_variables)
+
+
+
+names(which(sapply(newDat_variables, anyNA)))
+
+#str(newDat_variables)
+newDat_variables_dep <- cbind(geoNEW[1], newDat_variables)
+
+#pca_newDat <- prcomp(na.omit(newDat_variables), scale=TRUE)
+pca_newDat <- prcomp(newDat_variables)
+str(pca_newDat)
+
+
+autoplot(pca_newDat, data = newDat_variables_dep, colour = 'region',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+plot(pca_newDat, type = "l")
+
+#pca_newDat
+
+```
+
+## Cluster Analysis
+
+### Cluster Analysis on salary and delta M-F
+```{r}
+
+
+#create dataframe with first two principal components scores as variables
+salary_pca_scores<- as.data.frame(pca_salary$x[,1:2])
+salary_pca_scores <- as.data.frame(scale(salary_pca_scores))
+sapply(salary_pca_scores, var)
+#scatterplot between PC1 and PC2 to see if there are outliers
+pairs(salary_pca_scores, 
+      panel = function (x, y, ...) {
+          points(x, y, ...)
+          abline(lm(y ~ x), col = "red")
+      }, pch = ".", cex = 0.5)
+
+#after visually identifying thresholds, get rid of outliers
+outliers <- subset(salary_pca_scores, PC1 > 8 | PC2 > 13)
+outliers_names <- unlist(as.numeric(rownames(outliers)))
+salary_pca_scores <- salary_pca_scores[-outliers_names,]
+#renumber rows
+row.names(salary_pca_scores) <- 1:nrow(salary_pca_scores)
+
+#sample data
+set.seed(123)
+salary_scores_sampled <- sample_n(salary_pca_scores, 1000)
+
+#renumber rows
+row.names(salary_scores_sampled) <- 1:nrow(salary_scores_sampled)
+
+#create distance matrix for hclust
+dm <- dist(salary_scores_sampled)
+#round to two decimals
+dm <- round(dm, 2)
+
+# Below we show the cluster solutions for
+# salary data. The top row gives the cluster
+# dendograms along with the cutoff used to
+# derive the classes presented (in the space
+# of the two principal components) in the
+# bottom row:
+
+
+salary_pc <- princomp(dm, cor = TRUE)
+layout(matrix(1:6, nr = 2), height = c(2, 1))
+plot(cs <- hclust(dm, method = "single"), 
+     main = "Single")
+abline(h = 3.8, col = "lightgrey")
+xlim <- range(salary_pc$scores[,1])
+plot(salary_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cs, h = 3.8)
+text(salary_pc$scores[,1:2], labels = lab, 
+     cex=0.6)
+plot(cc <- hclust(dm, method = "complete"), 
+     main = "Complete")
+abline(h = 7, col = "lightgrey")
+plot(salary_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cc, h = 7)  
+text(salary_pc$scores[,1:2], labels = lab, 
+     cex=0.6)     
+plot(ca <- hclust(dm, method = "average"), 
+     main = "Average")
+abline(h = 7.8, col = "lightgrey")
+plot(salary_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(ca, h = 7.8)                             
+text(salary_pc$scores[,1:2], labels = lab, 
+     cex=0.6)  
+
+# restore layout 
+layout(matrix(1, nr = 1)) 
+ 
+# K-means clustering
+n <- nrow(salary_pca_scores)
+wss <- rep(0, 22)
+wss[1] <- (n - 1) * sum(sapply(salary_pca_scores, var))
+for (i in 2:22)
+    wss[i] <- sum(kmeans(salary_pca_scores,
+                         centers = i)$withinss)
+#we can see from the plot that optimal number of cluster is 5
+plot(1:22, wss, type = "b", 
+     xlab = "Number of groups",
+     ylab = "Within groups sum of squares")
+
+#plotting in PC space shows us that there are indeed distinguishable 5 groups 
+plot(salary_pca_scores, 
+     pch = kmeans(salary_pca_scores, 
+                  centers = 5)$cluster)
+
+#now we have to see whether these groups correspond to geographical regions...
+
+```
+
+### Mapping the salary clusters
 ```{r}
  
-# geo styling
-g <- list(
-  scope = 'france',
-  showland = TRUE,
-  landcolor = plotly::toRGB("grey86"),
-  subunitcolor = plotly::toRGB("white"),
-  countrycolor = plotly::toRGB("black"),
-  showlakes = TRUE,
-  lakecolor = plotly::toRGB("white"),
-  showsubunits = TRUE,
-  showcountries = TRUE,
-  resolution = 50,
-  projection = list(
-    type = 'conic conformal',
-    rotation = list(lon = 1)
-  ),
-  lonaxis = list(
-    showgrid = TRUE,
-    gridwidth = 0.5,
-    range = c(-5, 10),
-    dtick = 5
-  ),
-  lataxis = list(
-    showgrid = TRUE,
-    gridwidth = 0.5,
-    range = c(40, 55),
-    dtick = 5
-  )
-)
+#now we have to see whether these groups correspond to geographical regions...
+clusters <- kmeans(salary_pca_scores, 5)
+salary_with_dep$cluster <- clusters$cluster
+geoNEW$cluster <- clusters$cluster
+ 
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+salary_geo <-
+  FraMap +
+  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
+             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on salary")
+salary_geo
  
  
-p <- plotly::plot_geo(geoNEW, lat = ~latitude, lon = ~longitude) %>%
-  plotly::add_markers(
-    # text = ~paste(town_name, paste("Firms tot:", total), 
-    #               paste("Population:", total_population),
-    #               paste("Mean salary:", sal_general), 
-    #               paste("Salary ratio FvsM:", round(salary_ratio_FvsM, 4)),
-    #               sep = "<br />"),
-    color = ~cluster,  size = I(2), hoverinfo = "text", opacity = 0.8 #, colors = 'Purples'
-  ) %>%
-  plotly::colorbar(title = "Total population<br />in 2014") %>%
-  plotly::layout(title = 'Geographic information about France', geo = g)
-p
+#salary_with_dep$cluster <- clusters$cluster
+#data("world.cities")
+#France <- world.cities %>% filter(country.etc == "France")
+#EPS <- 0.15
+#clusters <- dbscan(France[, 4:5], eps = EPS)
+#+France$cluster <- clusters$cluster
  
+#groups  <- France %>% filter(cluster != 0)
+#noise  <- France %>% filter(cluster == 0)
+ 
+#ggplot(France, aes(x = long, y = lat, alpha = 0.5)) + 
+#  geom_point(aes(fill = "grey"), noise) +
+#  geom_point(aes(colour = as.factor(cluster)), groups,
+ #            size = 3) +
+#  coord_map() +
+#  theme(legend.position = "none")
  
 ```
 
-## Supervised
+
+### Clustering on merged dataset
+```{r}
+#create dataframe with first three principal components scores as variables
+newDat_pca_scores<- as.data.frame(pca_newDat$x[,1:3])
+newDat_pca_scores <- as.data.frame(scale(newDat_pca_scores))
+sapply(newDat_pca_scores, var)
+
+#sample data
+set.seed(123)
+newDat_scores_sampled <- sample_n(newDat_variables, 1000)
+
+#renumber rows
+row.names(newDat_scores_sampled) <- 1:nrow(newDat_scores_sampled)
+
+#create distance matrix for hclust
+dm <- dist(newDat_scores_sampled)
+#round to two decimals
+dm <- round(dm, 2)
+
+# Below we show the cluster solutions for
+# the merged data. The top row gives the cluster
+# dendograms along with the cutoff used to
+# derive the classes presented (in the space
+# of the three principal components) in the
+# bottom row:
+
+
+newDat_pc <- princomp(dm, cor = TRUE)
+layout(matrix(1:6, nr = 2), height = c(2, 1))
+plot(cs <- hclust(dm, method = "single"), 
+     main = "Single")
+abline(h = 3.8, col = "lightgrey")
+xlim <- range(newDat_pc$scores[,1])
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cs, h = 3.8)
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)
+plot(cc <- hclust(dm, method = "complete"), 
+     main = "Complete")
+abline(h = 7, col = "lightgrey")
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(cc, h = 7)  
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)     
+plot(ca <- hclust(dm, method = "average"), 
+     main = "Average")
+abline(h = 7.8, col = "lightgrey")
+plot(newDat_pc$scores[,1:2], type = "n", 
+     xlim = xlim, ylim = xlim,
+     xlab = "PC1", ylab = "PC2")
+lab <- cutree(ca, h = 7.8)                             
+text(newDat_pc$scores[,1:2], labels = lab, 
+     cex=0.6)  
+
+# restore layout 
+layout(matrix(1, nr = 1)) 
+ 
+# K-means clustering
+n <- nrow(newDat_pca_scores)
+wss <- rep(0, 15)
+wss[1] <- (n - 1) * sum(sapply(newDat_pca_scores, var))
+for (i in 2:15)
+    wss[i] <- sum(kmeans(newDat_pca_scores,
+                         centers = i)$withinss)
+#we can see from the plot that optimal number of cluster is 11
+plot(1:15, wss, type = "b", 
+     xlab = "Number of groups",
+     ylab = "Within groups sum of squares")
+
+#plotting in PC space shows us that there are indeed distinguishable 6 groups 
+plot(newDat_pca_scores, 
+     pch = kmeans(newDat_pca_scores, 
+                  centers = 6)$cluster)
+
+#now we have to see whether these groups correspond to geographical regions...
+```
+
+### Mapping the new clusters 
+```{r}
+#now we have to see whether these groups correspond to geographical regions...
+clusters <- kmeans(newDat_pca_scores, 10)
+newDat_variables_dep$cluster <- clusters$cluster
+geoNEW$cluster <- clusters$cluster
+ 
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+newDat_geo <-
+  FraMap +
+  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
+             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
+newDat_geo
+
+```
+
+
+
+# Supervised Learning
 
 Function for interactive plotting:
 ```{r}
@@ -3542,6 +3441,91 @@ ggbiplot(myPr, obs.scale = 1, var.scale = 1, varname.size = 1, varname.adjust = 
 
 
 ## Unsupervised learning 
+
+General:
+```{r Correlation plot with new merged data}
+# corrplot(cor(newDat[, 3:20]), method = "circle", title = "Correlation matrix for firms", 
+#          diag = F, tl.cex=1, #col = colorRampPalette(c("red","green","navyblue"))(100))
+#          tl.col = "black", type = "lower", mar=c(0,0,1.5,0))
+# corrplot(cor(newDat[, 21:41]), method = "circle", title = "Correlation matrix for firms", 
+#          diag = F, tl.cex=1, type = "lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
+#          tl.col = "black", mar=c(0,0,1.5,0))
+```
+
+Firms and geo:
+```{r}
+
+```
+
+new trial
+```{r}
+ 
+# geo styling
+g <- list(
+  scope = 'france',
+  showland = TRUE,
+  landcolor = plotly::toRGB("grey86"),
+  subunitcolor = plotly::toRGB("white"),
+  countrycolor = plotly::toRGB("black"),
+  showlakes = TRUE,
+  lakecolor = plotly::toRGB("white"),
+  showsubunits = TRUE,
+  showcountries = TRUE,
+  resolution = 50,
+  projection = list(
+    type = 'conic conformal',
+    rotation = list(lon = 1)
+  ),
+  lonaxis = list(
+    showgrid = TRUE,
+    gridwidth = 0.5,
+    range = c(-5, 10),
+    dtick = 5
+  ),
+  lataxis = list(
+    showgrid = TRUE,
+    gridwidth = 0.5,
+    range = c(40, 55),
+    dtick = 5
+  )
+)
+ 
+ 
+p <- plotly::plot_geo(geoNEW, lat = ~latitude, lon = ~longitude) %>%
+  plotly::add_markers(
+    # text = ~paste(town_name, paste("Firms tot:", total), 
+    #               paste("Population:", total_population),
+    #               paste("Mean salary:", sal_general), 
+    #               paste("Salary ratio FvsM:", round(salary_ratio_FvsM, 4)),
+    #               sep = "<br />"),
+    color = ~cluster,  size = I(2), hoverinfo = "text", opacity = 0.8 #, colors = 'Purples'
+  ) %>%
+  plotly::colorbar(title = "Total population<br />in 2014") %>%
+  plotly::layout(title = 'Geographic information about France', geo = g)
+p
+ 
+ 
+```
+
+## Regression
+```{r salary for executives}
+# average salary for executives
+average_sal_F_exec <- mean(newDat$sal_F_executive)
+average_sal_M_exec <- mean(newDat$sal_M_executive)
+# -> average salary gap between females and males (executives) are 20.20613 - 25.19371= -4.98758.
+# note that the max variable for sal_M_executive is 58 for female it is 35.5, nearly double. 
+# Strangely, for middle manager male, the max is 93.4 which is in Ile-de-France en Yvelines, Chambourcy. 
+
+# delta salary female and male
+newDat$sal_MF_exec <- newDat$sal_M_executive - newDat$sal_F_executive
+
+# linear regression
+lm=lm(sal_MF_exec~ univ + nodip + ,  data=newDat, subset=set.seed(2018))
+summary(lm)
+
+
+
+```
 
 Practise what has been done thoughout class.
 ```{r PCA population-Create clean dataset}
