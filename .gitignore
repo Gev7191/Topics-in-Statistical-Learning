@@ -24,3 +24,5 @@ data/
 *.snm
 *.gz
 *.pdf
+
+TSL_2\.Rmd
