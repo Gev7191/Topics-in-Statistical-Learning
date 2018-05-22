@@ -1503,7 +1503,7 @@ ggplot(data=status_work, aes(ifelse(full_M!=0, log(full_M), 0))) +
 ```{r}
 
 # add region variable to the salary dataset
-salary_with_dep <- cbind(geoNEW[1], salaryNEW)
+salary_with_dep <- cbind(geo[1], salary)
 #check
 #ncol(salary_with_dep)
 #head(salary_with_dep)
@@ -1611,7 +1611,7 @@ plot(xyplot(sal_worker ~ sal_midManager | M_F_salary_ratio,
 ### Preliminary multivariate firms data visualisation to better conduct the unsupervised learning 
 ```{r}
 # add region variable to the salary dataset
-firms_with_dep <- cbind(geoNEW[1], firmsNEW)
+firms_with_dep <- cbind(geo[1], firms)
 #check
 #ncol(salary_with_dep)
 #head(salary_with_dep)
@@ -1924,7 +1924,7 @@ firms_mds <- cmdscale(firms_mah, k = nrow(firms_mah) - 1,
 
 ### Multi-Dimensional Scaling for merged dataset
 ```{r}
-NewDat_PCA_with_dep <- cbind(geoNEW[1], newDat_pca_scores)
+NewDat_PCA_with_dep <- cbind(geo[1], newDat_pca_scores)
 # produces a list with covariance matrix
 # for each region as component:
 NewDat_PCA_var <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
@@ -2083,7 +2083,7 @@ newDat_variables <- as.data.frame(newDat_variables)
 names(which(sapply(newDat_variables, anyNA)))
 
 #str(newDat_variables)
-newDat_variables_dep <- cbind(geoNEW[1], newDat_variables)
+newDat_variables_dep <- cbind(geo[1], newDat_variables)
 
 #pca_newDat <- prcomp(na.omit(newDat_variables), scale=TRUE)
 pca_newDat <- prcomp(newDat_variables)
@@ -2204,15 +2204,15 @@ plot(salary_pca_scores,
 #now we have to see whether these groups correspond to geographical regions...
 clusters <- kmeans(salary_pca_scores, 5)
 salary_with_dep$cluster <- clusters$cluster
-geoNEW$cluster <- clusters$cluster
+geo$cluster <- clusters$cluster
  
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
  
 # Plot "Distribution of total population for each town" 
 salary_geo <-
   FraMap +
-  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
-             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on salary")
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(geo$cluster)),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on salary")
 salary_geo
  
  
@@ -2322,15 +2322,15 @@ plot(newDat_pca_scores,
 #now we have to see whether these groups correspond to geographical regions...
 clusters <- kmeans(newDat_pca_scores, 10)
 newDat_variables_dep$cluster <- clusters$cluster
-geoNEW$cluster <- clusters$cluster
+geo$cluster <- clusters$cluster
  
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
  
 # Plot "Distribution of total population for each town" 
 newDat_geo <-
   FraMap +
-  geom_point(aes(x=geoNEW$longitude, y=geoNEW$latitude, colour= factor(geoNEW$cluster)),
-             data=geoNEW, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(geo$cluster)),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
 newDat_geo
 
 ```
