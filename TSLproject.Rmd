@@ -314,6 +314,16 @@ summary(geo)
 
 ```
 
+Remove DOM-TOM towns (i.e. old colonies far from Europe)
+```{r}
+
+# delete non-European countries
+ind_nonEur = geo$latitude < 30 | geo$latitude > 70 |geo$longitude < -20 | geo$longitude > 20
+sum(ind_nonEur)
+geo = geo[!ind_nonEur,]
+
+```
+
 
 ## Salary data 
 
@@ -782,7 +792,7 @@ names(ineq)
 ineq <- subset(ineq, select = -c(LIBGEO, P09_POP, NAISD16, DECESD16, P14_RP_PROP, P09_EMPLT,ETTOT15, ETAZ15, ETBE15, ETFZ15, ETGU15, ETGZ15, ETOQ15, ETTEF115, ETTEFP1015))
 
 # rename variables 
-names(ineq)[5:ncol(ineq)] <-
+names(ineq)[4:ncol(ineq)] <-
   c("pop_2014",
     "Superficie",
     "birth09_14",
@@ -803,7 +813,7 @@ names(ineq)[5:ncol(ineq)] <-
     "act15_64")
 
 # drop more unnecessary variables 
-ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14, pop_2014, P14_POP))
+ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14, pop_2014))
 
 ```
 
@@ -961,12 +971,6 @@ head(newDat)
 # write.csv(newDat, "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
 ```
 
-Load the reduced data and take a subsample of it to reduce the geo-spatial correlation
-```{r}
-
-```
-
-
 Spatial plot of the data to spot possible patterns:
 ```{r newDat spatial plot}
 # center of France, obtained using:
@@ -978,6 +982,11 @@ ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
 
 ```
 
+
+Load the reduced data and take a subsample of it to reduce the geo-spatial correlation
+```{r}
+
+```
 
 
 # Descriptive statistics 
@@ -1077,11 +1086,6 @@ We could use these data for the following tasks:
 
 Plot available towns on a map:
 ```{r geo map}
-
-# delete non-European countries
-ind_nonEur = geo$latitude < 30 | geo$latitude > 70 |geo$longitude < -20 | geo$longitude > 20
-sum(ind_nonEur)
-geo = geo[!ind_nonEur,]
 
 # center of France, obtained using:
 # fra_center = as.numeric(geocode("France"))
