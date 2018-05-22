@@ -933,7 +933,7 @@ print(paste("The new dataset has", nrow(salaryNEW), "units and",
 ```
 
 Overwrite new datesets into the old ones and remove the latter ones from memory
-```{r}
+```{r take unique datasets}
 
 firms       <- firmsNEW
 geo         <- geoNEW
@@ -946,45 +946,6 @@ ineq        <- ineqNEW
 commune     <- communeNEW
 
 rm(list=c("firmsNEW", "geoNEW", "salaryNEW", "populationNEW", "educNEW", "categ_socioNEW", "status_workNEW", "ineqNEW", "communeNEW"))
-
-```
-
-Create an unique dataset:
-```{r Merge the data and create csv file}
-
-# merging
-newDat = merge(firms, population, by="CODGEO")
-newDat = merge(newDat, salary, by="CODGEO")
-newDat = merge(newDat, geo, by="CODGEO")
-newDat = merge(newDat, status_work, by="CODGEO")
-newDat = merge(newDat, ineq, by="CODGEO")
-newDat = merge(newDat, educ, by="CODGEO")
-newDat = merge(newDat, categ_socio, by="CODGEO")
-newDat = merge(newDat, commune, by="CODGEO")
-# newDat = subset(newDat, select = -town.y)
-
-# check
-names(newDat)
-head(newDat)
-
-# NewDat csv file created
-# write.csv(newDat, "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
-```
-
-Spatial plot of the data to spot possible patterns:
-```{r newDat spatial plot}
-# center of France, obtained using:
-# fra_center = as.numeric(geocode("France"))
-fra_center = c(2.213749, 46.227638)
-
-ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
-  geom_point(aes(x=longitude, y=latitude), data=newDat, col="orange", alpha=0.2, size=0.01) 
-
-```
-
-
-Load the reduced data and take a subsample of it to reduce the geo-spatial correlation
-```{r}
 
 ```
 
@@ -1089,7 +1050,7 @@ Plot available towns on a map:
 
 # center of France, obtained using:
 # fra_center = as.numeric(geocode("France"))
-# fra_center = c(2.213749, 46.227638)
+fra_center = c(2.213749, 46.227638)
 # plot all European towns available
 geo_pos = as.data.frame(cbind(lon = geo$longitude, lat = geo$latitude))
 geo_pos = geo_pos[complete.cases(geo_pos),]
@@ -1460,6 +1421,9 @@ aged_ratio_distribution <-
              sc + labs(color='') + ggtitle("Aged dependency ratio per town")
 aged_ratio_distribution
 
+# remove the dataset created to save memory
+rm(geo_population)
+
 ```
 
 
@@ -1496,6 +1460,44 @@ ggplot(data=status_work, aes(ifelse(full_M!=0, log(full_M), 0))) +
 
 ## Commune data
 
+
+Create an unique dataset:
+```{r Merge the data and create csv file}
+
+# merging
+newDat = merge(firms, population, by="CODGEO")
+newDat = merge(newDat, salary, by="CODGEO")
+newDat = merge(newDat, geo, by="CODGEO")
+newDat = merge(newDat, status_work, by="CODGEO")
+newDat = merge(newDat, ineq, by="CODGEO")
+newDat = merge(newDat, educ, by="CODGEO")
+newDat = merge(newDat, categ_socio, by="CODGEO")
+newDat = merge(newDat, commune, by="CODGEO")
+
+# check
+names(newDat)
+head(newDat)
+
+# NewDat csv file created
+# write.csv(newDat, "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
+```
+
+Spatial plot of the data to spot possible patterns:
+```{r newDat spatial plot}
+# center of France, obtained using:
+# fra_center = as.numeric(geocode("France"))
+fra_center = c(2.213749, 46.227638)
+
+ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
+  geom_point(aes(x=longitude, y=latitude), data=newDat, col="orange", alpha=0.2, size=0.01) 
+
+```
+
+
+Load the reduced data and take a subsample of it to reduce the geo-spatial correlation
+```{r}
+
+```
 
 
 
@@ -2345,6 +2347,7 @@ newDat_geo
 
 Function for interactive plotting:
 ```{r}
+
 # This function is used to obtain interactive regression diagnostic plots
 RegressionPlots <- function(fit, textlabels, robust=F){
   
@@ -2385,7 +2388,7 @@ RegressionPlots <- function(fit, textlabels, robust=F){
   Theoretical.Quantiles <- qqnorm(Residuals, plot.it = F)$x
   
   # Create data frame 
-  # Will be used as input to plot_ly
+  # Will be used as input to plotly
   regMat <- data.frame(Fitted.Values, 
                        Residuals, 
                        Standardized.Residuals, 
@@ -2588,7 +2591,7 @@ summary(ols)
 
 # diagnostic plots
 # layout(matrix(1:6, nr = 2), height = c(2, 1))
-RegressionPlots(ols, newDat$town_name, robust = F)
+RegressionPlots(ols, newDat$town, robust = F)
 
 ```
 
@@ -2596,7 +2599,7 @@ Model fitting using MM estimator:
 ```{r}
 
 # robust fit using MM estimator
-mm = lmrob(y~., data = mod, y=T, setting = "KS2014", control = lmrob.control(compute.rd = T))
+mm = lmrob(y~., data = mod, y=T, control = lmrob.control(compute.rd = T)) # setting = "KS2014",
 summary(mm)
 # outliers identified
 outl = mm$rweights < 2e-05
@@ -2604,7 +2607,7 @@ outl = mm$rweights < 2e-05
 # diagnostic plots
 # layout(matrix(1:6, nr = 2), height = c(2, 1))
 # plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
-RegressionPlots(mm, newDat$town_name, robust = T)
+RegressionPlots(mm, newDat$town, robust = T)
 outl = mm$rweights < 2e-05
 
 ```
@@ -2831,6 +2834,9 @@ France map:
 # devtools::install_github('ropensci/plotly')
 # library(plotly)
 
+# temporary here...
+newDat$salary_ratio_FvsM = salary$salary_ratio_FvsM
+
 newDat$firms_over_pop = newDat$total/newDat$total_population
 m <- list(colorbar = list(title = "Total Inches"))
 
@@ -2867,7 +2873,7 @@ g <- list(
 
 p <- plotly::plot_geo(newDat, lat = ~latitude, lon = ~longitude) %>%
   plotly::add_markers(
-    text = ~paste(town_name, paste("Firms tot:", total), 
+    text = ~paste(town, paste("Firms tot:", total), 
                   paste("Population:", total_population),
                   paste("Mean salary:", sal_general), 
                   paste("Salary ratio FvsM:", round(salary_ratio_FvsM, 4)),
