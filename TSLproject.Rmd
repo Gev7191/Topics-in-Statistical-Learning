@@ -1946,109 +1946,109 @@ firms_mds <- cmdscale(firms_mah, k = nrow(firms_mah) - 1,
 
 ### Multi-Dimensional Scaling for merged dataset
 ```{r}
-NewDat_PCA_with_dep <- cbind(geo[1], newDat_pca_scores)
-# produces a list with covariance matrix
-# for each region as component:
-NewDat_PCA_var <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
-                     function(i) var(NewDat_PCA_with_dep[i,2:4]))
-
-
-#remove regions with null values
-NewDat_PCA_var <- NewDat_PCA_var[-c(11, 12, 15, 19, 20, 28)]
-#check
-#str(firms_var)
-
-
-
-#create dataframe with the counts of towns per region
-regions_count <- data.frame(table(firms_with_dep$region))
-regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
-#check total sum
-row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
-sum(regions_count_sub$Freq)
-
-
-
-# initializes common covariance matrix var:
-S <- regions_count_sub$Freq[1] * as.matrix(NewDat_PCA_var[[1]])
-
-# creates common covariance matrix S
-s <- 0
-for (v in c(1:5)) S <- S + regions_count_sub$Freq[v] * as.matrix(NewDat_PCA_var[[v]]) 
-S <- S / 5024
-
-# finds center of each variable (micro, etc)
-# for each region
-NewDat_cen <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
-    function(i) apply(NewDat_PCA_with_dep[i,-1], 2, mean))
-NewDat_cen
-NewDat_cen <- NewDat_cen[-c(11, 12, 15, 19, 20, 28)]
-str(NewDat_cen)
-
-# create a matrix out of each components, each
-# mean measurement for all variables by region
-NewDat_cen <- matrix(unlist(NewDat_cen), 
-    nrow = length(NewDat_cen), byrow = TRUE)
-NewDat_cen
-
-# compute the mahalanobis distances:
-NewDat_mah <- apply(NewDat_cen, 1, 
-    function(cen) mahalanobis(NewDat_cen, cen, S))
-NewDat_mah
-
-
-
-# run it on two dimensions
-NewDat_mds <- cmdscale(NewDat_mah)
-
-# draw a scatterplot of two-dimensional solution
-# from classical MDS applied to Mahalanobis
-# distances:
-lim <- range(NewDat_mds) * 1.2
-plot(NewDat_mds, xlab = "Coordinate 1", 
-     ylab = "Coordinate 2",
-     xlim = lim, ylim = lim, type = "n")
-text(NewDat_mds, labels = levels(NewDat_PCA_with_dep$region), 
-     cex = 0.5)
-
-# But here, as the two-dimensional fit may not
-# explain what is needed to represent the observed
-# distances, we shall investigate the solution 
-# in a little more detail using the "minimum
-# spanning tree".
-
-# The minimum spanning tree is defined as follows. 
-# Suppose n points are given (possibly in many
-# dimensions). Then a tree spanning these points 
-# (that is, a spanning tree) is any set of straight 
-# line segments joining pairs of points such that
-# - 0 closed loops occur,
-# - every point is visited at least one time, and
-# - the tree is connected (has paths between each
-# pair of points)
-
-# We use function mst() from package ape to plot
-# minimum spanning tree on the two-dimensional
-# scaling solution:
-
-#
-# run classic MDS function on distances
-NewDat_mds <- cmdscale(NewDat_mah, k = nrow(NewDat_mah) - 1, 
-         eig = TRUE)
-
-#only 5 of the first 21 eigenvalues are > 0
-# x <- firms_mds$points[,1]
-# y <- firms_mds$points[,2]
-# st <- mst(firms_mah)
-# plot(x, y, xlab = "Coordinate 1", 
+# NewDat_PCA_with_dep <- cbind(geo[1], newDat_pca_scores)
+# # produces a list with covariance matrix
+# # for each region as component:
+# NewDat_PCA_var <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
+#                      function(i) var(NewDat_PCA_with_dep[i,2:4]))
+# 
+# 
+# #remove regions with null values
+# NewDat_PCA_var <- NewDat_PCA_var[-c(11, 12, 15, 19, 20, 28)]
+# #check
+# #str(firms_var)
+# 
+# 
+# 
+# #create dataframe with the counts of towns per region
+# regions_count <- data.frame(table(firms_with_dep$region))
+# regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
+# #check total sum
+# row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+# sum(regions_count_sub$Freq)
+# 
+# 
+# 
+# # initializes common covariance matrix var:
+# S <- regions_count_sub$Freq[1] * as.matrix(NewDat_PCA_var[[1]])
+# 
+# # creates common covariance matrix S
+# s <- 0
+# for (v in c(1:5)) S <- S + regions_count_sub$Freq[v] * as.matrix(NewDat_PCA_var[[v]]) 
+# S <- S / 5024
+# 
+# # finds center of each variable (micro, etc)
+# # for each region
+# NewDat_cen <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
+#     function(i) apply(NewDat_PCA_with_dep[i,-1], 2, mean))
+# NewDat_cen
+# NewDat_cen <- NewDat_cen[-c(11, 12, 15, 19, 20, 28)]
+# str(NewDat_cen)
+# 
+# # create a matrix out of each components, each
+# # mean measurement for all variables by region
+# NewDat_cen <- matrix(unlist(NewDat_cen), 
+#     nrow = length(NewDat_cen), byrow = TRUE)
+# NewDat_cen
+# 
+# # compute the mahalanobis distances:
+# NewDat_mah <- apply(NewDat_cen, 1, 
+#     function(cen) mahalanobis(NewDat_cen, cen, S))
+# NewDat_mah
+# 
+# 
+# 
+# # run it on two dimensions
+# NewDat_mds <- cmdscale(NewDat_mah)
+# 
+# # draw a scatterplot of two-dimensional solution
+# # from classical MDS applied to Mahalanobis
+# # distances:
+# lim <- range(NewDat_mds) * 1.2
+# plot(NewDat_mds, xlab = "Coordinate 1", 
 #      ylab = "Coordinate 2",
-#      xlim = range(x)*1.2, type = "n")
-# for (i in 1:nrow(firms_mah)) {
-#   w1 <- which(st[i, ] == 1)
-#   segments(x[i], y[i], x[w1], y[w1])
-# }
-# text(x, y, labels = colnames(firms_mah), 
-#      cex = 1.5)
+#      xlim = lim, ylim = lim, type = "n")
+# text(NewDat_mds, labels = levels(NewDat_PCA_with_dep$region), 
+#      cex = 0.5)
+# 
+# # But here, as the two-dimensional fit may not
+# # explain what is needed to represent the observed
+# # distances, we shall investigate the solution 
+# # in a little more detail using the "minimum
+# # spanning tree".
+# 
+# # The minimum spanning tree is defined as follows. 
+# # Suppose n points are given (possibly in many
+# # dimensions). Then a tree spanning these points 
+# # (that is, a spanning tree) is any set of straight 
+# # line segments joining pairs of points such that
+# # - 0 closed loops occur,
+# # - every point is visited at least one time, and
+# # - the tree is connected (has paths between each
+# # pair of points)
+# 
+# # We use function mst() from package ape to plot
+# # minimum spanning tree on the two-dimensional
+# # scaling solution:
+# 
+# #
+# # run classic MDS function on distances
+# NewDat_mds <- cmdscale(NewDat_mah, k = nrow(NewDat_mah) - 1, 
+#          eig = TRUE)
+# 
+# #only 5 of the first 21 eigenvalues are > 0
+# # x <- firms_mds$points[,1]
+# # y <- firms_mds$points[,2]
+# # st <- mst(firms_mah)
+# # plot(x, y, xlab = "Coordinate 1", 
+# #      ylab = "Coordinate 2",
+# #      xlim = range(x)*1.2, type = "n")
+# # for (i in 1:nrow(firms_mah)) {
+# #   w1 <- which(st[i, ] == 1)
+# #   segments(x[i], y[i], x[w1], y[w1])
+# # }
+# # text(x, y, labels = colnames(firms_mah), 
+# #      cex = 1.5)
 ```
 
 ## PCA
