@@ -82,6 +82,7 @@ Loading all libraries needed throughout the notebook:
 ```{r loading libraries}
 
 # data manipulation
+if(!require(psych)){install.packages("psych"); library(psych)}
 if(!require(plyr)){install.packages("dplyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
 # plotting
@@ -571,9 +572,6 @@ names(categ_socio)[3:ncol(categ_socio)] <-
     "M_NoImmi_noAct",
     "F_NoImmi_noAct")
 
-# drop LIBGEO
-categ_socio <- subset(categ_socio, select=-c(LIBGEO))
-
 ```
 
 Create the total number of immigrants and natives per town, also separeted by gender.
@@ -588,6 +586,12 @@ categ_socio$female_immig <- rowSums(cbind(categ_socio$F_immi_agri,categ_socio$F_
 # total number immigrants per town
 categ_socio$total_immig <- categ_socio$male_immig + categ_socio$female_immig
 
+# working male immigrants per town
+categ_socio$male_working_immig <- categ_socio$male_immig - categ_socio$M_immi_retired
+
+# working female immigrants per town 
+categ_socio$female_working_immig <- categ_socio$female_immig - categ_socio$F_immi_retired
+
 # total number of male natives per town 
 categ_socio$male_native <- rowSums(cbind(categ_socio$M_NoImmi_agri, categ_socio$M_NoImmi_comm, categ_socio$M_NoImmi_exec, categ_socio$M_NoImmi_emp, categ_socio$M_NoImmi_midman, categ_socio$M_NoImmi_noAct, categ_socio$M_NoImmi_retired, categ_socio$M_NoImmi_worker))
 
@@ -596,6 +600,10 @@ categ_socio$female_native <- rowSums(cbind(categ_socio$F_NoImmi_agri, categ_soci
 
 # total number of natives per town 
 categ_socio$total_native <- categ_socio$male_native + categ_socio$female_native
+
+# drop unnecessary variables
+categ_socio <- subset(categ_socio, select = c(CODGEO, male_immig, female_immig, total_immig, male_working_immig,
+                                               female_working_immig, male_native, female_native, total_native))
 
 ```
 
@@ -761,8 +769,8 @@ status_work$full <- status_work$full_M + status_work$full_F
 status_work$half <- status_work$half_M + status_work$half_F
 status_work$wagearner <- status_work$wagearner_M + status_work$wagearner_F
 status_work$independent <- status_work$independent_M + status_work$independent_F
-status_work$transfer <- sum(status_work$transfer_F, status_work$transfer_M)
-status_work$employer <- sum(status_work$employer_F, status_work$employer_M)
+status_work$transfer <- status_work$transfer_F + status_work$transfer_M
+status_work$employer <- status_work$employer_F + status_work$employer_M
 
 # drop unnecessary variables
 status_work <- subset(status_work, select = c(CODGEO,
@@ -813,7 +821,11 @@ names(ineq)[4:ncol(ineq)] <-
     "act15_64")
 
 # drop more unnecessary variables 
-ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14, pop_2014))
+ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14, pop_2014, households14, birth09_14,
+                                death09_14, tax_house14, shared_tax_house14))
+
+# unemployment rate
+ineq$unemp_rate <- ineq$unemp15_64/ineq$pop15_64
 
 ```
 
@@ -850,6 +862,9 @@ names(commune) <-c("CODGEO", "orient_econ", "demo_index", "population", "nb_hous
                     "nb_active_non_employees", "dymanic_demo_prof", "profitRate", 
                     "regional_GDP", "demo_environment", "evol_pop_score", 
                     "evol_entrepreneurial_score", "demo_envir2") 
+
+# drop more variables
+commune <-subset(commune, select=-c(demo_index, population, profitRate, demo_envir2, demo_environment))
 
 ```
 
@@ -1411,55 +1426,305 @@ population_distribution <-
 population_distribution
 
 # Plot "Distribution of aged dependency ratio for each town"
-sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$aged_dependency_ratio),
+sc <- scale_colour_gradientn(colours =palette(rainbow(4)), limits=c(min(geo_population$aged_dependency_ratio),
                                                                   max(geo_population$aged_dependency_ratio)))
 aged_ratio_distribution <-
   FraMap +
   geom_point(aes(x=geo_population$longitude, y=geo_population$latitude,
                  colour=geo_population$aged_dependency_ratio),
-             data=geo_population, alpha=0.2, size=0.01) +
+             data=geo_population, alpha=1, size=1) +
              sc + labs(color='') + ggtitle("Aged dependency ratio per town")
 aged_ratio_distribution
 
+# which city has the highest/lowest aged dependency ratio
+geo_population[which.min(geo_population$aged_dependency_ratio),c('region')] 
+geo_population[which.max(geo_population$aged_dependency_ratio),c('region')] 
+
+# get list of top 10 highest aged dependency ratio
+Rank = sort(geo_population$aged_dependency_ratio, TRUE)
+Rank10 = sort(Rank[1:10], TRUE)
+sol = rep(0, 10)
+for (i in 1:10){
+    sol[i] = paste(geo_population$region[geo_population$aged_dependency_ratio %in% Rank10[i]] )
+}
+
 # remove the dataset created to save memory
-rm(geo_population)
+rm(list = c("geo_population", "Rank", "Rank10"))
 
 ```
 
 
 ### What we have learned 
 
-...
+We can observe that in urban cities, the aged dependcy ratio is lower compared to non-urban cities. 
+The city with the lowest aged dependency ratio is ile-de-France and the highest is Pays de la Loire.
 
 ## Education data
 
+```{r Descriptive statistics-Education}
+
+# Difference between male and female's education level (with University degrees)
+summary(educ$male_Univ)
+summary(educ$female_Univ)
+summary(educ$male_NoDip)
+summary(educ$female_NoDip)
+
+# Merge geo and educ data to include longitude and latitude in the data.
+geo_educ <- cbind.data.frame(geo[unique(geo$CODGEO) %in% unique(educ$CODGEO),],
+                                   educ[unique(educ$CODGEO) %in% unique(geo$CODGEO),])
+
+# check the ratio of individuals with high and low education level for each town.
+summary(educ$univ/educ$nodip)
+
+# Histogram of the ratio of individuals with high and low education level for each town
+ggplot(data=educ, aes(log(educ$univ/educ$nodip))) +
+  geom_histogram(aes(y=..density..), col="black", fill="blue", alpha=0.3, bins= 50)+
+                   geom_density(col="black") +
+                   labs(x="log. University degree/No diploma", y="Density") +
+                   ggtitle("Ratio between the number of individuals with no diploma and 
+                           individuals with University degree per town") +
+                   theme(plot.title =element_text(hjust= 0.5))
+
+# Adjust scales before plotting
+sc <- scale_colour_gradientn(colours = c("#56ddc5", "#F8766D", "#00BA38"), limits=c(min(educ$univ/educ$nodip), max(educ$univ/educ$nodip)))
+
+# Map ratio 
+educ_ratio_NoDipUniv <-
+  FraMap +
+  geom_point(aes(x=geo_educ$longitude, y=geo_educ$latitude,
+                 colour=educ$univ/educ$nodip),
+             data=geo_educ, alpha=1, size=1) +
+             sc + labs(color='Ratio') + ggtitle("Education level ratio for each town")
+educ_ratio_NoDipUniv
+
+# Statistics of shape for the data
+# library(psych)
+describe(educ$univ/educ$nodip)
+
+# remove the dataset created to save memory
+rm(list=c("geo_educ", "educ_ratio_NoDipUniv"))
+
+```
+
+### What we have learned
+
+In average 960 males have university degree and 1100 females have university degree. 
+In average 904 males have no diploma and 1242 females have no diploma.
+Highest ratio in Paris=78251=Yvelines
+
+
 ## Demographic/social profiles data
+
+```{r Descriptive statistics Demographic profiles}
+glimpse(categ_socio)
+
+# find which cities have the most and least number of immigrants
+categ_socio[which.max(categ_socio$total_immig),c('CODGEO')] 
+categ_socio[which.min(categ_socio$total_immig),c('CODGEO')] 
+
+# get list of top 10 cities with the most number of immigrants
+Rank = sort(categ_socio$total_immig, TRUE)
+Rank10 = sort(Rank[1:10], TRUE)
+sol = rep(0, 10)
+for (i in 1:10){
+    sol[i] = paste(categ_socio$CODGEO[categ_socio$total_immig %in% Rank10[i]] )
+}
+
+```
+
+### What we have learned
+
+City with the least number of immigrants is Rennes and the most is Paris.
+= "75056" "13055" "69123" "31555" "6088"  "67482" "34172" "93066" "93001" "95018"
 
 ## Work status data
 
 ```{r descriptive stats status_work}
 
-summary(status_work)
+names(status_work)
+
+# which town has the most/least people receiving government transfers
+status_work[which.max(status_work$transfer),c('CODGEO')] 
+status_work[which.min(status_work$transfer),c('CODGEO')] 
+
+# get list of top 10 cities with the people receiving government transfers
+Rank = sort(status_work$transfer, TRUE)
+Rank10 = sort(Rank[1:10], TRUE)
+sol = rep(0, 10)
+for (i in 1:10){
+    sol[i] = paste(status_work$CODGEO[status_work$transfer %in% Rank10[i]] )
+}
+
+# which town has the most/least people with part time contract.
+status_work[which.max(status_work$half),c('CODGEO')] 
+status_work[which.min(status_work$half),c('CODGEO')] 
+
+# get list of top 10 cities with the most part-time contract.
+Rank = sort(status_work$half, TRUE)
+Rank10 = sort(Rank[1:10], TRUE)
+sol = rep(0, 10)
+for (i in 1:10){
+    sol[i] = paste(status_work$CODGEO[status_work$half %in% Rank10[i]] )
+}
+
+
+# Histogram (Females with full time contract)
+describe(status_work$full_F)    # Skewness
 
 ggplot(data=status_work, aes(ifelse(full_F!=0, log(full_F), 0))) +
   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
   geom_density(col="black") +
   labs(x="", y="Density") +
-  ggtitle("") +
+  ggtitle("Female workers with full time contract") +
   theme(plot.title = element_text(hjust = 0.5))
+
+# Histogram (males with full time contract)
+describe(status_work$full_M)    # Skewness
 
 ggplot(data=status_work, aes(ifelse(full_M!=0, log(full_M), 0))) +
   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
   geom_density(col="black") +
   labs(x="", y="Density") +
-  ggtitle("") +
+  ggtitle("Male workers with full time contract") +
   theme(plot.title = element_text(hjust = 0.5))
+
+# Histogram: Contract type ratio
+describe(status_work$half/status_work$full)    # Skewness
+
+ggplot(data=status_work, aes(status_work$half/status_work$full)) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 50) +
+  geom_density(col="black") +
+  labs(x="Contract type ratio (temporary/full time)", y="Density") +
+  ggtitle("Contract type ratio") +
+  theme(plot.title = element_text(hjust = 0.5))
+
 ```
+
+```{r Box plot}
+#  number of units
+n_sex <- length(status_work$wagearner_F)
+
+# vector representing males and females
+Label <- c(rep("M", n_sex*6), rep("F", n_sex*6))
+
+# vector representing the variable considered
+Variable <- c(rep("Wagearner", n_sex), 
+             rep("Independent", n_sex),
+             rep("Transfer", n_sex),
+             rep("Employer", n_sex),
+             rep("Full",n_sex),
+             rep("Half", n_sex))
+             
+# merge these data
+status_sex = cbind.data.frame(Label = Label, 
+             value = c(status_work$wagearner_M, status_work$wagearner_F, status_work$independent_M,
+                       status_work$independent_F, status_work$transfer_M, status_work$transfer_F,
+                       status_work$employer_M, status_work$employer_F, status_work$full_M, status_work$full_F,
+                       status_work$half_M, status_work$half_F),
+             Variable = Variable)
+
+# plotting phase
+ggplot(data = status_sex, aes(x=Label, y=value)) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Sex") + ylab("# of individuals") + ggtitle("Gender comparison") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
+
+
+# the same but excluding outliers
+ggplot(data = status_sex, aes(x=Label, y=value)) +
+  scale_y_continuous(limits = quantile(status_sex$value, c(0, 0.9))) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Sex") + ylab("# of individuals") + 
+  ggtitle("Gender comparison excluding the last decile") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
+```
+
+### What we have learned
+
+Paris is the city where they have the most individuals receiving government transfers.
+Lyon is the city where they have the least individuals receiving government transfers.
+="75056" "13055" "6088"  "69123" "31555" "33063" "34172" "44109" "42218" "67482"
+
+Paris has most individuals with half/full time contract.
+Rouen has the least. 
+= "75056" "69123" "13055" "31555" "44109" "59350" "67482" "34172" "33063" "35238"
+
+In average, more females receive transfers than males. 
+In average, more females have part-time contract than males. (In average, 581 females have part-time contract (in each town) and 178 males have part-time contract. (More males have full-time contract.)
+
+More females work as wage-earners than males.
+=All these facts can be related to vulnerability of females in the labour market. Many studies show that females are mostly working as part-time workers and lower job categories. On top of this, more females receive transfers.
+We can also observe this in our data that more males are registered as independent workers or employers. 
 
 ## Inequality data
 
+```{r descriptive statistics Inequality data}
+glimpse(ineq)
+
+# which city has the highest/lowest unemployment rate
+ineq[which.max(ineq$unemp_rate),c('CODGEO')] 
+ineq[which.min(ineq$unemp_rate),c('CODGEO')] 
+
+# get list of top 10 cities with the highest unemployment rate.
+Rank = sort(ineq$unemp_rate, TRUE)
+Rank10 = sort(Rank[1:10], TRUE)
+sol = rep(0, 10)
+for (i in 1:10){
+    sol[i] = paste(status_work$CODGEO[ineq$unemp_rate %in% Rank10[i]] )
+}
+
+
+# which is the smallest/biggest city (area)
+ineq[which.max(ineq$Superficie),c('CODGEO')] 
+ineq[which.min(ineq$Superficie),c('CODGEO')] 
+
+# which city has the highest/lowest median living level
+ineq[which.max(ineq$median_living14),c('CODGEO')] 
+ineq[which.min(ineq$median_living14),c('CODGEO')] 
+
+# Merge geo and educ data to include longitude and latitude in the data.
+geo_ineq <- cbind.data.frame(geo[unique(geo$CODGEO) %in% unique(ineq$CODGEO),],
+                                   ineq[unique(ineq$CODGEO) %in% unique(geo$CODGEO),])
+
+# Adjust scales before plotting
+sc <- scale_colour_gradientn(colours = c("#56ddc5", "#ff3db7"), limits=c(min(ineq$unemp_rate), max(ineq$unemp_rate)))
+
+# Map ratio 
+ineq_unempl_distribution <-
+  FraMap +
+  geom_point(aes(x=geo_ineq$longitude, y=geo_ineq$latitude,
+                 colour=ineq$unemp_rate),
+             data=geo_ineq, alpha=1, size=1) +
+             sc + labs(color='Unemployment rate') + ggtitle("Unemployment rate for each town")
+ineq_unempl_distribution
+
+# remove the dataset created to save memory
+rm(list=c("geo_ineq", "ineq_unempl_distribution"))
+
+```
+
+### What we have learned
+
+Bordeaux has the highest unemployment rate.
+Nantes has the lowest unemployment rate. 
+="33402" "30132" "59036" "76231" "97101" "2361"  "59291" "2304"  "8409"  "62447"
+
 ## Commune data
 
+```{r descriptive statistics Commune data}
+glimpse(commune)
+aaa = as.numeric(commune$urbanRural)
+
+```
+
+
+# Create an unique dataset
 
 Create an unique dataset:
 ```{r Merge the data and create csv file}
