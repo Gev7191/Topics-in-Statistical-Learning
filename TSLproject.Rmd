@@ -2369,7 +2369,8 @@ salary_geo
 
 
 ```
-###Clustering based on Location Quotient
+
+### Clustering based on Location Quotient
 ```{r}
 industry <- commune[, c("nb_firms_service", "nb_firms_commerce", "nb_firms_construction")]
 
@@ -2385,11 +2386,11 @@ lq_construction <- as.data.frame((lq_construction))
 
 industry_lq <- cbind(industry, lq_service, lq_commerce, lq_construction)
 #create dataframe with the counts of towns per region
-# regions_count <- data.frame(table(salary_with_dep$region))
-# regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
+regions_count <- data.frame(table(salary_with_dep$region))
+regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
 #check total sum
-# row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
-# sum(regions_count_sub$Freq)
+row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+sum(regions_count_sub$Freq)
 
 ```
 
