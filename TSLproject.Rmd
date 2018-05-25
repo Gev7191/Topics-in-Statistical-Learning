@@ -85,6 +85,8 @@ Loading all libraries needed throughout the notebook:
 if(!require(plyr)){install.packages("dplyr"); library(plyr)}
 if(!require(dplyr)){install.packages("dplyr"); library(dplyr)}
 # plotting
+if(!require(RColorBrewer)){install.packages("RColorBrewer"); library(RColorBrewer)} # colors
+if(!require(zoo)){install.packages("zoo"); library(zoo)} # colors
 if(!require(ggplot2)){install.packages("ggplot2"); library(ggplot2)}
 if(!require(ggfortify)){install.packages("ggfortify"); library(ggfortify)}
 if(!require(ggmap)){install.packages("ggmap"); library(ggmap)}
@@ -115,6 +117,9 @@ if(!require(glmnet)){install.packages("glmnet"); library(glmnet)}
 if(!require(gglasso)){install.packages("gglasso"); library(gglasso)}
 # robust fit
 if(!require(robustbase)){install.packages("robustbase"); library(robustbase)}
+# robust Lasso 
+if(!require(robustHD)){install.packages("robustHD"); library(robustHD)}
+if(!require(enetLTS)){install.packages("enetLTS"); library(enetLTS)}
 # box-cox tranformation (in ANOVA) and standardized residuals
 if(!require(MASS)){install.packages("MASS"); library(MASS)}
 # best subset selection
@@ -1494,24 +1499,6 @@ head(newDat)
 # write.csv(newDat, "newDat.csv", quote = FALSE, row.names=FALSE, fileEncoding = "UTF-8")
 ```
 
-Spatial plot of the data to spot possible patterns:
-```{r newDat spatial plot}
-# center of France, obtained using:
-# fra_center = as.numeric(geocode("France"))
-fra_center = c(2.213749, 46.227638)
-
-ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
-  geom_point(aes(x=longitude, y=latitude), data=newDat, col="orange", alpha=0.2, size=0.01) 
-
-```
-
-
-Load the reduced data and take a subsample of it to reduce the geo-spatial correlation
-```{r}
-
-```
-
-
 
 # Unsupervised Learning
 
@@ -2742,11 +2729,176 @@ plot3d(newDat_pca_scores[,1:3], col=newDat_pca_scores$cluster)
 
 # Supervised Learning
 
-Function for interactive plotting:
-```{r}
+## ANOVA for salary
+
+To check if the difference in the mean in salary betweem males and females is statistically significant,
+a t-test is performed
+```{r salary difference t test}
+
+t.test(salary$sal_Males, salary$sal_Females, alternative = c("two.sided"))
+
+```
+
+This solution can also be otbained fitting a linear model with a dummy variable catching the sex effect,
+which corresponds to an ANOVA test
+```{r salary difference t test as an ANOVA}
+
+# create the reponse attaching the salary for each sex
+sal_y = c(salary$sal_Males, salary$sal_Females)
+# create the dummy variable controlling for the corresponding sex
+dummy = c(rep(1, length(salary$sal_Males)), rep(0, length(salary$sal_Females)))
+
+# the t value is exactly the same as the one obtained in the previous t-test
+sal_ANOVA = lm(sal_y ~ dummy)
+summary(sal_ANOVA)
+
+```
+
+To improve such analysis some more aspects are now considered.
+In particualar, the model considered in an ANOVA, where the
+predictors take in account each gender for different age and job levels,
+plus their interaction terms.
+
+First of all the dataset is created and a subsample of it is considered, 
+in order to avoid strong correlation among units
+```{r salary construct full ANOVA model}
+
+# create response variable
+sal_y = c(salary$sal_M_18_25, salary$sal_M_26_50, salary$sal_M_51plus,
+          salary$sal_M_executive, salary$sal_M_midManager, salary$sal_M_employee, salary$sal_M_worker,
+          salary$sal_F_18_25, salary$sal_F_26_50, salary$sal_F_51plus,
+          salary$sal_F_executive, salary$sal_F_midManager, salary$sal_F_employee, salary$sal_F_worker)
+
+n_sal_y = length(sal_y)             # length response variable
+n_cat = length(salary$sal_M_18_25)  # length of each category (i.e., original vectors)
+
+# create sex dummy variable, 1 for males and 0 for females
+sal_sex = rep(0, n_sal_y)   # full regressors
+sal_sex[1:n_sal_y/2] = 1    # assign males
+
+# create age dummy variables, 18-25 years old is the base case
+sal_age = cbind(rep(0, n_sal_y), rep(0, n_sal_y)) # full regressors
+# 26-50 y.o.
+sal_age[(n_cat+1):(n_cat*2), 1] = 1     # males
+sal_age[(n_cat*8+1):(n_cat*9), 1] = 1   # females
+# 51+ y.o.
+sal_age[(n_cat*2+1):(n_cat*3), 2] = 1   # males
+sal_age[(n_cat*9+1):(n_cat*10), 2] = 1  # females
+
+# create job type dummy variables, worker is the base case
+sal_job = cbind(rep(0, n_sal_y), rep(0, n_sal_y), rep(0, n_sal_y)) # full regressors
+# executives
+sal_job[(n_cat*3+1):(n_cat*4), 1] = 1     # males
+sal_job[(n_cat*10+1):(n_cat*11), 1] = 1   # females
+# middle managers
+sal_job[(n_cat*4+1):(n_cat*5), 2] = 1     # males
+sal_job[(n_cat*11+1):(n_cat*12), 2] = 1   # females
+# employee
+sal_job[(n_cat*5+1):(n_cat*6), 3] =   1   # males
+sal_job[(n_cat*12+1):(n_cat*13), 3] = 1   # females
+
+# final data set
+data_ANOVA = cbind.data.frame(response = sal_y, sex = sal_sex, age = sal_age, job = sal_job)
+# names(data_ANOVA)
+# show regressors' shape
+imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA")
+axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl."))
+box()
+# sub sample to avoid correlation, (unbalanced dataset)
+  # set.seed(20)
+  subs = sample(1:n_sal_y, size = round(n_sal_y*0.4))
+  data_ANOVA = data_ANOVA[subs,]
+
+# show randomized data
+imagemat(data_ANOVA[,-1], xaxt = "n", main = "Factors for ANOVA after sub-sampling")
+axis(1, at=1:6, labels=c("Sex", "Age 26-50", "Age 51+", "Execut.", "Mid.Man.", "Empl."))
+box()
+
+```
+
+Run the ANOVA model, tranforming the response variable using Box-Cox transformation
+```{r salary ANOVA model}
+
+# plot the transformed response variable (suggested by Box-Cox transformation)
+sal_y = data_ANOVA[,1]^-1  
+ggplot(data=data.frame(data_ANOVA[,1]), aes(sal_y)) +
+  geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 40) +
+  geom_density(col="black") +
+  labs(x="salary^-1", y="Density") +
+  ggtitle("Transformation of salary found using Box-Cox transformation") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# take the identified subsample for dummy variables
+sex = sal_sex[subs]
+age = sal_age[subs,]
+job = sal_job[subs,]
+# ANOVA model
+sal_ANOVA = lm(sal_y ~ sex + age + job + sex:age + sex:job)
+summary(sal_ANOVA)
+anova(sal_ANOVA)
+aov(sal_y ~ sex + age + job + sex:age + sex:job)
+plot(sal_ANOVA, 1)
+
+# box-cox transformation suggested to use y^-1
+boxcox(sal_ANOVA)
+title("Box-Cox transformation of the response")
+
+# comparison a full model with a reduced one excluding one interaction term
+sal_ANOVA2 = lm(sal_y ~ sex + age + job + sex:age)
+anova(sal_ANOVA, sal_ANOVA2)
+
+```
+
+To check if the model can be sparsified the group-Lasso is applied,
+which shows that the interaction term sex:job is the least important.
+```{r salary group-Lasso}
+
+# define the considered model, which includes interaction terms
+form <- model.matrix(sal_y ~ (sex + age + job)^2)
+# remove interaction age:job
+colnames(form)
+form = form[,2:12]
+
+# define groups' labels
+grp = c(1,2,2,3,3,3,4,4,5,5,5)
+
+#Group-Lasso with 10-folds Cross Validation and LAD cost function
+fit.cv=cv.gglasso(x=form, y=sal_y, group=grp, nfolds=10, pred.loss = "L2")
+
+# plot CV for Lambda
+plot(fit.cv, main = "10-folds CV for group-Lasso in ANOVA", cex = 0.1)
+# mtext(expression("10-folds CV for group-Lasso in ANOVA"), outer=TRUE,  cex=1, line=-0.2)
+
+# extract coefficients
+# coef.mat = fit.cv$gglasso.fit$beta
+# plot separately each coefficient
+cols = brewer.pal(5,name="Set1")
+plot(fit.cv$gglasso.fit, col = cols, lwd = 3, main = "Coefficients vs.Lambda values")
+legend('bottomright', legend = paste("Group", 1:5), col=cols[1:5], cex = 0.65, pch = 1, lwd=4, bty ="n")
+# plot coefficients' norms (not working)
+# plot(fit.cv$gglasso.fit, group=1, col = brewer.pal(5,name="Set1"), lwd = 2)
+# legend('bottomright', legend = paste("Group", 1:5), col=cols[1:5], cex = 0.65, pch = 1, lwd=4, bty ="n")
+ 
+#Pick the best Lambda
+lmbda=fit.cv$lambda.1se
+(coefs=coef.gglasso(object=fit.cv$gglasso.fit,s=lmbda))
+#At best lambda get coefficients and fitted values
+plt=sal_y-predict.gglasso(object=fit.cv$gglasso.fit,newx=form,s=lmbda,type='link')
+plot(plt, ylab="residuals", xlab="index", main="Plot of residuals")
+abline(0, 0, col= "red")
+
+```
+
+## Difference in salary: men vs. females
+
+The focus of this part is on the delta between males and females salaries,
+comparing classical and robust approaches (with respect to noise/outliers).
+
+Function for interactive plotting used in the next chunks
+```{r function interactive regression diagnostic plots}
 
 # This function is used to obtain interactive regression diagnostic plots
-RegressionPlots <- function(fit, textlabels, robust=F){
+RegressionPlots <- function(fit, textlabels, robust=F, out = NULL){
   
   # number of units
   n = length(fit$fitted.values)
@@ -2809,7 +2961,7 @@ RegressionPlots <- function(fit, textlabels, robust=F){
   plt1 <- regMat %>% 
     plot_ly(x = Fitted.Values, y = Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text",
-            name = "Data", marker = list(size = 10, opacity = 0.5),
+            color = out, name = "Data", marker = list(size = 10, opacity = 0.5),
             text = paste('</br> Unit: ', 1:n,
                          '</br> Town: ', as.character(textlabels),
                          '</br> x: ', Fitted.Values,
@@ -2829,7 +2981,7 @@ RegressionPlots <- function(fit, textlabels, robust=F){
   plt2 <- regMat %>% 
     plot_ly(x = Fitted.Values, y = Standardized.Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text",
-            name = "Data", marker = list(size = 10, opacity = 0.5),
+            color = out, name = "Data", marker = list(size = 10, opacity = 0.5),
             text = paste('</br> Unit: ', 1:n,
                          '</br> Town: ', as.character(textlabels),
                          '</br> x: ', Fitted.Values,
@@ -2846,7 +2998,7 @@ RegressionPlots <- function(fit, textlabels, robust=F){
   plt3 <- regMat %>% 
     plot_ly(x = 1:n, y = Standardized.Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text",
-            name = "Data", marker = list(size = 10, opacity = 0.5),
+            color = out, name = "Data", marker = list(size = 10, opacity = 0.5),
            text = paste('</br> Unit: ', 1:n,
                          '</br> Town: ', as.character(textlabels),
                          '</br> x: ', 1:n,
@@ -2858,13 +3010,13 @@ RegressionPlots <- function(fit, textlabels, robust=F){
     layout(title = paste(tt, " Standardized Residuals' index"), plot_bgcolor = "#e6e6e6", 
              xaxis = list(title = "Index"),
              yaxis = list(title = "Standardized.Residuals")) 
+    
 
-  
   # Plot 4: QQ Pot
   plt4 <- regMat %>% 
     plot_ly(x = Theoretical.Quantiles, y = Standardized.Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text", 
-            name = "Data", marker = list(size = 10, opacity = 0.5),
+            color = out, name = "Data", marker = list(size = 10, opacity = 0.5),
            text = paste('</br> Unit: ', 1:n,
                          '</br> Town: ', as.character(textlabels),
                          '</br> x: ', Theoretical.Quantiles,
@@ -2886,7 +3038,7 @@ RegressionPlots <- function(fit, textlabels, robust=F){
   plt5 <- regMat %>% 
     plot_ly(x = Leverage, y = Residuals, 
             type = "scatter", mode = "markers", hoverinfo = "text", 
-            name = "Data", marker = list(size = 10, opacity = 0.5), 
+            color = out, name = "Data", marker = list(size = 10, opacity = 0.5), 
            text = paste('</br> Unit: ', 1:n,
                          '</br> Town: ', as.character(textlabels),
                          '</br> x: ', Leverage,
@@ -2907,7 +3059,7 @@ RegressionPlots <- function(fit, textlabels, robust=F){
   plt6 <- regMat %>% 
     plot_ly(x = Fitted.Values, y =y, 
             type = "scatter", mode = "markers", hoverinfo = "text",
-            name = "Data", marker = list(size = 10, opacity = 0.5),
+            color = out, name = "Data", marker = list(size = 10, opacity = 0.5),
            text = paste('</br> Unit: ', 1:n,
                          '</br> Town: ', as.character(textlabels),
                          '</br> x: ', Fitted.Values,
@@ -2936,12 +3088,16 @@ RegressionPlots <- function(fit, textlabels, robust=F){
   #   layout(title = "Scale Location", plot_bgcolor = "#e6e6e6")
   plt = list(plt1, plt2, plt3, plt4, plt5, plt6)
   return(plt)
+
+  # not working...to add in all plots
+  # to avoid error with colorPalette<3
+  suppressWarnings(warning("RColorBrewer::brewer.pal"))
+  
 }
 
 ```
 
-
-The focus of this part is on the delta between males and females salaries.
+Build the considered model
 ```{r linear model for delta M-F salary, fig.keep='all'}
 
 # response variable
@@ -2979,8 +3135,8 @@ corrplot(cor(mod), method = "number", title = "Correlation matrix",
 plot(newDat$sal_M_26_50 - newDat$sal_F_26_50,y)
 ```
 
-Model fitting using OLS:
-```{r}
+A classical linear model is first fitted
+```{r OLS fit}
 
 # OLS
 ols = lm(y ~ ., data = mod, y=T)
@@ -2993,7 +3149,7 @@ RegressionPlots(ols, newDat$town, robust = F)
 ```
 
 Model fitting using MM estimator:
-```{r}
+```{r MM fit}
 
 # robust fit using MM estimator
 mm = lmrob(y~., data = mod, y=T, control = lmrob.control(compute.rd = T)) # setting = "KS2014",
@@ -3009,8 +3165,8 @@ outl = mm$rweights < 2e-05
 
 ```
 
-Specify the model for model selection:
-```{r}
+Specify the model:
+```{r model specification}
 
 # copy of the previous options
 y = newDat$sal_Males - newDat$sal_Females
@@ -3050,7 +3206,7 @@ names(mod) = namesdataBS
 
 
 Use 10-folds cross validation on Elastic-net:
-```{r}
+```{r CV for Elastic net}
 
 # initialize list to contain the variables selected and the counter
 var_selec = list()
@@ -3107,7 +3263,7 @@ print(var_selec)
 ```
 
 Add a second step OLS estimate on the variables identified by LASSO:
-```{r}
+```{r OLS on Lasso solution}
 
 for (i in 1:6){
   mod_red = mod[,colnames(mod) %in% var_selec[[i]]$name ] 
@@ -3133,7 +3289,7 @@ for (i in 1:6){
 Using best subset selection.
 
 Function to plot the results
-```{r}
+```{r plot.regsubsets2}
 
 plot.regsubsets2 <-  
   function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
@@ -3175,7 +3331,7 @@ plot.regsubsets2 <-
 ```
 
 BSS results:
-```{r}
+```{r BSS results}
 
 # best subset selection
 best.sub = regsubsets(y ~ ., data = mod, nvmax = ncol(mod))
@@ -3223,7 +3379,61 @@ summary(ols_bic)
 
 ```
 
+Using sparse-LTS, which is a robustification of Lasso
+```{r sparseLTS, warning=FALSE}
 
+# fit robust Lasso
+sol_sparseLTS = sparseLTS(x, y, mode = "lambda", alpha = 0.95, ncores = NA, model=T)
+# check the solution
+sol_sparseLTS
+# construct mahalanobis distance (used for diagnostic plots)
+sol_sparseLTS$MD = covMcd(x)$mah
+# diagnostic plots
+RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[2]]
+RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[3]]
+RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[4]]
+
+```
+
+
+Robust elastic net
+```{r enetLTS, echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
+
+
+sol_enetLTS = enetLTS(x, y, family="gaussian", alphas=seq(0, 1, 0.2), hsize=0.9, nfold=10, seed=1)
+# check the solution
+print(sol_enetLTS)
+
+
+# save original response (used for diagnostic plots)
+sol_enetLTS$y = y
+# construct mahalanobis distance (used for diagnostic plots)
+sol_enetLTS$MD = covMcd(x)$mah
+# construct robust scale (used for diagnostic plots)
+sol_enetLTS$scale = sd(sol_enetLTS$residuals[!sol_enetLTS$wt])
+
+# interactive plots
+RegressionPlots(sol_enetLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_enetLTS$wt))[[2]]
+RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[3]]
+RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[4]]
+# built-in plots
+plotCoef.enetLTS(sol_enetLTS, cex = 2)
+plotDiagnostic.enetLTS(sol_enetLTS, cex = 2)
+
+# perform CV for user-values
+# # Calculate lambda path (first get lambda_max):
+# lambda_max <- 1 # max(abs(colSums(sx*sy)))/n
+# epsilon <- .0001
+# K <- 10
+# lambdapath <- round(exp(seq(log(lambda_max), log(lambda_max*epsilon), 
+#                             length.out = K)), digits = 10)
+# sol_cv = cv.enetLTS(index=NULL,x,y,family="gaussian",round(length(y)*0.90),
+#            seq(0, 1, 0.2),lambdas = lambdapath ,ncores=1,repl=5,nfold=10,plot=TRUE)
+
+```
+
+
+# Interactive map (trial)
 
 France map:
 ```{r}
@@ -4055,4 +4265,106 @@ Practise what has been done thoughout class.
 
 # hc_pop=hclust(dist(pca_pop_town), method="complete")
 # plot(hc_pop, labels=pca_pop_town$CODGEO, main="Complete Linkage", xlab="", ylab="", sub="", cex =.9)
+```
+
+
+### section: old ANOVA
+
+
+Now a best subset selction approach is used, in order
+to identify the best subset of variables.
+Such approach however is not satisfactory, because
+it doesn't consider groups as a whole.
+It is used only for illustrative purposes.
+
+This function is used to plot some results in the next chunk.
+```{r}
+
+plot.regsubsets2 <-  
+  function (x, labels = obj$xnames, main = NULL, scale = c("bic",  
+     "Cp", "adjr2", "r2"), col = gray(seq(0, 0.9, length = 10)), ...)  
+  { 
+    obj <- x 
+    lsum <- summary(obj) 
+    par(mar = c(7, 5, 6, 3) + 0.1) 
+    nmodels <- length(lsum$rsq) 
+    np <- obj$np 
+    propscale <- FALSE 
+    sscale <- pmatch(scale[1], c("bic", "Cp", "adjr2", "r2"),  
+                     nomatch = 0) 
+    if (sscale == 0)  
+      stop(paste("Unrecognised scale=", scale)) 
+    if (propscale)  
+      stop(paste("Proportional scaling only for probabilities")) 
+    yscale <- switch(sscale, lsum$bic, lsum$cp, lsum$adjr2, lsum$rsq) 
+    up <- switch(sscale, -1, -1, 1, 1) 
+    index <- order(yscale * up) 
+    colorscale <- switch(sscale, yscale, yscale, -log(pmax(yscale,  
+                                                           1e-04)), -log(pmax(yscale, 1e-04))) 
+    image(z = t(ifelse(lsum$which[index, ], colorscale[index],  
+                       NA + max(colorscale) * 1.5)), xaxt = "n", yaxt = "n",  
+          x = (1:np), y = 1:nmodels, xlab = "", ylab = scale[1],  
+          col = col) 
+    laspar <- par("las") 
+    on.exit(par(las = laspar)) 
+    par(las = 2) 
+    axis(1, at = 1:np, labels = labels, ...) # I modified this line 
+    axis(2, at = 1:nmodels, labels = signif(yscale[index], 2), ...) 
+    # axis(2,cex.axis=0.01)
+    if (!is.null(main))  
+      title(main = main) 
+    box() 
+    invisible(NULL)
+  } 
+
+```
+
+Best subset selection 
+```{r salary ANOVA BSS}
+
+# BSS
+best.sub = regsubsets((sal_y ~ sex + age + job + sex:age + sex:job),
+                      data = data_ANOVA, nvmax = 12)
+best.sub.summary = summary(best.sub)
+# plots: manual plotting
+par(mfrow =c(2,2))
+# rsq
+plot(best.sub.summary$rsq , xlab="Number of Variables", ylab="Rsq", type="l")
+ind_Rsq = which.max(best.sub.summary$rsq)
+points(ind_Rsq, best.sub.summary$adjr2[ind_Rsq], col ="red", cex=2, pch=20)
+# adjRsq
+plot(best.sub.summary$adjr2 ,xlab="Number of Variables", ylab="Adjusted RSq", type="l")
+ind_adjRsq = which.max(best.sub.summary$adjr2)
+points(ind_adjRsq, best.sub.summary$adjr2[ind_adjRsq], col ="red", cex=2, pch=20)
+# Cp
+plot(best.sub.summary$cp ,xlab="Number of Variables", ylab="Cp", type="l")
+ind_Cp = which.min(best.sub.summary$cp)
+points(ind_Cp, best.sub.summary$cp[ind_adjRsq], col ="red", cex=2, pch=20)
+# bic
+plot(best.sub.summary$bic ,xlab="Number of Variables", ylab="bic", type="l")
+ind_bic = which.min(best.sub.summary$bic)
+points(ind_bic, best.sub.summary$bic[ind_bic], col ="red", cex=2, pch=20)
+# mtext("My 'Title' in a strange place", line=15)
+mtext("Best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-2.5)
+# existing plots
+par(mfrow=c(1,1))
+plot.regsubsets2(best.sub, scale = "r2", cex.axis = 0.8)
+mtext("R2 best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-3.5)
+plot.regsubsets2(best.sub, scale = "Cp", cex.axis = 0.8)
+mtext("Cp best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-3.5)
+plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.8)
+mtext("BIC best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-3.5)
+plot.regsubsets2(best.sub, scale = "adjr2", cex.axis = 0.8)
+mtext("Adj-R2 subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-3.5)
+# original plots (without title and fixed cex)
+# plot(best.sub, scale = "r2")
+# plot(best.sub, scale = "bic")
+# plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.8)
+# mtext("Best subset selection for ANOVA", outer=TRUE,  cex=1.2, line=-3.5)
+# plot(best.sub, scale = "Cp")
+# plot(best.sub, scale = "adjr2")
+# retrieve the model with min BIC
+coefficients(best.sub, which.min(best.sub.summary$bic))
+
+
 ```
