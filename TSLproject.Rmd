@@ -1430,12 +1430,12 @@ geo_population <- cbind.data.frame(geo[unique(geo$CODGEO) %in% unique(population
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
 
 # Plot "Distribution of total population for each town" 
-sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(min(geo_population$total_population),
-                                                                    max(geo_population$total_population)))
+sc <- scale_colour_gradientn(colours =palette(rainbow(3)), limits=c(log10(min(geo_population$total_population)), 
+                                                                    log10(max(geo_population$total_population)))) 
 population_distribution <-
   FraMap +
   geom_point(aes(x=geo_population$longitude, y=geo_population$latitude,
-                 colour=geo_population$total_population),
+                 colour=log10(geo_population$total_population)), 
              data=geo_population, alpha=0.2, size=0.01) +
              sc + labs(color='') + ggtitle("Distribution of Population for each town")
 population_distribution
@@ -1773,7 +1773,7 @@ sc <- scale_colour_gradientn(colours = palette(rainbow(3)), limits=c(min(aaa), m
   FraMap +
   geom_point(aes(x=geo_commune$longitude, y=geo_commune$latitude,
                  colour=aaa),
-             data=geo_commune, alpha=1, size=1) +
+             data=geo_commune, alpha=1, size=0.5) +
              sc + labs(color='') + ggtitle("Urban and rural cities")
 urbanrural
 
@@ -1805,26 +1805,28 @@ head(newDat)
 Save/load final dataset (just to avoid running all the code) 
 ```{r Save/load final dataset, warning=FALSE} 
  
-#remove unused factor levels on newDat 
-for (i in 1:ncol(newDat)){ 
-  if (is.factor(newDat[,i])){ 
-    newDat[,i] = droplevels.factor(newDat[,i]) 
-  } 
-} 
-# save the NewDat.csv file created (which has to be moved in the data folder) 
-write.table(newDat, "newDat.csv", quote = TRUE, row.names=FALSE, col.names = TRUE, 
-          fileEncoding = "UTF-8", sep = ",") 
+# #remove unused factor levels on newDat 
+# for (i in 1:ncol(newDat)){ 
+#   if (is.factor(newDat[,i])){ 
+#     newDat[,i] = droplevels.factor(newDat[,i]) 
+#   } 
+# } 
+# # save the NewDat.csv file created (which has to be moved in the data folder) 
+# write.table(newDat, "newDat.csv", quote = TRUE, row.names=FALSE, col.names = TRUE, 
+#           fileEncoding = "UTF-8", sep = ",") 
  
 # load the final dataset 
-# setwd("./data") 
-# newDat <- read.csv("newDat.csv", encoding = "UTF-8", header = TRUE) 
+setwd("./data")
+newDat <- read.csv("newDat.csv", encoding = "UTF-8", header = TRUE)
+
 # check (changing newDat loaded with newDat2), the only differences are in the order of 10e-15 
 # identical(newDat, newDat2) 
  
 ```
 
-
-Spatial plot of the data to spot possible patterns: 
+Spatial plot of the data to spot possible patterns. 
+A sub-sample will be retained when needed in order to reduce 
+geo-spatial correlations. 
 ```{r newDat spatial plot} 
 # center of France, obtained using: 
 # fra_center = as.numeric(geocode("France")) 
@@ -1835,11 +1837,6 @@ ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
  
 ``` 
  
- 
-Load the reduced data and take a subsample of it to reduce the geo-spatial correlation 
-```{r} 
- 
-``` 
 
 # Unsupervised Learning
 
