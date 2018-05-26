@@ -3094,26 +3094,46 @@ plot3d(newDat_pca_scores[,1:3], col=newDat_pca_scores$cluster)
 
 ## ANOVA for salary
 
-To check if the difference in the mean in salary betweem males and females is statistically significant,
-a t-test is performed
+First the distribution of salary for both genders is considered, in original and log-scale
+```{r hist salary for gender}
+
+# original scale
+hist(newDat$sal_Males^-1, 30)
+hist(newDat$sal_Females^-1, 30)
+# log scale
+hist(log10(newDat$sal_Males), 30)
+hist(log10(newDat$sal_Females), 30)
+# log scale: together
+hist(c(log10(newDat$sal_Males), log10(newDat$sal_Females)), 30)
+
+```
+
+It is clear that the normality assumption, cannot hold.
+At the same time, for didactical reasons it is shown
+how to check if the difference in the mean in salary 
+between males and females using a t-test 
 ```{r salary difference t test}
 
-t.test(newDat$sal_Males, newDat$sal_Females, alternative = c("two.sided"))
+t.test(log10(newDat$sal_Males), log10(newDat$sal_Females), alternative = c("two.sided"))
 
 ```
 
 This solution can also be otbained fitting a linear model with a dummy variable catching the sex effect,
-which corresponds to an ANOVA test
+which corresponds to a one-way ANOVA model
 ```{r salary difference t test as an ANOVA}
 
 # create the reponse attaching the salary for each sex
-sal_y = c(newDat$sal_Males, newDat$sal_Females)
+sal_y = c(log10(newDat$sal_Males), log10(newDat$sal_Females))
 # create the dummy variable controlling for the corresponding sex
 dummy = c(rep(1, length(newDat$sal_Males)), rep(0, length(newDat$sal_Females)))
 
 # the t value is exactly the same as the one obtained in the previous t-test
 sal_ANOVA = lm(sal_y ~ dummy)
 summary(sal_ANOVA)
+
+# residuals plot
+plot(sal_ANOVA$residuals)
+abline (0, 0, col = "red")
 
 ```
 
@@ -3280,10 +3300,21 @@ abline(0, 0, col= "red")
 
 ```
 
+From this study it is possible to conclude that each factor is relevant 
+to the determine the salary level. 
+The least important factor results the interaction between sex and job.
+It means that it is not statistically significant the discrimination
+of gender between various jobs, even if it exists in general and for
+different ages.
+
+In the next section this topic will be investigated further.
+
+
 ## Difference in salary: men vs. females
 
-The focus of this part is on the delta between males and females salaries,
-comparing classical and robust approaches (with respect to noise/outliers).
+The focus of this section is on the on the difference on salary between males and females in various towns.
+Some classical approaches will be compared with robust ones,
+to diagnose the possible negative effect of the presence of noise or outliers.
 
 Function for interactive plotting used in the next chunks
 ```{r function interactive regression diagnostic plots}
@@ -3492,7 +3523,9 @@ Build the considered model
 ```{r linear model for delta M-F salary, fig.keep='all'}
 
 # response variable
+# y = log10(newDat$sal_Males - newDat$sal_Females)
 y = newDat$sal_Males - newDat$sal_Females
+
 # original response variable histogram
 ggplot(data=as.data.frame(y), aes(y)) +
   geom_histogram(aes(y =..density..), col="black", fill="blue", alpha = .3, bins = 35) +
@@ -3501,29 +3534,89 @@ ggplot(data=as.data.frame(y), aes(y)) +
   ggtitle("Original response variable") +
   theme(plot.title = element_text(hjust = 0.5))
 
+# x = cbind.data.frame(pop = newDat$total_population, 
+#                      firms = newDat$total,
+#                      # small_firms = newDat$small,
+#                      # small_firms = newDat$medium,
+#                      # small_firms = newDat$large,
+#                      ratio_pop_firms = newDat$total/newDat$total_population,
+#                      # delta_18_25 = newDat$sal_M_18_25 - newDat$sal_F_18_25,
+#                      # delta_26_50 = newDat$sal_M_26_50 - newDat$sal_F_26_50,
+#                      # delta_51plus = newDat$sal_M_51plus - newDat$sal_F_51plus,
+#                      delta_exec = newDat$sal_M_executive - newDat$sal_F_executive,
+#                      delta_midMan = newDat$sal_M_midManager - newDat$sal_F_midManager,
+#                      delta_empl = newDat$sal_M_employee - newDat$sal_F_employee,
+#                      delta_worker = newDat$sal_M_worker - newDat$sal_F_worker)
+
+# impute NA using median (only 3) ... move in pre-processing
+newDat$median_living14[is.na(newDat$median_living14)] = median(newDat$median_living14, na.rm = T)
+
 x = cbind.data.frame(pop = newDat$total_population, 
                      firms = newDat$total,
-                     # small_firms = newDat$small,
-                     # small_firms = newDat$medium,
-                     # small_firms = newDat$large,
                      ratio_pop_firms = newDat$total/newDat$total_population,
-                     # delta_18_25 = newDat$sal_M_18_25 - newDat$sal_F_18_25,
-                     # delta_26_50 = newDat$sal_M_26_50 - newDat$sal_F_26_50,
-                     # delta_51plus = newDat$sal_M_51plus - newDat$sal_F_51plus,
                      delta_exec = newDat$sal_M_executive - newDat$sal_F_executive,
                      delta_midMan = newDat$sal_M_midManager - newDat$sal_F_midManager,
                      delta_empl = newDat$sal_M_employee - newDat$sal_F_employee,
-                     delta_worker = newDat$sal_M_worker - newDat$sal_F_worker)
+                     delta_worker = newDat$sal_M_worker - newDat$sal_F_worker,
+                     workforce = newDat$workforce,
+                     dependency_ratio = newDat$dependency_ratio,
+                     delta_wagearner = newDat$wagearner_M - newDat$wagearner_F,
+                     delta_indep = newDat$independent_M - newDat$independent_F,
+                     delta_transfer = newDat$transfer_M - newDat$transfer_F,
+                     delta_employer = newDat$employer_M - newDat$employer_F,
+                     delta_full = newDat$full_M - newDat$full_F,
+                     # delta_half = newDat$half_M - newDat$half_F, # OLS gives NA
+                     superficie = newDat$Superficie,
+                     housing14 = newDat$housing14,
+                     median_living14 = newDat$median_living14,
+                     # lev_ineq14 = newDat$lev_ineq14, # 884 NA
+                     empl = newDat$empl,
+                     emp_sal = newDat$emp_sal,
+                     pop15_64 = newDat$pop15_64,
+                     unemp15_64 = newDat$unemp15_64,
+                     act15_64 = newDat$act15_64,
+                     unemp_rate = newDat$unemp_rate,
+                     delta_NoDip = newDat$male_NoDip - newDat$female_NoDip,
+                     delta_sec = newDat$male_Sec - newDat$female_Sec,
+                     delta_hi = newDat$male_Hi - newDat$female_Hi,
+                     delta_univ = newDat$male_Univ - newDat$female_Univ,
+                     nodip = newDat$nodip,
+                     delta_immig = newDat$male_immig - newDat$female_immig,
+                     delta_workingImmig = newDat$male_working_immig - newDat$female_working_immig,
+                     delta_native = newDat$male_native - newDat$female_native,
+                     # evol_entrepr = newDat$evol_entrepreneurial_score,
+                     # evol_pop = newDat$evol_pop_score,
+                     regional_GDP = newDat$regional_GDP,
+                     # dymanic_demo_prof = newDat$dymanic_demo_prof,
+                     nb_active_employees = newDat$nb_active_employees,
+                     nb_active_non_employees = newDat$nb_active_non_employees,
+                     # nb_active = newDat$nb_active,   # OLS gives NA
+                     nb_created_services = newDat$nb_created_services,
+                     nb_created_commerce = newDat$nb_created_commerce,
+                     nb_created_construction = newDat$nb_created_construction,
+                     nb_created_ind = newDat$nb_created_ind,
+                     # nb_created_firms = newDat$nb_created_firms, # OLS gives  
+                     nb_firms_service = newDat$nb_firms_service,
+                     nb_firms_commerce = newDat$nb_firms_commerce,
+                     nb_firms_construction = newDat$nb_firms_construction,
+                     nb_firms_ind = newDat$nb_firms_ind,
+                     nb_major = newDat$nb_major,
+                     nb_minor = newDat$nb_minor,
+                     delta_num_sex = newDat$nb_male - newDat$nb_female,
+                     nb_household = newDat$nb_household)
+# add dummy for urban
+
 # merge variables
 mod = cbind.data.frame(y, x)
+dim(mod)
 
 # scatter plot matrix
 # pairs(mod)
 # correlations
-corrplot(cor(mod), method = "number", title = "Correlation matrix",
+corrplot(cor(mod), method = "color", title = "Correlation matrix for X variables",
          diag = T, tl.cex=0.5, type="lower", #col = colorRampPalette(c("red","green","navyblue"))(100))
          tl.col = "black")  # , mar=c(0,0,1.5,0)
-plot(newDat$sal_M_26_50 - newDat$sal_F_26_50,y)
+
 ```
 
 A classical linear model is first fitted
@@ -3543,121 +3636,168 @@ Model fitting using MM estimator:
 ```{r MM fit}
 
 # robust fit using MM estimator
+set.seed(5) # to ensure convergence
 mm = lmrob(y~., data = mod, y=T, control = lmrob.control(compute.rd = T)) # setting = "KS2014",
 summary(mm)
 # outliers identified
 outl = mm$rweights < 2e-05
+# outl_mm
 
 # diagnostic plots
-# layout(matrix(1:6, nr = 2), height = c(2, 1))
-# plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
+  # layout(matrix(1:6, nr = 2), height = c(2, 1))
+  # plot(mm, cex = 0.6, id.n = 10, labels.id = newDat$town_name, sub.caption="MM")
 RegressionPlots(mm, newDat$town, robust = T)
-outl = mm$rweights < 2e-05
 
 ```
 
-Specify the model:
-```{r model specification}
+Model fitting using LTS estimator with trimming equal to 20% of the units: (does not work)
+```{r LTS}
 
-# copy of the previous options
-y = newDat$sal_Males - newDat$sal_Females
-x = cbind.data.frame(pop = newDat$total_population, 
-                     firms = newDat$total,
-                     # small_firms = newDat$small,
-                     # small_firms = newDat$medium,
-                     # small_firms = newDat$large,
-                     ratio_pop_firms = newDat$total/newDat$total_population,
-                     # delta_18_25 = newDat$sal_M_18_25 - newDat$sal_F_18_25,
-                     # delta_26_50 = newDat$sal_M_26_50 - newDat$sal_F_26_50,
-                     # delta_51plus = newDat$sal_M_51plus - newDat$sal_F_51plus,
-                     delta_exec = newDat$sal_M_executive - newDat$sal_F_executive,
-                     delta_midMan = newDat$sal_M_midManager - newDat$sal_F_midManager,
-                     delta_empl = newDat$sal_M_employee - newDat$sal_F_employee,
-                     delta_worker = newDat$sal_M_worker - newDat$sal_F_worker)
-
-# merge variables
-mod = cbind.data.frame(y, x)
-# merge variables excluding ouliers
-# mod = mod[!outl,]
-
-# add transformations on the predictors
-mod = cbind.data.frame(mod, mod[,2:ncol(mod)]^2, mod[,2:ncol(mod)]^3)
-namesdataBS = names(mod)
-lll = ((dim(mod)[2]-1)/3)
-# for (i in 1:lll+1){
-#   str = namesdataBS[i]
-#   namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1]
-# }
-namesdataBS[(lll+2):(lll*2+1)] = paste(namesdataBS[1:lll+1], rep("^2", lll), sep="")
-namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll), sep="")
-# namesdataBS[(lll*3+2):(lll*4+1)] = paste(namesdataBS[1:lll+1], rep("log", lll))
-names(mod) = namesdataBS
+# lts_sol = ltsreg(y~., data = mod, alpha = 0.8)  # 
+# lts_sol
+# lts_sol$y = y
+# plot(lts_sol)
+# lts_sol$MD = covMcd(mod[,c(1:12, 14:ncol(mod))])$mah
+# RegressionPlots(lts_sol, newDat$town, robust = T)
 
 ```
 
+Specify the model with additional polynomials as predictors
+```{r model augmentation}
 
-Use 10-folds cross validation on Elastic-net:
+# # merge variables
+# modyx = cbind.data.frame(y, x)
+# # merge variables excluding ouliers
+# # mod = mod[!outl,]
+# 
+# # add transformations on the predictors
+#   mod = cbind.data.frame(mod, mod[,2:ncol(mod)]^2, mod[,2:ncol(mod)]^3)
+#   namesdataBS = names(mod)
+#   lll = ((dim(mod)[2]-1)/3)
+#   # for (i in 1:lll+1){
+#   #   str = namesdataBS[i]
+#   #   namesdataBS[i] = regmatches(str, regexpr("_", str), invert = TRUE)[[1]][-1]
+#   # }
+#   namesdataBS[(lll+2):(lll*2+1)] = paste(namesdataBS[1:lll+1], rep("^2", lll), sep="")
+#   namesdataBS[(lll*2+2):(lll*3+1)] = paste(namesdataBS[1:lll+1], rep("^3", lll), sep="")
+#   # namesdataBS[(lll*3+2):(lll*4+1)] = paste(namesdataBS[1:lll+1], rep("log", lll))
+#   names(mod) = namesdataBS
+
+```
+
+Compute again OLS and MM solutions, which show that the benefit is marginal
+```{r OLS and MM on augmented data}
+
+# # OLS
+# ols = lm(y ~ ., data = mod, y=T)
+# summary(ols)
+# # diagnostic plots
+# RegressionPlots(ols, newDat$town, robust = F)
+# 
+# # MM 
+# mm = lmrob(y~., data = mod, y=T, control = lmrob.control(compute.rd = T)) # setting = "KS2014",
+# summary(mm)
+# # outliers identified
+# outl2 = mm$rweights < 2e-05
+# # diagnostic plots
+# RegressionPlots(mm, newDat$town, robust = T)
+
+```
+
+Use 10-folds cross validation on Elastic-net for different alpha values:
 ```{r CV for Elastic net}
 
-# initialize list to contain the variables selected and the counter
+# initialize list to contain the variables selected, 
+# number of non zero coefficients and the counter
+nzcoef = matrix(NA, 11, 2)
 var_selec = list()
 i = 1
 
 # Elastic net
 x = as.matrix(mod[, 2:ncol(mod)])
 y = mod[, 1]
-par(mfrow =c(3,2))
+par(mfrow =c(3,4))
 par(oma=c(0,0,2,0))
-alp = c(0, 0.2, 0.4, 0.6, 0.8, 1)
+alp = seq(0, 1, 0.1)
 for (j in alp){
   # set.seed (3)
-  cv.out = cv.glmnet(x, y, alpha = j, standardize.response = T ) # standardize.response = T , parallel = T 
+  cv.out = cv.glmnet(x, y, alpha = j, nfolds=10) # standardize.response = T , parallel = T 
   plot(cv.out)
   title(paste("alpha = ", j), line = 0.3)
+  # save selected variables
   tmp_coeffs <- coef(cv.out, s = "lambda.min") # cv.out$lambda.1se 
-  var_selec[[i]] = data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], coefficient = tmp_coeffs@x)
+  var_selec[[i]] = data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], 
+                              coefficient = tmp_coeffs@x)
+  # save number of non zero variables
+  nzcoef[i,1] = cv.out$nzero[cv.out$lambda == cv.out$lambda.min]
+  nzcoef[i,2] = cv.out$nzero[cv.out$lambda == cv.out$lambda.1se]
   i = i + 1
 }
 mtext(expression("Best lambda for delta gender salary using elastic-net and 10-folds CV"), outer=TRUE,  cex=1, line=0.2)
 
-# compare the results
+# compare the coefficients obtained
 print(var_selec)
 
-# Manual evaluation
-# # split the date leaving the 20% for CV
-# par(mfrow =c(1,1))
-# train = sample(1:nrow(x), floor(nrow(x)*0.8))
-# test = -train
-# y.test = y[test]
-# x = as.matrix(x)
-# itercol = 1
-# for (j in c(0, 0.2, 0.4, 0.6, 0.8, 1)){
-#   # set.seed (3)
-#   lasso.mod = glmnet(x[train,], y[train], alpha = j, thresh = 1e-10)
-#   err.i = rep("NA", length(lasso.mod$lambda))
-#   for (i in 1:length(lasso.mod$lambda)){
-#     lasso.pred = predict(lasso.mod, s = lasso.mod$lambda[i], newx = x[test,], alpha = j)
-#     err.i[i] = mean((lasso.pred - y.test)^2)
-#   }
-#   if (itercol == 1){
-#     plot(log(lasso.mod$lambda), err.i, xlab = 'log Lambda', ylab = 'test set MSE',
-#          main = 'Test MSE among different Lambdas', type = "b", col = itercol)
-#   } else{
-#     lines(log(lasso.mod$lambda), err.i, type = "b", col = itercol)
-#   }
-#   bestlam = which.min(err.i)
-#   points(log(lasso.mod$lambda)[bestlam], err.i[bestlam], col = 3, cex=2, pch=20)
-#   itercol = itercol +1
-# }
-# 
+# plot number of non zero coefficients
+par(mfrow =c(1,1))
+plot(alp, nzcoef[,1], main="Number of non-zero coefficients for each alpha level",
+     xlab = "alpha proportion", ylab = "Non-zero coefficients", type = "b", col = "blue",
+     ylim = c(min(nzcoef), max(nzcoef)))
+lines(alp, nzcoef[,2], col = "red", type = "b")
+legend('topright', c("lambda min", "lambda 1SE"), lty = 1, col = c("blue", "red"), cex = 0.7,lwd=2) 
+
+```
+
+The units' weights are now given to the same algorithm,
+which were obtained using the MM estimator
+```{r CV for Elastic net with MM weights}
+
+# initialize list to contain the variables selected, 
+# number of non zero coefficients and the counter
+nzcoef = matrix(NA, 11, 2)
+var_selec = list()
+i = 1
+
+# Elastic net
+x = as.matrix(mod[, 2:ncol(mod)])
+y = mod[, 1]
+par(mfrow =c(2,3))
+par(oma=c(0,0,2,0))
+alp = seq(0, 1, 0.1)
+for (j in alp){
+  # set.seed (3)
+  cv.out = cv.glmnet(x, y, alpha = j, nfolds=10, weights = mm$rweights) # standardize.response = T , parallel = T 
+  plot(cv.out)
+  title(paste("alpha = ", j), line = 0.3)
+  # save selected variables
+  tmp_coeffs <- coef(cv.out, s = "lambda.min") # cv.out$lambda.1se 
+  var_selec[[i]] = data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], 
+                              coefficient = tmp_coeffs@x)
+  # save number of non zero variables
+  nzcoef[i,1] = cv.out$nzero[cv.out$lambda == cv.out$lambda.min]
+  nzcoef[i,2] = cv.out$nzero[cv.out$lambda == cv.out$lambda.1se]
+  i = i + 1
+}
+mtext(expression("Best lambda for delta gender salary using elastic-net and 10-folds CV"), outer=TRUE,  cex=1, line=0.2)
+
+# compare the coefficients obtained
+print(var_selec)
+
+# plot number of non zero coefficients
+par(mfrow =c(1,1))
+plot(alp, nzcoef[,1], main="Number of non-zero coefficients for each alpha level",
+     xlab = "alpha proportion", ylab = "Non-zero coefficients", type = "b", col = "blue",
+     ylim = c(min(nzcoef), max(nzcoef)))
+lines(alp, nzcoef[,2], col = "red", type = "b")
+legend('topright', c("lambda min", "lambda 1SE"), lty = 1, col = c("blue", "red"), cex = 0.7,lwd=2) 
 
 ```
 
 Add a second step OLS estimate on the variables identified by LASSO:
 ```{r OLS on Lasso solution}
 
-for (i in 1:6){
-  mod_red = mod[,colnames(mod) %in% var_selec[[i]]$name ] 
+for (i in 1:11){
+  mod_red = mod[,colnames(mod) %in% var_selec[[i]]$name] 
   mod_red = cbind.data.frame(y, mod_red)
   olsRed = lm(y ~ ., data = mod_red, y=T)
   print("--------------------------------------------")
@@ -3721,11 +3861,11 @@ plot.regsubsets2 <-
   } 
 ```
 
-BSS results:
+BSS results: (((DO ALL WITH A SUBSET)))
 ```{r BSS results}
 
 # best subset selection
-best.sub = regsubsets(y ~ ., data = mod, nvmax = ncol(mod))
+best.sub = regsubsets(y ~ ., data = mod, nvmax = ncol(mod), really.big=TRUE, method="seqrep") #exhaustive
 best.sub.summary = summary(best.sub)
 # manual plotting
 par(mfrow =c(2,2))
@@ -3759,14 +3899,15 @@ plot.regsubsets2(best.sub, scale = "bic", cex.axis = 0.6, main = "Best subset se
 # retrieve the model with min BIC
 coefficients(best.sub, which.min(best.sub.summary$bic))
 nnn = names(coefficients(best.sub, which.min(best.sub.summary$bic)))
-nnn <- gsub(x = nnn,
-            pattern = "`",
-            replacement = "")
+  # nnn <- gsub(x = nnn,
+  #             pattern = "`",
+  #             replacement = "")
 # apply OLS
-mod_bic = mod[,colnames(mod) %in% nnn ] 
+mod_bic = mod[,colnames(mod) %in% nnn] 
 mod_bic = cbind.data.frame(y, mod_bic)
 ols_bic = lm(y ~ ., data = mod_bic, y=T)
 summary(ols_bic)
+RegressionPlots(ols_bic, textlabels = newDat$town)
 
 ```
 
@@ -3774,15 +3915,63 @@ Using sparse-LTS, which is a robustification of Lasso
 ```{r sparseLTS, warning=FALSE}
 
 # fit robust Lasso
-sol_sparseLTS = sparseLTS(x, y, mode = "lambda", alpha = 0.95, ncores = NA, model=T)
+sol_sparseLTS = sparseLTS(x, y, mode = "lambda", alpha = 0.95, ncores = NA, model=TRUE)
 # check the solution
-sol_sparseLTS
+print(sol_sparseLTS) 
 # construct mahalanobis distance (used for diagnostic plots)
-sol_sparseLTS$MD = covMcd(x)$mah
+sol_sparseLTS$MD = hatvalues(ols) # covMcd(x)$mah # compute standard leverages
+  # install.packages("robust")
+  # library(robust)
+  # cov.mcd(x)$mah
 # diagnostic plots
 RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[2]]
 RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[3]]
 RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[4]]
+# plot(sol_sparseLTS)
+
+```
+
+
+```{r CV for Elastic net with sparseLTS weights}
+
+# initialize list to contain the variables selected, 
+# number of non zero coefficients and the counter
+nzcoef = matrix(NA, 11, 2)
+var_selec = list()
+i = 1
+
+# Elastic net
+x = as.matrix(mod[, 2:ncol(mod)])
+y = mod[, 1]
+par(mfrow =c(2,3))
+par(oma=c(0,0,2,0))
+alp = seq(0, 1, 0.1)
+for (j in alp){
+  # set.seed (3)
+  cv.out = cv.glmnet(x, y, alpha = j, nfolds=10, weights = sol_sparseLTS$wt) # standardize.response = T , parallel = T 
+  plot(cv.out)
+  title(paste("alpha = ", j), line = 0.3)
+  # save selected variables
+  tmp_coeffs <- coef(cv.out, s = "lambda.min") # cv.out$lambda.1se 
+  var_selec[[i]] = data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], 
+                              coefficient = tmp_coeffs@x)
+  # save number of non zero variables
+  nzcoef[i,1] = cv.out$nzero[cv.out$lambda == cv.out$lambda.min]
+  nzcoef[i,2] = cv.out$nzero[cv.out$lambda == cv.out$lambda.1se]
+  i = i + 1
+}
+mtext(expression("Best lambda for delta gender salary using elastic-net and 10-folds CV"), outer=TRUE,  cex=1, line=0.2)
+
+# compare the coefficients obtained
+print(var_selec)
+
+# plot number of non zero coefficients
+par(mfrow =c(1,1))
+plot(alp, nzcoef[,1], main="Number of non-zero coefficients for each alpha level",
+     xlab = "alpha proportion", ylab = "Non-zero coefficients", type = "b", col = "blue",
+     ylim = c(min(nzcoef), max(nzcoef)))
+lines(alp, nzcoef[,2], col = "red", type = "b")
+legend('topright', c("lambda min", "lambda 1SE"), lty = 1, col = c("blue", "red"), cex = 0.7,lwd=2) 
 
 ```
 
@@ -3790,23 +3979,21 @@ RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.f
 Robust elastic net
 ```{r enetLTS, echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
 
-
-sol_enetLTS = enetLTS(x, y, family="gaussian", alphas=seq(0, 1, 0.2), hsize=0.9, nfold=10, seed=1)
+sol_enetLTS = enetLTS(x[,21:40], y, family="gaussian", alphas=seq(0, 1, 0.1), hsize=0.8, nfold=10, seed=1) # ,lambdas=0.05
 # check the solution
 print(sol_enetLTS)
-
 
 # save original response (used for diagnostic plots)
 sol_enetLTS$y = y
 # construct mahalanobis distance (used for diagnostic plots)
-sol_enetLTS$MD = covMcd(x)$mah
+sol_enetLTS$MD = hatvalues(ols) # covMcd(x)$mah # compute standard leverages
 # construct robust scale (used for diagnostic plots)
 sol_enetLTS$scale = sd(sol_enetLTS$residuals[!sol_enetLTS$wt])
 
 # interactive plots
 RegressionPlots(sol_enetLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_enetLTS$wt))[[2]]
-RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[3]]
-RegressionPlots(sol_sparseLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_sparseLTS$wt))[[4]]
+RegressionPlots(sol_enetLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_enetLTS$wt))[[3]]
+RegressionPlots(sol_enetLTS, textlabels=newDat$town, robust = TRUE, out = as.factor(sol_enetLTS$wt))[[4]]
 # built-in plots
 plotCoef.enetLTS(sol_enetLTS, cex = 2)
 plotDiagnostic.enetLTS(sol_enetLTS, cex = 2)
@@ -3823,6 +4010,48 @@ plotDiagnostic.enetLTS(sol_enetLTS, cex = 2)
 
 ```
 
+```{r CV for Elastic net with sol_enetLTS weights}
+
+# initialize list to contain the variables selected, 
+# number of non zero coefficients and the counter
+nzcoef = matrix(NA, 11, 2)
+var_selec = list()
+i = 1
+
+# Elastic net
+x = as.matrix(mod[, 2:ncol(mod)])
+y = mod[, 1]
+par(mfrow =c(2,3))
+par(oma=c(0,0,2,0))
+alp = seq(0, 1, 0.1)
+for (j in alp){
+  # set.seed (3)
+  cv.out = cv.glmnet(x, y, alpha = j, nfolds=10, weights = sol_enetLTS$wt) # standardize.response = T , parallel = T 
+  plot(cv.out)
+  title(paste("alpha = ", j), line = 0.3)
+  # save selected variables
+  tmp_coeffs <- coef(cv.out, s = "lambda.min") # cv.out$lambda.1se 
+  var_selec[[i]] = data.frame(name = tmp_coeffs@Dimnames[[1]][tmp_coeffs@i + 1], 
+                              coefficient = tmp_coeffs@x)
+  # save number of non zero variables
+  nzcoef[i,1] = cv.out$nzero[cv.out$lambda == cv.out$lambda.min]
+  nzcoef[i,2] = cv.out$nzero[cv.out$lambda == cv.out$lambda.1se]
+  i = i + 1
+}
+mtext(expression("Best lambda for delta gender salary using elastic-net and 10-folds CV"), outer=TRUE,  cex=1, line=0.2)
+
+# compare the coefficients obtained
+print(var_selec)
+
+# plot number of non zero coefficients
+par(mfrow =c(1,1))
+plot(alp, nzcoef[,1], main="Number of non-zero coefficients for each alpha level",
+     xlab = "alpha proportion", ylab = "Non-zero coefficients", type = "b", col = "blue",
+     ylim = c(min(nzcoef), max(nzcoef)))
+lines(alp, nzcoef[,2], col = "red", type = "b")
+legend('topright', c("lambda min", "lambda 1SE"), lty = 1, col = c("blue", "red"), cex = 0.7,lwd=2) 
+
+```
 
 # Interactive map (trial)
 
