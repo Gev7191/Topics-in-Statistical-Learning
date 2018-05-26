@@ -837,10 +837,13 @@ names(ineq)[4:ncol(ineq)] <-
 
 # drop more unnecessary variables 
 ineq <- subset(ineq, select = -c(princ_resid14, sec_resid14, vac_resid14, pop_2014, households14, birth09_14, 
-                                death09_14, tax_house14, shared_tax_house14)) 
+                                death09_14, tax_house14, shared_tax_house14, lev_ineq14)) 
  
 # unemployment rate 
 ineq$unemp_rate <- ineq$unemp15_64/ineq$pop15_64 
+
+# impute NA using median (only 3)
+ineq$median_living14[is.na(ineq$median_living14)] = median(ineq$median_living14, na.rm = T)
 
 ```
 
@@ -1804,23 +1807,27 @@ head(newDat)
 
 Save/load final dataset (just to avoid running all the code) 
 ```{r Save/load final dataset, warning=FALSE} 
+
+## UNCOMMENT THESE LINE AND COMMENT THE NEXT ONES TO SAVE THE DATASET
+## THEN MOVE THIS FILE IN THE data FOLDER
+# #remove unused factor levels on newDat
+# for (i in 1:ncol(newDat)){
+#   if (is.factor(newDat[,i])){
+#     newDat[,i] = droplevels.factor(newDat[,i])
+#   }
+# }
+# # save the NewDat.csv file created (which has to be moved in the data folder)
+# write.table(newDat, "newDat.csv", quote = TRUE, row.names=FALSE, col.names = TRUE,
+#           fileEncoding = "UTF-8", sep = ",")
  
-# #remove unused factor levels on newDat 
-# for (i in 1:ncol(newDat)){ 
-#   if (is.factor(newDat[,i])){ 
-#     newDat[,i] = droplevels.factor(newDat[,i]) 
-#   } 
-# } 
-# # save the NewDat.csv file created (which has to be moved in the data folder) 
-# write.table(newDat, "newDat.csv", quote = TRUE, row.names=FALSE, col.names = TRUE, 
-#           fileEncoding = "UTF-8", sep = ",") 
- 
-# load the final dataset 
+## LOADING DATA
+# load the final dataset
 setwd("./data")
 newDat <- read.csv("newDat.csv", encoding = "UTF-8", header = TRUE)
 
-# check (changing newDat loaded with newDat2), the only differences are in the order of 10e-15 
-# identical(newDat, newDat2) 
+# JUST A CHECK, DO NOT NEED TO RUN
+# check (changing newDat loaded with newDat2), the only differences are in the order of 10e-15
+# identical(newDat, newDat2)
  
 ```
 
@@ -3520,7 +3527,7 @@ RegressionPlots <- function(fit, textlabels, robust=F, out = NULL){
 ```
 
 Build the considered model
-```{r linear model for delta M-F salary, fig.keep='all'}
+```{r linear model specification for delta M-F salary, fig.keep='all'}
 
 # response variable
 # y = log10(newDat$sal_Males - newDat$sal_Females)
@@ -3548,9 +3555,6 @@ ggplot(data=as.data.frame(y), aes(y)) +
 #                      delta_empl = newDat$sal_M_employee - newDat$sal_F_employee,
 #                      delta_worker = newDat$sal_M_worker - newDat$sal_F_worker)
 
-# impute NA using median (only 3) ... move in pre-processing
-newDat$median_living14[is.na(newDat$median_living14)] = median(newDat$median_living14, na.rm = T)
-
 x = cbind.data.frame(pop = newDat$total_population, 
                      firms = newDat$total,
                      ratio_pop_firms = newDat$total/newDat$total_population,
@@ -3569,7 +3573,6 @@ x = cbind.data.frame(pop = newDat$total_population,
                      superficie = newDat$Superficie,
                      housing14 = newDat$housing14,
                      median_living14 = newDat$median_living14,
-                     # lev_ineq14 = newDat$lev_ineq14, # 884 NA
                      empl = newDat$empl,
                      emp_sal = newDat$emp_sal,
                      pop15_64 = newDat$pop15_64,
@@ -3999,14 +4002,15 @@ plotCoef.enetLTS(sol_enetLTS, cex = 2)
 plotDiagnostic.enetLTS(sol_enetLTS, cex = 2)
 
 # perform CV for user-values
-# # Calculate lambda path (first get lambda_max):
-# lambda_max <- 1 # max(abs(colSums(sx*sy)))/n
-# epsilon <- .0001
-# K <- 10
-# lambdapath <- round(exp(seq(log(lambda_max), log(lambda_max*epsilon), 
-#                             length.out = K)), digits = 10)
-# sol_cv = cv.enetLTS(index=NULL,x,y,family="gaussian",round(length(y)*0.90),
-#            seq(0, 1, 0.2),lambdas = lambdapath ,ncores=1,repl=5,nfold=10,plot=TRUE)
+# Calculate lambda path (first get lambda_max):
+lambda_max <- 10 # max(abs(colSums(sx*sy)))/n
+epsilon <- .0001
+K <- 10
+lambdapath <- round(exp(seq(log(lambda_max), log(lambda_max*epsilon),
+                            length.out = K)), digits = 10)
+sol_cv = cv.enetLTS(index=NULL,x,y,family="gaussian",round(length(y)*0.90),
+           seq(0, 1, 0.2),lambdas = lambdapath ,ncores=1,repl=5,nfold=10,plot=TRUE)
+sol_cv
 
 ```
 
@@ -4103,9 +4107,9 @@ p <- plotly::plot_geo(newDat, lat = ~latitude, lon = ~longitude) %>%
     text = ~paste(town, paste("Firms tot:", total), 
                   paste("Population:", total_population),
                   paste("Mean salary:", sal_general), 
-                  paste("Salary ratio FvsM:", round(salary_ratio_FvsM, 4)),
+                  # paste("Salary ratio FvsM:", round(salary_ratio_FvsM, 4)),
                   sep = "<br />"),
-    color = ~firms_over_pop,  size = I(2), hoverinfo = "text", opacity = 0.8 #, colors = 'Purples'
+    color = ~total_population,  size = I(3), hoverinfo = "text", opacity = 0.8 #, colors = 'Purples'
   ) %>%
   plotly::colorbar(title = "Total population<br />in 2014") %>%
   plotly::layout(title = 'Geographic information about France', geo = g)
