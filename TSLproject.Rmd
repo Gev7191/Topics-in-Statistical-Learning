@@ -2125,7 +2125,7 @@ salary_var <- tapply(1:nrow(salary_with_dep), salary_with_dep$region,
 str(salary_var)
 
 #remove regions with null values
-salary_var <- salary_var[-c(12, 15, 19, 20, 28)]
+salary_var <- salary_var[-c(11, 12, 15, 19, 20, 28)]
 # str(salary_var)
 #salary_var <- salary_var[-c(10)]
 str(salary_var)
@@ -2144,15 +2144,15 @@ regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1
 S <- regions_count_sub$Freq[1] * as.matrix(salary_var[[1]])
 # creates common covariance matrix S
 s <- 0
-for (v in c(1:23)) S <- S + regions_count_sub$Freq[v] * as.matrix(salary_var[[v]]) 
-S <- S / 5022
+for (v in c(1:22)) S <- S + regions_count_sub$Freq[v] * as.matrix(salary_var[[v]]) 
+S <- S / 5021
 
 # finds center of each variable (sal_general, etc)
 # for each region
 salary_cen <- tapply(1:nrow(salary_with_dep), salary_with_dep$region, 
     function(i) apply(salary_with_dep[i,-c(1:2)], 2, mean))
 salary_cen
-salary_cen <- salary_cen[-c(12, 15, 19, 20, 28)]
+salary_cen <- salary_cen[-c(11, 12, 15, 19, 20, 28)]
 str(salary_cen)
 
 # create a matrix out of each components, each
@@ -2224,23 +2224,27 @@ salary_mds <- cmdscale(salary_mah, k = nrow(salary_mah) - 1,
 
 ### Multi-dimensional scaling (MDS) on firms data
 ```{r}
+
 firms_with_dep <- firms_with_dep[, -9]
+firms_with_dep_normalized <- firms_with_dep[, 4:8]/population$total_population
+firms_with_dep_normalized <- cbind(firms_with_dep$region, firms_with_dep_normalized)
+names(firms_with_dep_normalized)[1] <- "region"
 # produces a list with covariance matrix
 # for each region as component:
-firms_var <- tapply(1:nrow(firms_with_dep), firms_with_dep$region, 
-                     function(i) var(firms_with_dep[i,4:8]))
+firms_var <- tapply(1:nrow(firms_with_dep_normalized), firms_with_dep_normalized$region, 
+                     function(i) var(firms_with_dep_normalized[i,2:6]))
 #str(firms_var)
 
 #remove regions with null values
-firms_var <- firms_var[-c(12, 15, 19, 20, 28)]
+firms_var <- firms_var[-c(11, 12, 15, 19, 20, 28)]
 #firms_var <- firms_var[-c(10)]
 #check
-str(firms_var)
+#str(firms_var)
 
 
 
 #create dataframe with the counts of towns per region
-regions_count <- data.frame(table(firms_with_dep$region))
+regions_count <- data.frame(table(firms_with_dep_normalized$region))
 regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
 #check total sum
 row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
@@ -2253,15 +2257,15 @@ S <- regions_count_sub$Freq[1] * as.matrix(firms_var[[1]])
 
 # creates common covariance matrix S
 s <- 0
-for (v in c(1:23)) S <- S + regions_count_sub$Freq[v] * as.matrix(firms_var[[v]]) 
-S <- S / 5022
+for (v in c(1:22)) S <- S + (regions_count_sub$Freq[v] - 1) * as.matrix(firms_var[[v]]) 
+S <- S / 5021
 
 # finds center of each variable (micro, etc)
 # for each region
-firms_cen <- tapply(1:nrow(firms_with_dep), firms_with_dep$region, 
-    function(i) apply(firms_with_dep[i,-c(1:3)], 2, mean))
+firms_cen <- tapply(1:nrow(firms_with_dep_normalized), firms_with_dep_normalized$region, 
+    function(i) apply(firms_with_dep_normalized[i,-1], 2, mean))
 firms_cen
-firms_cen <- firms_cen[-c(12, 15, 19, 20, 28)]
+firms_cen <- firms_cen[-c(11, 12, 15, 19, 20, 28)]
 str(firms_cen)
 
 # create a matrix out of each components, each
@@ -2287,7 +2291,7 @@ lim <- range(firms_mds) * 1.2
 plot(firms_mds, xlab = "Coordinate 1", 
      ylab = "Coordinate 2",
      xlim = lim, ylim = lim, type = "n")
-text(firms_mds, labels = levels(firms_with_dep$region), 
+text(firms_mds, labels = levels(firms_with_dep_normalized$region), 
      cex = 0.5)
 
 # But here, as the two-dimensional fit may not
@@ -2360,14 +2364,14 @@ selected_PCA_var <- tapply(1:nrow(selected_pca_with_dep), selected_pca_with_dep$
 
 
 #remove regions with null values
-selected_PCA_var <- selected_PCA_var[-c(12, 15, 19, 20, 28)]
+selected_PCA_var <- selected_PCA_var[-c(11, 12, 15, 19, 20, 28)]
 #check
-#str(firms_var)
+str(selected_PCA_var)
 
 
 
 #create dataframe with the counts of towns per region
-regions_count <- data.frame(table(firms_with_dep$region))
+regions_count <- data.frame(table(selected_pca_with_dep$region))
 regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
 #check total sum
 row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
@@ -2380,15 +2384,15 @@ S <- regions_count_sub$Freq[1] * as.matrix(selected_PCA_var[[1]])
 
 # creates common covariance matrix S
 s <- 0
-for (v in c(1:23)) S <- S + regions_count_sub$Freq[v] * as.matrix(selected_PCA_var[[v]])
-S <- S / 5024
+for (v in c(1:22)) S <- S + (regions_count_sub$Freq[v] - 1) * as.matrix(selected_PCA_var[[v]])
+S <- S / 5021
 
 # finds center of each variable (micro, etc)
 # for each region
 selected_cen <- tapply(1:nrow(selected_pca_with_dep), selected_pca_with_dep$region,
     function(i) apply(selected_pca_with_dep[i,-1], 2, mean))
 selected_cen
-selected_cen <- selected_cen[-c(12, 15, 19, 20, 28)]
+selected_cen <- selected_cen[-c(11, 12, 15, 19, 20, 28)]
 str(selected_cen)
 
 # create a matrix out of each components, each
@@ -2695,8 +2699,7 @@ FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal
 # Plot "Distribution of total population for each town" 
 salary_geo <-
   FraMap +
-  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(clusters$cluster)),
-             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on unemployment rate")
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(clusters$cluster), size = unemp_percent$unemp_percent), data=geo, alpha=0.5, size=0.5) + scale_fill_manual(name = "Unemployment rate", values = unemp_by_cluster$`unemp_rate(%)`) + labs(color='') + ggtitle("Clusters of towns based on unemployment rate")
 salary_geo
 
 
@@ -2761,6 +2764,29 @@ salary_geo
 
 
 ```
+
+### Moran's I statistic
+```{r}
+Moran <- cbind(geo[, c(2,7,8)], industry)
+Moran <- aggregate(Moran[, 4:6], list(Moran$region), sum)
+
+geo_coord <- geo[, c("region", "latitude", "longitude")]
+geo_coord <- aggregate(geo_coord[, 2:3], list(geo_coord$region), mean)
+
+distance_matrix <- dist(geo_coord[, c("latitude", "longitude")], method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+
+Moran_distance_matrix <- as.data.frame(as.matrix(distance_matrix))
+
+Moran_service <- Moran.I(Moran$nb_firms_service, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
+
+Moran_commerce <- Moran.I(Moran$nb_firms_commerce, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
+
+Moran_construction <- Moran.I(Moran$nb_firms_construction, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
+
+
+```
+
+
 ###Mapping the towns based on the intensity of locational Gini coefficient
 ```{r}
 #Mapping the towns based on the intensity of locational Gini coefficient of the service industry
