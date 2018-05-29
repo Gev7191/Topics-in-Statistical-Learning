@@ -1463,9 +1463,7 @@ Rank = sort(population$aged_dependency_ratio, TRUE)
 Rank10 = sort(Rank[1:10], TRUE) 
 sol = rep(0, 10) 
 for (i in 1:10){ 
-    # maybe this one was right (LUCA)
-    # sol[i] = paste(geo_population$CODGEO[geo_population$aged_dependency_ratio %in% Rank10[i]] ) 
-    sol[i] = paste(geo_population$region[population$aged_dependency_ratio %in% Rank10[i]] )
+    sol[i] = paste(geo_population$CODGEO[geo_population$aged_dependency_ratio %in% Rank10[i]] )
 } 
 
 # remove the dataset created to save memory
@@ -1477,7 +1475,7 @@ rm(list = c("geo_population", "Rank", "Rank10"))
 ### What we have learned 
 
 We can observe that in urban cities, the aged dependcy ratio is lower compared to non-urban cities. 
-The city with the lowest aged dependency ratio is La Ferté-sous-Jouarre and the highest is L'Aiguillon-sur-Mer. 
+The city with the lowest aged dependency ratio is La Fert?-sous-Jouarre and the highest is L'Aiguillon-sur-Mer. 
 
 ## Education data
 
@@ -1553,6 +1551,18 @@ sol = rep(0, 10)
 for (i in 1:10){
     sol[i] = paste(geo_categ_socio$region[categ_socio$total_immig %in% Rank10[i]] )
 }
+
+# Adjust scales before plotting 
+sc <- scale_colour_gradientn(colours = c("#F8766D",  "#00BA38"), limits=c(min(geo_categ_socio$total_immig/population$total_population), max(geo_categ_socio$total_immig/population$total_population))) 
+ 
+# Map ratio  
+distribution_immig <- 
+  FraMap + 
+  geom_point(aes(x=geo_categ_socio$longitude, y=geo_categ_socio$latitude, 
+                 colour=geo_categ_socio$total_immig/population$total_population), 
+             data=geo_categ_socio, alpha=1, size=1) + 
+             sc + labs(color='') + ggtitle("Immigrants for each town") 
+distribution_immig
 
 rm(geo_categ_socio)
 ```
@@ -1761,7 +1771,7 @@ Nantes has the lowest unemployment rate.
 glimpse(commune)
 
 # change the factor variables to numeric
-aaa = as.numeric(commune$urbanRural)
+# aaa = as.numeric(commune$urbanRural)
 
 # Merge geo and commune data to include longitude and latitude in the data.
 geo_commune <- cbind.data.frame(geo[unique(geo$CODGEO) %in% unique(commune$CODGEO),],
@@ -1769,16 +1779,57 @@ geo_commune <- cbind.data.frame(geo[unique(geo$CODGEO) %in% unique(commune$CODGE
 
 
 # Adjust scales before plotting
-sc <- scale_colour_gradientn(colours = palette(rainbow(3)), limits=c(min(aaa), max(aaa)))
+#sc <- scale_colour_gradientn(colours = palette(rainbow(3)), limits=c(min(aaa), max(aaa)))
 
 # Map ratio 
- urbanrural<-
-  FraMap +
-  geom_point(aes(x=geo_commune$longitude, y=geo_commune$latitude,
-                 colour=aaa),
-             data=geo_commune, alpha=1, size=0.5) +
-             sc + labs(color='') + ggtitle("Urban and rural cities")
-urbanrural
+ # urbanrural<-
+ #  FraMap +
+ #  geom_point(aes(x=geo_commune$longitude, y=geo_commune$latitude,
+ #                 colour=aaa),
+ #             data=geo_commune, alpha=1, size=0.5) +
+ #             sc + labs(color='') + ggtitle("Urban and rural cities")
+# urbanrural
+
+# boxplot
+#  number of units
+n_firms <- length(commune$nb_firms_commerce)
+
+# vector 
+Label <- c(rep("Firms", n_firms*4))
+
+# vector representing the variable considered
+Variable <- c(rep("Service", n_firms), 
+             rep("Industry", n_firms),
+             rep("Commerce", n_firms),
+             rep("Construction", n_firms))
+          
+             
+# merge these data
+firms_sector = cbind.data.frame(Label = Label, 
+             value = c(commune$nb_firms_commerce, commune$nb_firms_service, commune$nb_firms_ind, commune$nb_firms_construction),
+             Variable = Variable)
+
+# plotting phase
+ggplot(data = firms_sector, aes(x=Label, y=value)) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Firms") + ylab("# of firms") + ggtitle("Sector comparison") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
+
+
+# the same but excluding outliers
+ggplot(data = firms_sector, aes(x=Label, y=value)) +
+  scale_y_continuous(limits = quantile(firms_sector$value, c(0, 0.9))) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Firms") + ylab("# of firms") + 
+  ggtitle("Sector comparison excluding the last decile") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
+
 
 rm(list = c("geo_commune", "Rank", "Rank10", "aaa"))
 ```
@@ -1841,7 +1892,7 @@ geo-spatial correlations.
 fra_center = c(2.213749, 46.227638) 
  
 ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") + 
-  geom_point(aes(x=longitude, y=latitude), data=newDat, col="orange", alpha=0.2, size=0.01)  
+  geom_point(aes(x=longitude, y=latitude), data=newDat, col="orange", alpha=1, size=0.05)  
  
 ``` 
  
