@@ -1467,9 +1467,7 @@ Rank = sort(population$aged_dependency_ratio, TRUE)
 Rank10 = sort(Rank[1:10], TRUE) 
 sol = rep(0, 10) 
 for (i in 1:10){ 
-    # maybe this one was right (LUCA)
-    # sol[i] = paste(geo_population$CODGEO[geo_population$aged_dependency_ratio %in% Rank10[i]] ) 
-    sol[i] = paste(geo_population$region[population$aged_dependency_ratio %in% Rank10[i]] )
+    sol[i] = paste(geo_population$CODGEO[geo_population$aged_dependency_ratio %in% Rank10[i]] )
 } 
 
 # remove the dataset created to save memory
@@ -1481,7 +1479,7 @@ rm(list = c("geo_population", "Rank", "Rank10"))
 ### What we have learned 
 
 We can observe that in urban cities, the aged dependcy ratio is lower compared to non-urban cities. 
-The city with the lowest aged dependency ratio is La Ferté-sous-Jouarre and the highest is L'Aiguillon-sur-Mer. 
+The city with the lowest aged dependency ratio is La Fert?-sous-Jouarre and the highest is L'Aiguillon-sur-Mer. 
 
 ## Education data
 
@@ -1557,6 +1555,18 @@ sol = rep(0, 10)
 for (i in 1:10){
     sol[i] = paste(geo_categ_socio$region[categ_socio$total_immig %in% Rank10[i]] )
 }
+
+# Adjust scales before plotting 
+sc <- scale_colour_gradientn(colours = c("#F8766D",  "#00BA38"), limits=c(min(geo_categ_socio$total_immig/population$total_population), max(geo_categ_socio$total_immig/population$total_population))) 
+ 
+# Map ratio  
+distribution_immig <- 
+  FraMap + 
+  geom_point(aes(x=geo_categ_socio$longitude, y=geo_categ_socio$latitude, 
+                 colour=geo_categ_socio$total_immig/population$total_population), 
+             data=geo_categ_socio, alpha=1, size=1) + 
+             sc + labs(color='') + ggtitle("Immigrants for each town") 
+distribution_immig
 
 rm(geo_categ_socio)
 ```
@@ -1765,7 +1775,7 @@ Nantes has the lowest unemployment rate.
 glimpse(commune)
 
 # change the factor variables to numeric
-aaa = as.numeric(commune$urbanRural)
+# aaa = as.numeric(commune$urbanRural)
 
 # Merge geo and commune data to include longitude and latitude in the data.
 geo_commune <- cbind.data.frame(geo[unique(geo$CODGEO) %in% unique(commune$CODGEO),],
@@ -1773,16 +1783,57 @@ geo_commune <- cbind.data.frame(geo[unique(geo$CODGEO) %in% unique(commune$CODGE
 
 
 # Adjust scales before plotting
-sc <- scale_colour_gradientn(colours = palette(rainbow(3)), limits=c(min(aaa), max(aaa)))
+#sc <- scale_colour_gradientn(colours = palette(rainbow(3)), limits=c(min(aaa), max(aaa)))
 
 # Map ratio 
- urbanrural<-
-  FraMap +
-  geom_point(aes(x=geo_commune$longitude, y=geo_commune$latitude,
-                 colour=aaa),
-             data=geo_commune, alpha=1, size=0.5) +
-             sc + labs(color='') + ggtitle("Urban and rural cities")
-urbanrural
+ # urbanrural<-
+ #  FraMap +
+ #  geom_point(aes(x=geo_commune$longitude, y=geo_commune$latitude,
+ #                 colour=aaa),
+ #             data=geo_commune, alpha=1, size=0.5) +
+ #             sc + labs(color='') + ggtitle("Urban and rural cities")
+# urbanrural
+
+# boxplot
+#  number of units
+n_firms <- length(commune$nb_firms_commerce)
+
+# vector 
+Label <- c(rep("Firms", n_firms*4))
+
+# vector representing the variable considered
+Variable <- c(rep("Service", n_firms), 
+             rep("Industry", n_firms),
+             rep("Commerce", n_firms),
+             rep("Construction", n_firms))
+          
+             
+# merge these data
+firms_sector = cbind.data.frame(Label = Label, 
+             value = c(commune$nb_firms_commerce, commune$nb_firms_service, commune$nb_firms_ind, commune$nb_firms_construction),
+             Variable = Variable)
+
+# plotting phase
+ggplot(data = firms_sector, aes(x=Label, y=value)) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Firms") + ylab("# of firms") + ggtitle("Sector comparison") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
+
+
+# the same but excluding outliers
+ggplot(data = firms_sector, aes(x=Label, y=value)) +
+  scale_y_continuous(limits = quantile(firms_sector$value, c(0, 0.9))) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Firms") + ylab("# of firms") + 
+  ggtitle("Sector comparison excluding the last decile") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
+
 
 rm(list = c("geo_commune", "Rank", "Rank10", "aaa"))
 ```
@@ -1845,7 +1896,7 @@ geo-spatial correlations.
 fra_center = c(2.213749, 46.227638) 
  
 ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") + 
-  geom_point(aes(x=longitude, y=latitude), data=newDat, col="orange", alpha=0.2, size=0.01)  
+  geom_point(aes(x=longitude, y=latitude), data=newDat, col="orange", alpha=1, size=0.05)  
  
 ``` 
  
@@ -1856,12 +1907,12 @@ ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
 
 ### Preliminary multivariate salary data visualisation to better conduct the unsupervised learning  
 ```{r}
-newDat2 = newDat[!ind_nonEur,]
-salary2 = salary[!ind_nonEur,]
-region <- newDat2$region
+# newDat2 = newDat[!ind_nonEur,]
+# salary2 = salary[!ind_nonEur,]
+region <- geo$region
 
 # add region variable to the salary dataset
-salary_with_dep <- cbind(region, salary2)
+salary_with_dep <- cbind(region, salary)
 #check
 #ncol(salary_with_dep)
 #head(salary_with_dep)
@@ -1969,8 +2020,8 @@ plot(xyplot(sal_worker ~ sal_midManager | M_F_salary_ratio,
 ### Preliminary multivariate firms data visualisation to better conduct the unsupervised learning 
 ```{r}
 # add region variable to the salary dataset
-firms2 = firms[!ind_nonEur,]
-firms_with_dep <- cbind(region, firms2)
+#firms2 = firms[!ind_nonEur,]
+firms_with_dep <- cbind(region, firms)
 #check
 #ncol(salary_with_dep)
 #head(salary_with_dep)
@@ -1986,28 +2037,28 @@ pairs(firms_variables[, 2:5],
 
 
 #bivariate densities among general, males and females salaries
-panel.hist <- function(x, ...)
-{
-  usr <- par("usr"); on.exit(par(usr))
-  par(usr = c(usr[1:2], 0, 1.5) )
-  h <- hist(x, plot = FALSE)
-  breaks <- h$breaks; nB <- length(breaks)
-  y <- h$counts; y <- y/max(y)
-  rect(breaks[-nB], 0, 
-       breaks[-1], y, col="grey", ...)
-}
-
-
-pairs(firms_variables[, 2:5],
-      diag.panel = panel.hist,
-      panel = function (x,y) {
-        data <- data.frame(cbind(x,y))
-        par(new = TRUE)
-        den <- bkde2D(data, 
-                      bandwidth=sapply(data,dpik))
-        contour(x = den$x1, y = den$x2, 
-                z = den$fhat, axes = FALSE)
-      })
+# panel.hist <- function(x, ...)
+# {
+#   usr <- par("usr"); on.exit(par(usr))
+#   par(usr = c(usr[1:2], 0, 1.5) )
+#   h <- hist(x, plot = FALSE)
+#   breaks <- h$breaks; nB <- length(breaks)
+#   y <- h$counts; y <- y/max(y)
+#   rect(breaks[-nB], 0, 
+#        breaks[-1], y, col="grey", ...)
+# }
+# 
+# 
+# pairs(firms_variables[, 2:5],
+#       diag.panel = panel.hist,
+#       panel = function (x,y) {
+#         data <- data.frame(cbind(x,y))
+#         par(new = TRUE)
+#         den <- bkde2D(data, 
+#                       bandwidth=sapply(data,dpik))
+#         contour(x = den$x1, y = den$x2, 
+#                 z = den$fhat, axes = FALSE)
+#       })
 
 #scale the data
 firms_variables_scaled <- as.data.frame(scale(firms_variables))
@@ -2078,17 +2129,18 @@ salary_var <- tapply(1:nrow(salary_with_dep), salary_with_dep$region,
 str(salary_var)
 
 #remove regions with null values
-salary_var <- salary_var[-c(12, 15, 19, 20, 28)]
+salary_var <- salary_var[-c(11, 12, 15, 19, 20, 28)]
+# str(salary_var)
+#salary_var <- salary_var[-c(10)]
 str(salary_var)
-
 
 
 #create dataframe with the counts of towns per region
 regions_count <- data.frame(table(salary_with_dep$region))
 regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
 #check total sum
-row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
-sum(regions_count_sub$Freq)
+#row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+#sum(regions_count_sub$Freq)
 
 
 
@@ -2096,7 +2148,7 @@ sum(regions_count_sub$Freq)
 S <- regions_count_sub$Freq[1] * as.matrix(salary_var[[1]])
 # creates common covariance matrix S
 s <- 0
-for (v in c(1:23)) S <- S + regions_count_sub$Freq[v] * as.matrix(salary_var[[v]]) 
+for (v in c(1:22)) S <- S + regions_count_sub$Freq[v] * as.matrix(salary_var[[v]]) 
 S <- S / 5021
 
 # finds center of each variable (sal_general, etc)
@@ -2104,7 +2156,7 @@ S <- S / 5021
 salary_cen <- tapply(1:nrow(salary_with_dep), salary_with_dep$region, 
     function(i) apply(salary_with_dep[i,-c(1:2)], 2, mean))
 salary_cen
-salary_cen <- salary_cen[-c(12, 15, 19, 20, 28)]
+salary_cen <- salary_cen[-c(11, 12, 15, 19, 20, 28)]
 str(salary_cen)
 
 # create a matrix out of each components, each
@@ -2176,22 +2228,27 @@ salary_mds <- cmdscale(salary_mah, k = nrow(salary_mah) - 1,
 
 ### Multi-dimensional scaling (MDS) on firms data
 ```{r}
+
 firms_with_dep <- firms_with_dep[, -9]
+firms_with_dep_normalized <- firms_with_dep[, 4:8]/population$total_population
+firms_with_dep_normalized <- cbind(firms_with_dep$region, firms_with_dep_normalized)
+names(firms_with_dep_normalized)[1] <- "region"
 # produces a list with covariance matrix
 # for each region as component:
-firms_var <- tapply(1:nrow(firms_with_dep), firms_with_dep$region, 
-                     function(i) var(firms_with_dep[i,4:8]))
+firms_var <- tapply(1:nrow(firms_with_dep_normalized), firms_with_dep_normalized$region, 
+                     function(i) var(firms_with_dep_normalized[i,2:6]))
 #str(firms_var)
 
 #remove regions with null values
-firms_var <- firms_var[-c(12, 15, 19, 20, 28)]
+firms_var <- firms_var[-c(11, 12, 15, 19, 20, 28)]
+#firms_var <- firms_var[-c(10)]
 #check
-str(firms_var)
+#str(firms_var)
 
 
 
 #create dataframe with the counts of towns per region
-regions_count <- data.frame(table(firms_with_dep$region))
+regions_count <- data.frame(table(firms_with_dep_normalized$region))
 regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
 #check total sum
 row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
@@ -2204,15 +2261,15 @@ S <- regions_count_sub$Freq[1] * as.matrix(firms_var[[1]])
 
 # creates common covariance matrix S
 s <- 0
-for (v in c(1:5)) S <- S + regions_count_sub$Freq[v] * as.matrix(firms_var[[v]]) 
+for (v in c(1:22)) S <- S + (regions_count_sub$Freq[v] - 1) * as.matrix(firms_var[[v]]) 
 S <- S / 5021
 
 # finds center of each variable (micro, etc)
 # for each region
-firms_cen <- tapply(1:nrow(firms_with_dep), firms_with_dep$region, 
-    function(i) apply(firms_with_dep[i,-c(1:3)], 2, mean))
+firms_cen <- tapply(1:nrow(firms_with_dep_normalized), firms_with_dep_normalized$region, 
+    function(i) apply(firms_with_dep_normalized[i,-1], 2, mean))
 firms_cen
-firms_cen <- firms_cen[-c(12, 15, 19, 20, 28)]
+firms_cen <- firms_cen[-c(11, 12, 15, 19, 20, 28)]
 str(firms_cen)
 
 # create a matrix out of each components, each
@@ -2238,7 +2295,7 @@ lim <- range(firms_mds) * 1.2
 plot(firms_mds, xlab = "Coordinate 1", 
      ylab = "Coordinate 2",
      xlim = lim, ylim = lim, type = "n")
-text(firms_mds, labels = levels(firms_with_dep$region), 
+text(firms_mds, labels = levels(firms_with_dep_normalized$region), 
      cex = 0.5)
 
 # But here, as the two-dimensional fit may not
@@ -2283,109 +2340,129 @@ firms_mds <- cmdscale(firms_mah, k = nrow(firms_mah) - 1,
 
 ### Multi-Dimensional Scaling for merged dataset
 ```{r}
-# NewDat_PCA_with_dep <- cbind(geo[1], newDat_pca_scores)
-# # produces a list with covariance matrix
-# # for each region as component:
-# NewDat_PCA_var <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
-#                      function(i) var(NewDat_PCA_with_dep[i,2:4]))
-# 
-# 
-# #remove regions with null values
-# NewDat_PCA_var <- NewDat_PCA_var[-c(11, 12, 15, 19, 20, 28)]
-# #check
-# #str(firms_var)
-# 
-# 
-# 
-# #create dataframe with the counts of towns per region
-# regions_count <- data.frame(table(firms_with_dep$region))
-# regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
-# #check total sum
-# row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
-# sum(regions_count_sub$Freq)
-# 
-# 
-# 
-# # initializes common covariance matrix var:
-# S <- regions_count_sub$Freq[1] * as.matrix(NewDat_PCA_var[[1]])
-# 
-# # creates common covariance matrix S
-# s <- 0
-# for (v in c(1:5)) S <- S + regions_count_sub$Freq[v] * as.matrix(NewDat_PCA_var[[v]]) 
-# S <- S / 5024
-# 
-# # finds center of each variable (micro, etc)
-# # for each region
-# NewDat_cen <- tapply(1:nrow(NewDat_PCA_with_dep), NewDat_PCA_with_dep$region, 
-#     function(i) apply(NewDat_PCA_with_dep[i,-1], 2, mean))
-# NewDat_cen
-# NewDat_cen <- NewDat_cen[-c(11, 12, 15, 19, 20, 28)]
-# str(NewDat_cen)
-# 
-# # create a matrix out of each components, each
-# # mean measurement for all variables by region
-# NewDat_cen <- matrix(unlist(NewDat_cen), 
-#     nrow = length(NewDat_cen), byrow = TRUE)
-# NewDat_cen
-# 
-# # compute the mahalanobis distances:
-# NewDat_mah <- apply(NewDat_cen, 1, 
-#     function(cen) mahalanobis(NewDat_cen, cen, S))
-# NewDat_mah
-# 
-# 
-# 
-# # run it on two dimensions
-# NewDat_mds <- cmdscale(NewDat_mah)
-# 
-# # draw a scatterplot of two-dimensional solution
-# # from classical MDS applied to Mahalanobis
-# # distances:
-# lim <- range(NewDat_mds) * 1.2
-# plot(NewDat_mds, xlab = "Coordinate 1", 
+nums <- unlist(lapply(commune, is.numeric)) 
+commune_selected <- commune[, nums]
+
+commune_selected <- commune_selected[, 2:20]
+
+commune_selected_normalized <- commune_selected[]/population$total_population
+
+unemp_percent <- as.data.frame((ineq$unemp15_64/ineq$pop15_64)*100)
+names(unemp_percent)[1] <- "unemp_percent"
+
+firms_variables_normalized <- firms_variables[]/population$total_population
+
+selected_variables <- cbind(firms_variables_normalized, salary_variables, commune_selected_normalized, unemp_percent)
+
+selected_variables_with_dep <- cbind(geo$region, selected_variables)
+names(selected_variables_with_dep)[1] <- "region"
+
+pca_selected_variables <- prcomp(selected_variables)
+selected_pca_scores<- as.data.frame(pca_selected_variables$x[,1:3])
+selected_pca_with_dep <- cbind(geo$region, selected_pca_scores)
+names(selected_pca_with_dep)[1] <- "region"
+# produces a list with covariance matrix
+# for each region as component:
+selected_PCA_var <- tapply(1:nrow(selected_pca_with_dep), selected_pca_with_dep$region,
+                     function(i) var(selected_pca_with_dep[i,2:4]))
+
+
+#remove regions with null values
+selected_PCA_var <- selected_PCA_var[-c(11, 12, 15, 19, 20, 28)]
+#check
+str(selected_PCA_var)
+
+
+
+#create dataframe with the counts of towns per region
+regions_count <- data.frame(table(selected_pca_with_dep$region))
+regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
+#check total sum
+row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+sum(regions_count_sub$Freq)
+
+
+
+# initializes common covariance matrix var:
+S <- regions_count_sub$Freq[1] * as.matrix(selected_PCA_var[[1]])
+
+# creates common covariance matrix S
+s <- 0
+for (v in c(1:22)) S <- S + (regions_count_sub$Freq[v] - 1) * as.matrix(selected_PCA_var[[v]])
+S <- S / 5021
+
+# finds center of each variable (micro, etc)
+# for each region
+selected_cen <- tapply(1:nrow(selected_pca_with_dep), selected_pca_with_dep$region,
+    function(i) apply(selected_pca_with_dep[i,-1], 2, mean))
+selected_cen
+selected_cen <- selected_cen[-c(11, 12, 15, 19, 20, 28)]
+str(selected_cen)
+
+# create a matrix out of each components, each
+# mean measurement for all variables by region
+selected_cen <- matrix(unlist(selected_cen),
+    nrow = length(selected_cen), byrow = TRUE)
+selected_cen
+
+# compute the mahalanobis distances:
+selected_mah <- apply(selected_cen, 1,
+    function(cen) mahalanobis(selected_cen, cen, S))
+selected_mah
+
+
+
+# run it on two dimensions
+selected_mds <- cmdscale(selected_mah)
+
+# draw a scatterplot of two-dimensional solution
+# from classical MDS applied to Mahalanobis
+# distances:
+lim <- range(selected_mds) * 1.2
+plot(selected_mds, xlab = "Coordinate 1",
+     ylab = "Coordinate 2",
+     xlim = lim, ylim = lim, type = "n")
+text(selected_mds, labels = levels(selected_pca_with_dep$region),
+     cex = 0.5)
+
+# But here, as the two-dimensional fit may not
+# explain what is needed to represent the observed
+# distances, we shall investigate the solution
+# in a little more detail using the "minimum
+# spanning tree".
+
+# The minimum spanning tree is defined as follows.
+# Suppose n points are given (possibly in many
+# dimensions). Then a tree spanning these points
+# (that is, a spanning tree) is any set of straight
+# line segments joining pairs of points such that
+# - 0 closed loops occur,
+# - every point is visited at least one time, and
+# - the tree is connected (has paths between each
+# pair of points)
+
+# We use function mst() from package ape to plot
+# minimum spanning tree on the two-dimensional
+# scaling solution:
+
+#
+# run classic MDS function on distances
+selected_mds <- cmdscale(selected_mah, k = nrow(selected_mah) - 1,
+         eig = TRUE)
+
+#only 5 of the first 21 eigenvalues are > 0
+# x <- firms_mds$points[,1]
+# y <- firms_mds$points[,2]
+# st <- mst(firms_mah)
+# plot(x, y, xlab = "Coordinate 1",
 #      ylab = "Coordinate 2",
-#      xlim = lim, ylim = lim, type = "n")
-# text(NewDat_mds, labels = levels(NewDat_PCA_with_dep$region), 
-#      cex = 0.5)
-# 
-# # But here, as the two-dimensional fit may not
-# # explain what is needed to represent the observed
-# # distances, we shall investigate the solution 
-# # in a little more detail using the "minimum
-# # spanning tree".
-# 
-# # The minimum spanning tree is defined as follows. 
-# # Suppose n points are given (possibly in many
-# # dimensions). Then a tree spanning these points 
-# # (that is, a spanning tree) is any set of straight 
-# # line segments joining pairs of points such that
-# # - 0 closed loops occur,
-# # - every point is visited at least one time, and
-# # - the tree is connected (has paths between each
-# # pair of points)
-# 
-# # We use function mst() from package ape to plot
-# # minimum spanning tree on the two-dimensional
-# # scaling solution:
-# 
-# #
-# # run classic MDS function on distances
-# NewDat_mds <- cmdscale(NewDat_mah, k = nrow(NewDat_mah) - 1, 
-#          eig = TRUE)
-# 
-# #only 5 of the first 21 eigenvalues are > 0
-# # x <- firms_mds$points[,1]
-# # y <- firms_mds$points[,2]
-# # st <- mst(firms_mah)
-# # plot(x, y, xlab = "Coordinate 1", 
-# #      ylab = "Coordinate 2",
-# #      xlim = range(x)*1.2, type = "n")
-# # for (i in 1:nrow(firms_mah)) {
-# #   w1 <- which(st[i, ] == 1)
-# #   segments(x[i], y[i], x[w1], y[w1])
-# # }
-# # text(x, y, labels = colnames(firms_mah), 
-# #      cex = 1.5)
+#      xlim = range(x)*1.2, type = "n")
+# for (i in 1:nrow(firms_mah)) {
+#   w1 <- which(st[i, ] == 1)
+#   segments(x[i], y[i], x[w1], y[w1])
+# }
+# text(x, y, labels = colnames(firms_mah),
+#      cex = 1.5)
 ```
 
 ## PCA
@@ -2429,7 +2506,7 @@ plot(pca_salary_delta, type = "l")
 
 ### PCA on firms data
 ```{r}
-firms_variables_normalized <- firms_variables[]/commune$population
+firms_variables_normalized <- firms_variables[]/population$total_population
 
 pca_firms <- prcomp(firms_variables_normalized)
 autoplot(pca_firms, data = firms_with_dep, colour = 'region',
@@ -2443,44 +2520,14 @@ plot(pca_firms, type = "l")
 ```
 
 
-### PCA on merged dataset
-```{r}
-drops <- c("CODGEO","town", "total", "null", "total_population", "region", "region_capital", "department", "town_name", "postal_code", "latitude", "longitude", "LIBGEO.x", "LIBGEO.y", "REG", "DEP", "pop_2014", "transfer_M", "transfer_F", "M_immi_agri", "F_immi_agri", "male_immig", "tax_house14", "shared_tax_house14", "median_living14", "lev_ineq14")
-
-
-newDat_variables <- newDat2[ , !(names(newDat2) %in% drops)]
-newDat_variables <- select_if(newDat_variables, is.numeric)
-newDat_variables <- sapply(newDat_variables, as.numeric)
-newDat_variables <- as.data.frame(newDat_variables)
-
-
-
-names(which(sapply(newDat_variables, anyNA)))
-
-#str(newDat_variables)
-newDat_variables_dep <- cbind(geo[1], newDat_variables)
-
-#pca_newDat <- prcomp(na.omit(newDat_variables), scale=TRUE)
-pca_newDat <- prcomp(newDat_variables)
-str(pca_newDat)
-
-
-autoplot(pca_newDat, data = newDat_variables_dep, colour = 'region',
-         loadings = TRUE, loadings.colour = 'blue',
-         loadings.label = TRUE, loadings.label.size = 3)
-plot(pca_newDat, type = "l")
-
-#pca_newDat
-
-```
 ### PCA on selected variables
 ```{r}
 nums <- unlist(lapply(commune, is.numeric)) 
 commune_selected <- commune[, nums]
 
-commune_selected <- commune_selected[, 3:21]
+commune_selected <- commune_selected[, 2:20]
 
-commune_selected_normalized <- commune_selected[]/commune$population
+commune_selected_normalized <- commune_selected[]/population$total_population
 
 unemp_percent <- as.data.frame((ineq$unemp15_64/ineq$pop15_64)*100)
 names(unemp_percent)[1] <- "unemp_percent"
@@ -2513,66 +2560,6 @@ sapply(salary_pca_scores, var)
 #           abline(lm(y ~ x), col = "red")
 #       }, pch = ".", cex = 0.5)
 
-#after visually identifying thresholds, get rid of outliers
-#outliers <- subset(salary_pca_scores, PC1 > 8 | PC2 > 13)
-#outliers_names <- unlist(as.numeric(rownames(outliers)))
-#salary_pca_scores <- salary_pca_scores[-outliers_names,]
-#renumber rows
-#row.names(salary_pca_scores) <- 1:nrow(salary_pca_scores)
-
-#sample data
-#set.seed(123)
-#salary_scores_sampled <- sample_n(salary_pca_scores, 1000)
-
-#renumber rows
-#row.names(salary_scores_sampled) <- 1:nrow(salary_scores_sampled)
-
-#create distance matrix for hclust
-#dm <- dist(salary_scores_sampled)
-#round to two decimals
-#dm <- round(dm, 2)
-
-# Below we show the cluster solutions for
-# salary data. The top row gives the cluster
-# dendograms along with the cutoff used to
-# derive the classes presented (in the space
-# of the two principal components) in the
-# bottom row:
-
-
-# salary_pc <- princomp(dm, cor = TRUE)
-# layout(matrix(1:6, nr = 2), height = c(2, 1))
-# plot(cs <- hclust(dm, method = "single"), 
-#      main = "Single")
-# abline(h = 3.8, col = "lightgrey")
-# xlim <- range(salary_pc$scores[,1])
-# plot(salary_pc$scores[,1:2], type = "n", 
-#      xlim = xlim, ylim = xlim,
-#      xlab = "PC1", ylab = "PC2")
-# lab <- cutree(cs, h = 3.8)
-# text(salary_pc$scores[,1:2], labels = lab, 
-#      cex=0.6)
-# plot(cc <- hclust(dm, method = "complete"), 
-#      main = "Complete")
-# abline(h = 7, col = "lightgrey")
-# plot(salary_pc$scores[,1:2], type = "n", 
-#      xlim = xlim, ylim = xlim,
-#      xlab = "PC1", ylab = "PC2")
-# lab <- cutree(cc, h = 7)  
-# text(salary_pc$scores[,1:2], labels = lab, 
-#      cex=0.6)     
-# plot(ca <- hclust(dm, method = "average"), 
-#      main = "Average")
-# abline(h = 7.8, col = "lightgrey")
-# plot(salary_pc$scores[,1:2], type = "n", 
-#      xlim = xlim, ylim = xlim,
-#      xlab = "PC1", ylab = "PC2")
-# lab <- cutree(ca, h = 7.8)                             
-# text(salary_pc$scores[,1:2], labels = lab, 
-#      cex=0.6)  
-
-# restore layout 
-layout(matrix(1, nr = 1)) 
  
 # K-means clustering
 n <- nrow(salary_pca_scores)
@@ -2632,7 +2619,7 @@ FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal
 salary_geo <-
   FraMap +
   geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(clusters$cluster)),
-             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on unemployment rate")
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on male-female salary difference")
 salary_geo
 
 
@@ -2645,12 +2632,12 @@ names(sal_delta_by_cluster)[1] <- "Salary_difference"
 ### Finding towns with large difference in male-female salaries
 ```{r}
 #detecting extreme cities in PCA
-quantiles<-tapply(salary_delta_pca_scores$PC1,newDat$town,quantile)
-minq <- sapply(newDat$town, function(x) quantiles[[x]]["25%"])
-maxq <- sapply(newDat$town, function(x) quantiles[[x]]["75%"])
+quantiles<-tapply(salary_delta_pca_scores$PC1,firms$town,quantile)
+minq <- sapply(firms$town, function(x) quantiles[[x]]["25%"])
+maxq <- sapply(firms$town, function(x) quantiles[[x]]["75%"])
 
 
-towns <- as.data.frame(newDat$town)
+towns <- as.data.frame(firms$town)
 k <- salary_delta_pca_scores[which(salary_delta_pca_scores$PC1<minq | salary_delta_pca_scores$PC1>maxq), ]
 
 #find towns with largedifference 
@@ -2660,16 +2647,20 @@ extreme_towns <- as.data.frame(extreme_town_list)
 
 
 #detecting extreme cities in salary delta
-quantiles<-tapply(salary_var_delta$M.F,newDat$town,quantile)
-minq <- sapply(newDat$town, function(x) quantiles[[x]]["25%"])
-maxq <- sapply(newDat$town, function(x) quantiles[[x]]["75%"])
+quantiles<-tapply(salary_var_delta$M.F,firms$town,quantile)
+minq <- sapply(firms$town, function(x) quantiles[[x]]["25%"])
+maxq <- sapply(firms$town, function(x) quantiles[[x]]["75%"])
 
 town <- towns[which(salary_var_delta$M.F<minq | 
                                     salary_var_delta$M.F>maxq), ]
 
 extreme_towns_m_f <- as.data.frame(town)
+#extreme_towns_m_f <- as.data.frame(cbind(firms$CODGEO, town))
+#colnames(extreme_towns_m_f)[colnames(extreme_towns_m_f)=="V1"] <- "CODGEO"
 
-geo_extreme <- subset(newDat, town %in% extreme_towns_m_f$town)
+geo <- as.data.frame(cbind(firms$town, geo))
+colnames(geo)[colnames(geo)=="firms$town"] <- "town"
+geo_extreme <- subset(geo, town %in% extreme_towns_m_f$town)
 geo_extreme <- geo_extreme[, c("town", "latitude", "longitude")]
 
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
@@ -2712,8 +2703,7 @@ FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal
 # Plot "Distribution of total population for each town" 
 salary_geo <-
   FraMap +
-  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(clusters$cluster)),
-             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on unemployment rate")
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(clusters$cluster), size = unemp_percent$unemp_percent), data=geo, alpha=0.5, size=0.5) + scale_fill_manual(name = "Unemployment rate", values = unemp_by_cluster$`unemp_rate(%)`) + labs(color='') + ggtitle("Clusters of towns based on unemployment rate")
 salary_geo
 
 
@@ -2741,6 +2731,97 @@ regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1
 #check total sum
 row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
 sum(regions_count_sub$Freq)
+
+industry_lq <- cbind(firms$town, industry_lq)
+names(industry_lq)[1] <- "town" 
+names(industry_lq)[5] <- "lq_service"
+names(industry_lq)[6] <- "lq_commerce"
+names(industry_lq)[7] <- "lq_construction"
+
+dm <- dist(industry_lq[, 5:7])
+#round to two decimals
+dm <- round(dm, 2)
+ 
+# K-means clustering
+n <- nrow(industry_lq)
+wss <- rep(0, 22)
+wss[1] <- (n - 1) * sum(sapply(industry_lq[, 5:7], var))
+for (i in 2:22)
+    wss[i] <- sum(kmeans(industry_lq[, 5:7],
+                         centers = i)$withinss)
+#we can see from the plot that optimal number of cluster is 5
+plot(1:22, wss, type = "b", 
+     xlab = "Number of groups",
+     ylab = "Within groups sum of squares")
+
+clusters <- kmeans(industry_lq[, 5:7], 5)
+
+#Mapping the towns based on the locational Gini coefficient
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+salary_geo <-
+  FraMap +
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(clusters$cluster)),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on locational gini coefficient")
+salary_geo
+
+
+```
+
+### Moran's I statistic
+```{r}
+Moran <- cbind(geo[, c(2,7,8)], industry)
+Moran <- aggregate(Moran[, 4:6], list(Moran$region), sum)
+
+geo_coord <- geo[, c("region", "latitude", "longitude")]
+geo_coord <- aggregate(geo_coord[, 2:3], list(geo_coord$region), mean)
+
+distance_matrix <- dist(geo_coord[, c("latitude", "longitude")], method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
+
+Moran_distance_matrix <- as.data.frame(as.matrix(distance_matrix))
+
+Moran_service <- Moran.I(Moran$nb_firms_service, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
+
+Moran_commerce <- Moran.I(Moran$nb_firms_commerce, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
+
+Moran_construction <- Moran.I(Moran$nb_firms_construction, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
+
+
+```
+
+
+###Mapping the towns based on the intensity of locational Gini coefficient
+```{r}
+#Mapping the towns based on the intensity of locational Gini coefficient of the service industry
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+salary_geo <-
+  FraMap +
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= industry_lq$lq_service),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Towns based on service locational gini coefficient")
+salary_geo
+
+#Mapping the towns based on the intensity of locational Gini coefficient of the commerce industry
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+salary_geo <-
+  FraMap +
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= industry_lq$lq_commerce),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Towns based on commerce locational gini coefficient")
+salary_geo
+
+#Mapping the towns based on the intensity of locational Gini coefficient of the commerce industry
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+salary_geo <-
+  FraMap +
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= industry_lq$lq_construction),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Towns based on construction locational gini coefficient")
+salary_geo
 
 ```
 
@@ -2834,86 +2915,6 @@ names(salary_cluster)[1] <- "salary"
 ```
 
 
-### Clustering on merged dataset
-```{r}
-#create dataframe with first three principal components scores as variables
-newDat_pca_scores<- as.data.frame(pca_newDat$x[,1:3])
-newDat_pca_scores <- as.data.frame(scale(newDat_pca_scores))
-sapply(newDat_pca_scores, var)
-
-#sample data
-#set.seed(123)
-#newDat_scores_sampled <- sample_n(newDat_variables, 1000)
-
-#renumber rows
-#row.names(newDat_scores_sampled) <- 1:nrow(newDat_scores_sampled)
-
-#create distance matrix for hclust
-dm <- dist(newDat_variables)
-#round to two decimals
-dm <- round(dm, 2)
-
-# Below we show the cluster solutions for
-# the merged data. The top row gives the cluster
-# dendograms along with the cutoff used to
-# derive the classes presented (in the space
-# of the three principal components) in the
-# bottom row:
-
-
-# newDat_pc <- princomp(dm, cor = TRUE)
-# layout(matrix(1:6, nr = 2), height = c(2, 1))
-# plot(cs <- hclust(dm, method = "single"), 
-#      main = "Single")
-# abline(h = 3.8, col = "lightgrey")
-# xlim <- range(newDat_pc$scores[,1])
-# plot(newDat_pc$scores[,1:2], type = "n", 
-#      xlim = xlim, ylim = xlim,
-#      xlab = "PC1", ylab = "PC2")
-# lab <- cutree(cs, h = 3.8)
-# text(newDat_pc$scores[,1:2], labels = lab, 
-#      cex=0.6)
-# plot(cc <- hclust(dm, method = "complete"), 
-#      main = "Complete")
-# abline(h = 7, col = "lightgrey")
-# plot(newDat_pc$scores[,1:2], type = "n", 
-#      xlim = xlim, ylim = xlim,
-#      xlab = "PC1", ylab = "PC2")
-# lab <- cutree(cc, h = 7)  
-# text(newDat_pc$scores[,1:2], labels = lab, 
-#      cex=0.6)     
-# plot(ca <- hclust(dm, method = "average"), 
-#      main = "Average")
-# abline(h = 7.8, col = "lightgrey")
-# plot(newDat_pc$scores[,1:2], type = "n", 
-#      xlim = xlim, ylim = xlim,
-#      xlab = "PC1", ylab = "PC2")
-# lab <- cutree(ca, h = 7.8)                             
-# text(newDat_pc$scores[,1:2], labels = lab, 
-#      cex=0.6)  
-# 
-# # restore layout 
-# layout(matrix(1, nr = 1)) 
- 
-# K-means clustering
-n <- nrow(newDat_pca_scores)
-wss <- rep(0, 15)
-wss[1] <- (n - 1) * sum(sapply(newDat_pca_scores, var))
-for (i in 2:15)
-    wss[i] <- sum(kmeans(newDat_pca_scores,
-                         centers = i)$withinss)
-#we can see from the plot that optimal number of cluster is 11
-plot(1:15, wss, type = "b", 
-     xlab = "Number of groups",
-     ylab = "Within groups sum of squares")
-
-#plotting in PC space shows us that there are indeed distinguishable 6 groups 
-plot(newDat_pca_scores, 
-     pch = kmeans(newDat_pca_scores, 
-                  centers = 6)$cluster)
-
-#now we have to see whether these groups correspond to geographical regions...
-```
 ### Clustering on selected variables
 ```{r}
 selected_pca_scores<- as.data.frame(pca_selected_variables$x[,1:3])
@@ -2943,46 +2944,16 @@ salary_geo <-
              data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on selected variables")
 salary_geo
 
-# plot3d(selected_pca_scores, col=clusters$cluster)
-# newDat_matrix <- as.matrix(selected_pca_scores)
-# kNNdistplot(newDat_matrix, k=5)
-# abline(h=1, col="red")
-# 
-# set.seed(1234)
-# db = dbscan(newDat_matrix, 1, 50)
-# db
-# 
-# # newDat_pca_scores$cluster <- db$cluster
-# # newDat_pca_scores$cluster <- newDat_pca_scores$cluster + 1
-# plot3d(selected_pca_scores[,1:3], col=db$cluster+1)
-# 
-# 
-# cl <- hdbscan(newDat_pca_scores, minPts = 49)
-# cl
-# plot3d(newDat_pca_scores[,1:3], col=cl$cluster+1)
-# 
-# cluster <- sNNclust(newDat_pca_scores, 20, 10, 10)
-# cluster
-# plot3d(newDat_pca_scores[,1:3], col=cluster$cluster+1)
-# 
-# cluster <- jpclust(newDat_pca_scores, 15, 10)
-# cluster
-# plot3d(newDat_pca_scores[,1:3], col=cluster$cluster+1)
-```
-```{r}
-# install.packages(c("rgl", "car"))
-# library("car")
-scatter3d(x = selected_pca_scores$PC1, y = selected_pca_scores$PC2, z = selected_pca_scores$PC3, groups = as.factor(cluster$cluster+1),
-          grid = FALSE, surface = FALSE)
 
 ```
-###clustering in commune
+
+### Clustering in commune
 ```{r}
 commune_trimmed <- commune[,c("nb_firms_service","nb_firms_commerce","nb_firms_construction")]
-commune_trimmed$active_empl_prop <- commune$nb_active_employees/commune$population
-commune_trimmed$nb_firms_service <- commune$nb_firms_service/commune$population
-commune_trimmed$nb_firms_commerce <- commune$nb_firms_commerce/commune$population
-commune_trimmed$nb_firms_construction <- commune$nb_firms_construction/commune$population
+commune_trimmed$active_empl_prop <- commune$nb_active_employees/population$total_population
+commune_trimmed$nb_firms_service <- commune$nb_firms_service/population$total_population
+commune_trimmed$nb_firms_commerce <- commune$nb_firms_commerce/population$total_population
+commune_trimmed$nb_firms_construction <- commune$nb_firms_construction/population$total_population
 #commune_trimmed <- as.data.frame(scale(commune_trimmed))
 
 names(which(sapply(commune_trimmed, anyNA)))
@@ -3014,19 +2985,19 @@ for (i in 2:15)
     wss[i] <- sum(kmeans(commune_trimmed,
                          centers = i)$withinss)
 #we can see from the plot that optimal number of cluster is 11
-plot(1:15, wss, type = "b", 
+plot(1:15, wss, type = "b",
      xlab = "Number of groups",
      ylab = "Within groups sum of squares")
 
-#plotting in PC space shows us that there are indeed distinguishable 6 groups 
-plot(commune_trimmed, 
-     pch = kmeans(commune_trimmed, 
+#plotting in PC space shows us that there are indeed distinguishable 6 groups
+plot(commune_trimmed,
+     pch = kmeans(commune_trimmed,
                   centers = 6)$cluster)
 
 
 ```
 
-###PCA on commune
+### PCA on commune dataset
 ```{r}
 commune_pca <- prcomp(commune_trimmed)
 commune_pca
@@ -3037,67 +3008,29 @@ autoplot(commune_pca, data = geo, colour = 'region',
          loadings.label = TRUE, loadings.label.size = 3)
 plot(commune_pca, type = "l")
 
-plot3d(commune_pca[,1:2], col=cluster$cluster+1)
+# plot3d(commune_pca[,1:2], col=cluster$cluster+1)
+scatter3d(x = commune_pca_scores$PC1, y = commune_pca_scores$PC2, z = commune_pca_scores$PC3, groups = as.factor(kmeans(commune_pca_scores, 
+                  centers = 6)$cluster),
+          grid = FALSE, surface = FALSE)
 
 ```
 
-
-```{r}
-# K-means clustering
-n <- nrow(newDat_variables)
-wss <- rep(0, 15)
-wss[1] <- (n - 1) * sum(sapply(newDat_variables, var))
-for (i in 2:15)
-    wss[i] <- sum(kmeans(newDat_variables,
-                         centers = i)$withinss)
-#we can see from the plot that optimal number of cluster is 5
-plot(1:15, wss, type = "b", 
-     xlab = "Number of groups",
-     ylab = "Within groups sum of squares")
-```
+### Mapping the new clusters
 ```{r}
 #now we have to see whether these groups correspond to geographical regions...
-clusters <- kmeans(newDat_variables, 10)
-newDat_variables_dep$cluster <- clusters$cluster
-geo$cluster <- clusters$cluster
 
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
- 
-# Plot "Distribution of total population for each town" 
+
+# Plot "Distribution of total population for each town"
 newDat_geo <-
   FraMap +
-  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(geo$cluster)),
-             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(kmeans(commune_pca_scores, 
+                  centers = 6)$cluster)),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on 'commune' dataset predictors")
 newDat_geo
 ```
 
 
-### Mapping the new clusters 
-```{r}
-#now we have to see whether these groups correspond to geographical regions...
-clusters <- kmeans(newDat_pca_scores, 6)
-newDat_variables_dep$cluster <- clusters$cluster
-geo$cluster <- clusters$cluster
-
-newDat_pca_scores$cluster <- clusters$cluster
-library(rgl)
-plot3d(newDat_pca_scores[,1:3], col=newDat_pca_scores$cluster)
- 
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
- 
-# Plot "Distribution of total population for each town" 
-newDat_geo <-
-  FraMap +
-  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(geo$cluster)),
-             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on merged Dataset predictors")
-newDat_geo
-
-```
-```{r}
-newDat_pca_scores$cluster <- clusters$cluster
-library(rgl)
-plot3d(newDat_pca_scores[,1:3], col=newDat_pca_scores$cluster)
-```
 
 
 
