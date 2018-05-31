@@ -1905,17 +1905,14 @@ ggmap(get_googlemap(center=fra_center, scale=2, zoom=5), extent="normal") +
 
 ## Multi-Dimensional Scaling (MDS)
 
-### Preliminary multivariate salary data visualisation to better conduct the unsupervised learning  
+### Preliminary multivariate data visualisation to better conduct the unsupervised learning  
 ```{r}
-# newDat2 = newDat[!ind_nonEur,]
-# salary2 = salary[!ind_nonEur,]
+
 region <- geo$region
 
 # add region variable to the salary dataset
 salary_with_dep <- cbind(region, salary)
-#check
-#ncol(salary_with_dep)
-#head(salary_with_dep)
+
 # extract continuous variables
 salary_variables <- salary_with_dep[, 3:34]
 
@@ -1933,39 +1930,12 @@ pairs(salary_variables[, c("salary_ratio_FvsM", "sal_general", "sal_Females","sa
           abline(lm(y ~ x), col = "red")
       }, pch = ".", cex = 0.5)
 
-#bivariate densities among general, males and females salaries
-panel.hist <- function(x, ...)
-{
-  usr <- par("usr"); on.exit(par(usr))
-  par(usr = c(usr[1:2], 0, 1.5) )
-  h <- hist(x, plot = FALSE)
-  breaks <- h$breaks; nB <- length(breaks)
-  y <- h$counts; y <- y/max(y)
-  rect(breaks[-nB], 0, 
-       breaks[-1], y, col="grey", ...)
-}
-
-
-pairs(salary_variables[, c("salary_ratio_FvsM", "sal_general", "sal_Females","sal_Males")],
-      diag.panel = panel.hist,
-      panel = function (x,y) {
-        data <- data.frame(cbind(x,y))
-        par(new = TRUE)
-        den <- bkde2D(data, 
-                      bandwidth=sapply(data,dpik))
-        contour(x = den$x1, y = den$x2, 
-                z = den$fhat, axes = FALSE)
-      })
 
 #scale the data
 salary_variables_scaled <- as.data.frame(scale(salary_variables))
 #divide sal_general into 4 parts
 salary_levels <- with(salary_variables_scaled, 
                   equal.count(sal_general,4))
-#make a 3D plot of salary_ratio_FvsM against sal_26_50 and sal_employee given salary_levels
-plot(cloud(salary_ratio_FvsM ~ sal_26_50 * sal_employee | salary_levels, 
-           panel.aspect = 0.5,
-           data = salary_variables_scaled))
 
 #plot sal_worker against sal_midManager given 3 partitions of sal_general
 plot(xyplot(sal_worker ~ sal_midManager| cut(sal_general, 3), 
@@ -2004,27 +1974,13 @@ plot(xyplot(sal_worker ~ sal_midManager | M_F_salary_ratio,
             ylab = "Midmanager salary"))
 
 
-#plot(cloud(sal_general ~ sal_worker * salary_ratio_FvsM | sal_26_50, 
-#           data = salary_variables,
-#           zlim = rev(range(salary_variables$sal_general)),
-#           screen = list(z = 5, x = -3), 
-#           panel.aspect = 0.9,
-#           xlab = "Worker salary", 
-#           ylab = "M_F_salary_ratio", 
-#           zlab = "General salary"))
-
-
-
 ```
 
-### Preliminary multivariate firms data visualisation to better conduct the unsupervised learning 
+#### Preliminary multivariate firms data visualisation to better conduct the unsupervised learning 
 ```{r}
 # add region variable to the salary dataset
-#firms2 = firms[!ind_nonEur,]
 firms_with_dep <- cbind(region, firms)
-#check
-#ncol(salary_with_dep)
-#head(salary_with_dep)
+
 # extract continuous variables
 firms_variables <- firms_with_dep[, 4:8]
 
@@ -2036,39 +1992,12 @@ pairs(firms_variables[, 2:5],
       }, pch = ".", cex = 0.5)
 
 
-#bivariate densities among general, males and females salaries
-# panel.hist <- function(x, ...)
-# {
-#   usr <- par("usr"); on.exit(par(usr))
-#   par(usr = c(usr[1:2], 0, 1.5) )
-#   h <- hist(x, plot = FALSE)
-#   breaks <- h$breaks; nB <- length(breaks)
-#   y <- h$counts; y <- y/max(y)
-#   rect(breaks[-nB], 0, 
-#        breaks[-1], y, col="grey", ...)
-# }
-# 
-# 
-# pairs(firms_variables[, 2:5],
-#       diag.panel = panel.hist,
-#       panel = function (x,y) {
-#         data <- data.frame(cbind(x,y))
-#         par(new = TRUE)
-#         den <- bkde2D(data, 
-#                       bandwidth=sapply(data,dpik))
-#         contour(x = den$x1, y = den$x2, 
-#                 z = den$fhat, axes = FALSE)
-#       })
-
 #scale the data
 firms_variables_scaled <- as.data.frame(scale(firms_variables))
 #divide firms total into 4 parts
 firms_levels <- with(firms_variables_scaled, 
                   equal.count(total,4))
-#make a 3D plot of large against micro and small given firms_levels
-plot(cloud(large ~ micro * small | firms_levels, 
-           panel.aspect = 0.5,
-           data = firms_variables))
+
 
 #plot sal_worker against sal_midManager given 3 partitions of sal_general
 plot(xyplot(medium ~ large| cut(total, 3), 
@@ -2077,62 +2006,21 @@ plot(xyplot(medium ~ large| cut(total, 3),
             xlab = "medium firms", 
             ylab = "large firms"))
 
-#multidimesnional plot of large firms against micro firms, given 4 partitions of medium, and grayscale intensities of total
-#medium_firms  <- with(firms_variables, equal.count(medium, 4))
-#total.ord <- with(firms_variables, rev(order(total)))
-#firms_variables.ordered <- firms_variables[total.ord,]
-#total.breaks <- with(firms_variables.ordered, 
-                     #do.breaks(range(total),10))
-#firms_variables.ordered$color<-level.colors(firms_variables.ordered$total,
-                                  # at=total.breaks,
-                                   #col.regions=grey.colors)
-#plot(xyplot(large ~ micro | medium, 
-            #data = firms_variables.ordered,
-            #aspect = "iso", 
-            #groups = color, 
-            #cex = 1, col = "black",
-       #panel = function(x, y, groups, ..., subscripts) {
-           #fill <- groups[subscripts]
-          #panel.grid(h = -1, v = -1)
-           #panel.xyplot(x, y, pch = 11, 
-                       #fill = fill, ...)
-       #},
-       #legend =
-       #list(right =
-            #list(fun = draw.colorkey,
-                 #args=list(key=list(col=gray.colors,
-                                    #at = total.breaks),
-                           #draw = FALSE))),
-            #xlab = "micro firms", 
-            #ylab = "large firms"))
-
-
-#plot(cloud(sal_general ~ sal_worker * salary_ratio_FvsM | sal_26_50, 
-#           data = salary_variables,
-#           zlim = rev(range(salary_variables$sal_general)),
-#           screen = list(z = 5, x = -3), 
-#           panel.aspect = 0.9,
-#           xlab = "Worker salary", 
-#           ylab = "M_F_salary_ratio", 
-#           zlab = "General salary"))
-
 
 ```
 
 
-### Multi-dimensional scaling (MDS) on salary data
+### Multi-dimensional scaling (MDS) 
+#### Multi-dimensional scaling (MDS) on salary data
 ```{r}
+#Multi-dimensional scaling (MDS) on salary data
 # produces a list with covariance matrix
 # for each region as component:
 salary_var <- tapply(1:nrow(salary_with_dep), salary_with_dep$region, 
                      function(i) var(salary_with_dep[i,3:34]))
-str(salary_var)
 
 #remove regions with null values
 salary_var <- salary_var[-c(11, 12, 15, 19, 20, 28)]
-# str(salary_var)
-#salary_var <- salary_var[-c(10)]
-str(salary_var)
 
 
 #create dataframe with the counts of towns per region
@@ -2155,21 +2043,18 @@ S <- S / 5021
 # for each region
 salary_cen <- tapply(1:nrow(salary_with_dep), salary_with_dep$region, 
     function(i) apply(salary_with_dep[i,-c(1:2)], 2, mean))
-salary_cen
 salary_cen <- salary_cen[-c(11, 12, 15, 19, 20, 28)]
-str(salary_cen)
+
 
 # create a matrix out of each components, each
 # mean measurement for all variables by region
 salary_cen <- matrix(unlist(salary_cen), 
     nrow = length(salary_cen), byrow = TRUE)
-salary_cen
+#salary_cen
 
 # compute the mahalanobis distances:
 salary_mah <- apply(salary_cen, 1, 
     function(cen) mahalanobis(salary_cen, cen, S))
-salary_mah
-
 
 
 # run it on two dimensions
@@ -2185,48 +2070,9 @@ plot(salary_mds, xlab = "Coordinate 1",
 text(salary_mds, labels = levels(salary_with_dep$region), 
      cex = 0.5)
 
-# But here, as the two-dimensional fit may not
-# explain what is needed to represent the observed
-# distances, we shall investigate the solution 
-# in a little more detail using the "minimum
-# spanning tree".
-
-# The minimum spanning tree is defined as follows. 
-# Suppose n points are given (possibly in many
-# dimensions). Then a tree spanning these points 
-# (that is, a spanning tree) is any set of straight 
-# line segments joining pairs of points such that
-# - 0 closed loops occur,
-# - every point is visited at least one time, and
-# - the tree is connected (has paths between each
-# pair of points)
-
-# We use function mst() from package ape to plot
-# minimum spanning tree on the two-dimensional
-# scaling solution:
-
-#
-# run classic MDS function on distances
-salary_mds <- cmdscale(salary_mah, k = nrow(salary_mah) - 1, 
-         eig = TRUE)
-
-#only 9 of the first 21 eigenvalues are > 0
-# x <- salary_mds$points[,1]
-# y <- salary_mds$points[,2]
-# st <- mst(salary_mah)
-# plot(x, y, xlab = "Coordinate 1", 
-#      ylab = "Coordinate 2",
-#      xlim = range(x)*1.2, type = "n")
-# for (i in 1:nrow(salary_mah)) {
-#   w1 <- which(st[i, ] == 1)
-#   segments(x[i], y[i], x[w1], y[w1])
-# }
-# text(x, y, labels = colnames(salary_mah), 
-#      cex = 1.5)
-
 ```
 
-### Multi-dimensional scaling (MDS) on firms data
+#### Multi-dimensional scaling (MDS) on firms data
 ```{r}
 
 firms_with_dep <- firms_with_dep[, -9]
@@ -2237,22 +2083,17 @@ names(firms_with_dep_normalized)[1] <- "region"
 # for each region as component:
 firms_var <- tapply(1:nrow(firms_with_dep_normalized), firms_with_dep_normalized$region, 
                      function(i) var(firms_with_dep_normalized[i,2:6]))
-#str(firms_var)
 
 #remove regions with null values
 firms_var <- firms_var[-c(11, 12, 15, 19, 20, 28)]
-#firms_var <- firms_var[-c(10)]
-#check
-#str(firms_var)
-
 
 
 #create dataframe with the counts of towns per region
 regions_count <- data.frame(table(firms_with_dep_normalized$region))
 regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
 #check total sum
-row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
-sum(regions_count_sub$Freq)
+# row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+# sum(regions_count_sub$Freq)
 
 
 
@@ -2262,26 +2103,23 @@ S <- regions_count_sub$Freq[1] * as.matrix(firms_var[[1]])
 # creates common covariance matrix S
 s <- 0
 for (v in c(1:22)) S <- S + (regions_count_sub$Freq[v] - 1) * as.matrix(firms_var[[v]]) 
-S <- S / 5021
+S <- S / 5020
 
 # finds center of each variable (micro, etc)
 # for each region
 firms_cen <- tapply(1:nrow(firms_with_dep_normalized), firms_with_dep_normalized$region, 
     function(i) apply(firms_with_dep_normalized[i,-1], 2, mean))
-firms_cen
 firms_cen <- firms_cen[-c(11, 12, 15, 19, 20, 28)]
-str(firms_cen)
+
 
 # create a matrix out of each components, each
 # mean measurement for all variables by region
 firms_cen <- matrix(unlist(firms_cen), 
     nrow = length(firms_cen), byrow = TRUE)
-firms_cen
 
 # compute the mahalanobis distances:
 firms_mah <- apply(firms_cen, 1, 
     function(cen) mahalanobis(firms_cen, cen, S))
-firms_mah
 
 
 
@@ -2298,47 +2136,9 @@ plot(firms_mds, xlab = "Coordinate 1",
 text(firms_mds, labels = levels(firms_with_dep_normalized$region), 
      cex = 0.5)
 
-# But here, as the two-dimensional fit may not
-# explain what is needed to represent the observed
-# distances, we shall investigate the solution 
-# in a little more detail using the "minimum
-# spanning tree".
-
-# The minimum spanning tree is defined as follows. 
-# Suppose n points are given (possibly in many
-# dimensions). Then a tree spanning these points 
-# (that is, a spanning tree) is any set of straight 
-# line segments joining pairs of points such that
-# - 0 closed loops occur,
-# - every point is visited at least one time, and
-# - the tree is connected (has paths between each
-# pair of points)
-
-# We use function mst() from package ape to plot
-# minimum spanning tree on the two-dimensional
-# scaling solution:
-
-#
-# run classic MDS function on distances
-firms_mds <- cmdscale(firms_mah, k = nrow(firms_mah) - 1, 
-         eig = TRUE)
-
-#only 5 of the first 21 eigenvalues are > 0
-# x <- firms_mds$points[,1]
-# y <- firms_mds$points[,2]
-# st <- mst(firms_mah)
-# plot(x, y, xlab = "Coordinate 1", 
-#      ylab = "Coordinate 2",
-#      xlim = range(x)*1.2, type = "n")
-# for (i in 1:nrow(firms_mah)) {
-#   w1 <- which(st[i, ] == 1)
-#   segments(x[i], y[i], x[w1], y[w1])
-# }
-# text(x, y, labels = colnames(firms_mah), 
-#      cex = 1.5)
 ```
 
-### Multi-Dimensional Scaling for merged dataset
+#### Multi-Dimensional Scaling for merged dataset
 ```{r}
 nums <- unlist(lapply(commune, is.numeric)) 
 commune_selected <- commune[, nums]
@@ -2369,17 +2169,14 @@ selected_PCA_var <- tapply(1:nrow(selected_pca_with_dep), selected_pca_with_dep$
 
 #remove regions with null values
 selected_PCA_var <- selected_PCA_var[-c(11, 12, 15, 19, 20, 28)]
-#check
-str(selected_PCA_var)
-
 
 
 #create dataframe with the counts of towns per region
 regions_count <- data.frame(table(selected_pca_with_dep$region))
 regions_count_sub<-regions_count[!(regions_count$Freq==0 | regions_count$Freq==1),]
 #check total sum
-row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
-sum(regions_count_sub$Freq)
+# row.names(regions_count_sub) <- 1:nrow(regions_count_sub)
+# sum(regions_count_sub$Freq)
 
 
 
@@ -2395,21 +2192,16 @@ S <- S / 5021
 # for each region
 selected_cen <- tapply(1:nrow(selected_pca_with_dep), selected_pca_with_dep$region,
     function(i) apply(selected_pca_with_dep[i,-1], 2, mean))
-selected_cen
 selected_cen <- selected_cen[-c(11, 12, 15, 19, 20, 28)]
-str(selected_cen)
 
 # create a matrix out of each components, each
 # mean measurement for all variables by region
 selected_cen <- matrix(unlist(selected_cen),
     nrow = length(selected_cen), byrow = TRUE)
-selected_cen
 
 # compute the mahalanobis distances:
 selected_mah <- apply(selected_cen, 1,
     function(cen) mahalanobis(selected_cen, cen, S))
-selected_mah
-
 
 
 # run it on two dimensions
@@ -2425,49 +2217,11 @@ plot(selected_mds, xlab = "Coordinate 1",
 text(selected_mds, labels = levels(selected_pca_with_dep$region),
      cex = 0.5)
 
-# But here, as the two-dimensional fit may not
-# explain what is needed to represent the observed
-# distances, we shall investigate the solution
-# in a little more detail using the "minimum
-# spanning tree".
-
-# The minimum spanning tree is defined as follows.
-# Suppose n points are given (possibly in many
-# dimensions). Then a tree spanning these points
-# (that is, a spanning tree) is any set of straight
-# line segments joining pairs of points such that
-# - 0 closed loops occur,
-# - every point is visited at least one time, and
-# - the tree is connected (has paths between each
-# pair of points)
-
-# We use function mst() from package ape to plot
-# minimum spanning tree on the two-dimensional
-# scaling solution:
-
-#
-# run classic MDS function on distances
-selected_mds <- cmdscale(selected_mah, k = nrow(selected_mah) - 1,
-         eig = TRUE)
-
-#only 5 of the first 21 eigenvalues are > 0
-# x <- firms_mds$points[,1]
-# y <- firms_mds$points[,2]
-# st <- mst(firms_mah)
-# plot(x, y, xlab = "Coordinate 1",
-#      ylab = "Coordinate 2",
-#      xlim = range(x)*1.2, type = "n")
-# for (i in 1:nrow(firms_mah)) {
-#   w1 <- which(st[i, ] == 1)
-#   segments(x[i], y[i], x[w1], y[w1])
-# }
-# text(x, y, labels = colnames(firms_mah),
-#      cex = 1.5)
 ```
 
 ## PCA
 
-### PCA on salary data and delta M-F
+#### PCA on salary data and delta M-F
 ```{r}
 
 pca_salary <- prcomp(salary_variables)
@@ -2475,8 +2229,6 @@ autoplot(pca_salary, data = salary_with_dep, colour = 'region',
          loadings = TRUE, loadings.colour = 'blue',
          loadings.label = TRUE, loadings.label.size = 3)
 plot(pca_salary, type = "l")
-#pca_salary
-#summary(pca_salary)
 
 #create dataset with M-F differences
 salary_var_delta <- data.frame("M-F" = salary_variables$sal_Males -                                                           salary_variables$sal_Females,
@@ -2499,28 +2251,50 @@ autoplot(pca_salary_delta, data = salary_with_dep, colour = 'region',
          loadings = TRUE, loadings.colour = 'blue',
          loadings.label = TRUE, loadings.label.size = 3)
 plot(pca_salary_delta, type = "l")
-#pca_salary_delta
-#summary(pca_salary_delta)
 
 ```
 
-### PCA on firms data
+#### PCA on firms data
 ```{r}
-firms_variables_normalized <- firms_variables[]/population$total_population
+firms_variables_normalized <- firms_variables[, -1]/population$total_population
 
 pca_firms <- prcomp(firms_variables_normalized)
 autoplot(pca_firms, data = firms_with_dep, colour = 'region',
          loadings = TRUE, loadings.colour = 'blue',
          loadings.label = TRUE, loadings.label.size = 3)
 plot(pca_firms, type = "l")
-#pca_firms
-#summary(pca_firms)
 
+```
+#### PCA on commune dataset
+```{r}
+commune_trimmed <- commune[,c("nb_firms_service","nb_firms_commerce","nb_firms_construction")]
+commune_trimmed$active_empl_prop <- commune$nb_active_employees/population$total_population
+commune_trimmed$nb_firms_service <- commune$nb_firms_service/population$total_population
+commune_trimmed$nb_firms_commerce <- commune$nb_firms_commerce/population$total_population
+commune_trimmed$nb_firms_construction <- commune$nb_firms_construction/population$total_population
+#commune_trimmed <- as.data.frame(scale(commune_trimmed))
+
+names(which(sapply(commune_trimmed, anyNA)))
+str(commune_trimmed)
+
+
+commune_pca <- prcomp(commune_trimmed)
+commune_pca
+commune_pca_scores<- as.data.frame(commune_pca$x[,1:3])
+
+autoplot(commune_pca, data = geo, colour = 'region',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+plot(commune_pca, type = "l")
+
+# plot3d(commune_pca[,1:2], col=cluster$cluster+1)
+scatter3d(x = commune_pca_scores$PC1, y = commune_pca_scores$PC2, z = commune_pca_scores$PC3, groups = as.factor(kmeans(commune_pca_scores, 
+                  centers = 6)$cluster),
+          grid = FALSE, surface = FALSE)
 
 ```
 
-
-### PCA on selected variables
+#### PCA on selected variables
 ```{r}
 nums <- unlist(lapply(commune, is.numeric)) 
 commune_selected <- commune[, nums]
@@ -2545,20 +2319,13 @@ plot(pca_selected_variables, type = "l")
 
 ## Cluster Analysis
 
-### Cluster Analysis on salary
+#### Cluster Analysis on salary
 ```{r}
-
 
 #create dataframe with first two principal components scores as variables
 salary_pca_scores<- as.data.frame(pca_salary$x[,1:2])
 salary_pca_scores <- as.data.frame(scale(salary_pca_scores))
 sapply(salary_pca_scores, var)
-#scatterplot between PC1 and PC2 to see if there are outliers
-# pairs(salary_pca_scores, 
-#       panel = function (x, y, ...) {
-#           points(x, y, ...)
-#           abline(lm(y ~ x), col = "red")
-#       }, pch = ".", cex = 0.5)
 
  
 # K-means clustering
@@ -2581,7 +2348,7 @@ plot(salary_pca_scores,
 #now we have to see whether these groups correspond to geographical regions...
 
 ```
-###clustering salary delta M-F
+#### clustering salary delta M-F
 ```{r}
 salary_delta_pca_scores <- as.data.frame(pca_salary_delta$x[,1:3])
 
@@ -2597,15 +2364,7 @@ plot(1:15, wss, type = "b",
      ylab = "Within groups sum of squares")
 
 
-
 #plots
-plot(salary_delta_pca_scores, 
-     pch = kmeans(salary_delta_pca_scores, 
-                  centers = 6)$cluster)
-
-plot3d(salary_delta_pca_scores, col=kmeans(salary_delta_pca_scores, 
-                  centers = 6)$cluster)
-
 scatter3d(x = salary_delta_pca_scores$PC1, y = salary_delta_pca_scores$PC2, z = salary_delta_pca_scores$PC3, groups = as.factor(kmeans(salary_delta_pca_scores, 
                   centers = 6)$cluster),
           grid = FALSE, surface = FALSE)
@@ -2627,9 +2386,19 @@ salary_delta_cluster <- cbind(salary_var_delta, clusters$cluster)
 names(salary_delta_cluster)[9] <- "cluster"
 sal_delta_by_cluster <- aggregate(salary_delta_cluster$M.F, by=list(salary_delta_cluster$cluster), FUN=mean)[2]
 names(sal_delta_by_cluster)[1] <- "Salary_difference"
+
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+ 
+# Plot "Distribution of total population for each town" 
+salary_geo <-
+  FraMap +
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= salary_variables$salary_ratio_FvsM),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Female-Male salary ratio")
+salary_geo
+
 ```
 
-### Finding towns with large difference in male-female salaries
+#### Finding towns with large difference in male-female salaries
 ```{r}
 #detecting extreme cities in PCA
 quantiles<-tapply(salary_delta_pca_scores$PC1,firms$town,quantile)
@@ -2655,8 +2424,6 @@ town <- towns[which(salary_var_delta$M.F<minq |
                                     salary_var_delta$M.F>maxq), ]
 
 extreme_towns_m_f <- as.data.frame(town)
-#extreme_towns_m_f <- as.data.frame(cbind(firms$CODGEO, town))
-#colnames(extreme_towns_m_f)[colnames(extreme_towns_m_f)=="V1"] <- "CODGEO"
 
 geo <- as.data.frame(cbind(firms$town, geo))
 colnames(geo)[colnames(geo)=="firms$town"] <- "town"
@@ -2675,7 +2442,7 @@ salary_geo
 #As you can see, the towns with large salry differences are concetrated around large cities such as Paris and Lyon.
 
 ```
-###clustering towns based on unemployed %
+#### clustering towns based on unemployed %
 ```{r}
 unemp_percent <- as.data.frame((ineq$unemp15_64/ineq$pop15_64)*100)
 names(unemp_percent)[1] <- "unemp_percent"
@@ -2710,7 +2477,7 @@ salary_geo
 
 ```
 
-### Clustering based on Location Quotient
+#### Clustering based on Locational Gini Coefficient
 ```{r}
 industry <- commune[, c("nb_firms_service", "nb_firms_commerce", "nb_firms_construction")]
 
@@ -2769,29 +2536,7 @@ salary_geo
 
 ```
 
-### Moran's I statistic
-```{r}
-Moran <- cbind(geo[, c(2,7,8)], industry)
-Moran <- aggregate(Moran[, 4:6], list(Moran$region), sum)
-
-geo_coord <- geo[, c("region", "latitude", "longitude")]
-geo_coord <- aggregate(geo_coord[, 2:3], list(geo_coord$region), mean)
-
-distance_matrix <- dist(geo_coord[, c("latitude", "longitude")], method = "euclidean", diag = FALSE, upper = FALSE, p = 2)
-
-Moran_distance_matrix <- as.data.frame(as.matrix(distance_matrix))
-
-Moran_service <- Moran.I(Moran$nb_firms_service, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
-
-Moran_commerce <- Moran.I(Moran$nb_firms_commerce, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
-
-Moran_construction <- Moran.I(Moran$nb_firms_construction, Moran_distance_matrix, scaled = FALSE, na.rm = FALSE, alternative = "two.sided")
-
-
-```
-
-
-###Mapping the towns based on the intensity of locational Gini coefficient
+#### apping the towns based on the intensity of locational Gini coefficient
 ```{r}
 #Mapping the towns based on the intensity of locational Gini coefficient of the service industry
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
@@ -2826,7 +2571,7 @@ salary_geo
 ```
 
 
-###Salary clusters 
+#### Salary clusters 
 ```{r}
 #create distance matrix for hclust
 dm <- dist(salary_variables)
@@ -2845,54 +2590,14 @@ plot(1:22, wss, type = "b",
      xlab = "Number of groups",
      ylab = "Within groups sum of squares")
 
-#plotting in PC space shows us that there are indeed distinguishable 5 groups 
-# plot(salary_pca_scores, 
-#      pch = kmeans(salary_pca_scores, 
-#                   centers = 5)$cluster)
-
 #now we have to see whether these groups correspond to geographical regions...
 ```
 
 
-### Mapping the salary clusters
+#### Mapping the salary clusters
 ```{r}
  
 #now we have to see whether these groups correspond to geographical regions...
-clusters <- kmeans(salary_pca_scores, 5)
-salary_with_dep$cluster <- clusters$cluster
-geo$cluster <- clusters$cluster
-
-salary_pca_scores$cluster <- clusters$cluster
-ggplot(salary_pca_scores, aes(x = PC1, y = PC2, colour = cluster)) +
-  geom_point()
- 
-FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
- 
-# Plot "Distribution of total population for each town" 
-salary_geo <-
-  FraMap +
-  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(geo$cluster)),
-             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on salary")
-salary_geo
- 
- 
-#salary_with_dep$cluster <- clusters$cluster
-#data("world.cities")
-#France <- world.cities %>% filter(country.etc == "France")
-#EPS <- 0.15
-#clusters <- dbscan(France[, 4:5], eps = EPS)
-#+France$cluster <- clusters$cluster
- 
-#groups  <- France %>% filter(cluster != 0)
-#noise  <- France %>% filter(cluster == 0)
- 
-#ggplot(France, aes(x = long, y = lat, alpha = 0.5)) + 
-#  geom_point(aes(fill = "grey"), noise) +
-#  geom_point(aes(colour = as.factor(cluster)), groups,
- #            size = 3) +
-#  coord_map() +
-#  theme(legend.position = "none")
-
 clusters <- kmeans(salary_variables, 6)
 salary_with_dep$cluster <- clusters$cluster
 geo$cluster <- clusters$cluster
@@ -2915,7 +2620,7 @@ names(salary_cluster)[1] <- "salary"
 ```
 
 
-### Clustering on selected variables
+#### Clustering on selected variables
 ```{r}
 selected_pca_scores<- as.data.frame(pca_selected_variables$x[,1:3])
 
@@ -2947,35 +2652,8 @@ salary_geo
 
 ```
 
-### Clustering in commune
+#### Clustering in commune
 ```{r}
-commune_trimmed <- commune[,c("nb_firms_service","nb_firms_commerce","nb_firms_construction")]
-commune_trimmed$active_empl_prop <- commune$nb_active_employees/population$total_population
-commune_trimmed$nb_firms_service <- commune$nb_firms_service/population$total_population
-commune_trimmed$nb_firms_commerce <- commune$nb_firms_commerce/population$total_population
-commune_trimmed$nb_firms_construction <- commune$nb_firms_construction/population$total_population
-#commune_trimmed <- as.data.frame(scale(commune_trimmed))
-
-names(which(sapply(commune_trimmed, anyNA)))
-str(commune_trimmed)
-#str(newDat_variables)
-#newDat_variables_dep <- cbind(geo[1], newDat_variables)
-
-# i <- sapply(commune_trimmed, is.factor)
-# commune_trimmed[i] <- lapply(commune_trimmed[i], as.character)
-# str(commune_trimmed)
-
-newDat_matrix <- as.matrix(commune_trimmed)
-kNNdistplot(newDat_matrix, k=5)
-abline(h=0.01, col="red")
-
-set.seed(1234)
-db = dbscan(newDat_matrix, 0.01, 50)
-db
-
-cl <- hdbscan(commune_trimmed, minPts = 15)
-cl
-
 #K means
 
 n <- nrow(commune_trimmed)
@@ -2989,34 +2667,22 @@ plot(1:15, wss, type = "b",
      xlab = "Number of groups",
      ylab = "Within groups sum of squares")
 
-#plotting in PC space shows us that there are indeed distinguishable 6 groups
-plot(commune_trimmed,
-     pch = kmeans(commune_trimmed,
-                  centers = 6)$cluster)
-
-
 ```
 
-### PCA on commune dataset
+
+#### Mapping the new clusters
 ```{r}
-commune_pca <- prcomp(commune_trimmed)
-commune_pca
-commune_pca_scores<- as.data.frame(commune_pca$x[,1:3])
+n <- nrow(commune_trimmed)
+wss <- rep(0, 22)
+wss[1] <- (n - 1) * sum(sapply(commune_trimmed$active_empl_prop, var))
+for (i in 2:22)
+    wss[i] <- sum(kmeans(commune_trimmed$active_empl_prop,
+                         centers = i)$withinss)
+#we can see from the plot that optimal number of cluster is 7
+plot(1:22, wss, type = "b", 
+     xlab = "Number of groups",
+     ylab = "Within groups sum of squares")
 
-autoplot(commune_pca, data = geo, colour = 'region',
-         loadings = TRUE, loadings.colour = 'blue',
-         loadings.label = TRUE, loadings.label.size = 3)
-plot(commune_pca, type = "l")
-
-# plot3d(commune_pca[,1:2], col=cluster$cluster+1)
-scatter3d(x = commune_pca_scores$PC1, y = commune_pca_scores$PC2, z = commune_pca_scores$PC3, groups = as.factor(kmeans(commune_pca_scores, 
-                  centers = 6)$cluster),
-          grid = FALSE, surface = FALSE)
-
-```
-
-### Mapping the new clusters
-```{r}
 #now we have to see whether these groups correspond to geographical regions...
 
 FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
@@ -3024,10 +2690,20 @@ FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal
 # Plot "Distribution of total population for each town"
 newDat_geo <-
   FraMap +
-  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(kmeans(commune_pca_scores, 
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= factor(kmeans(commune_trimmed$active_empl_prop, 
                   centers = 6)$cluster)),
-             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on 'commune' dataset predictors")
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on active employees proportion")
 newDat_geo
+
+FraMap = ggmap(get_googlemap(center=fra_center, scale=2, zoom=6), extent="normal")
+
+# Plot "Distribution of total population for each town"
+newDat_geo <-
+  FraMap +
+  geom_point(aes(x=geo$longitude, y=geo$latitude, colour= commune_trimmed$active_empl_prop),
+             data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on active employees")
+newDat_geo
+
 ```
 
 
