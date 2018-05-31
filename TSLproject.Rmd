@@ -2703,7 +2703,6 @@ newDat_geo <-
   geom_point(aes(x=geo$longitude, y=geo$latitude, colour= commune_trimmed$active_empl_prop),
              data=geo, alpha=0.5, size=0.5) + labs(color='') + ggtitle("Clusters of towns based on active employees")
 newDat_geo
-
 ```
 
 
