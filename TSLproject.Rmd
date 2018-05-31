@@ -2012,7 +2012,7 @@ plot(xyplot(medium ~ large| cut(total, 3),
 
 ### Multi-dimensional scaling (MDS) 
 #### Multi-dimensional scaling (MDS) on salary data
-One can see that Languedoc Roussilon, the worst region in terms of GDP per capita, is further away from the center.
+
 ```{r}
 #Multi-dimensional scaling (MDS) on salary data
 # produces a list with covariance matrix
@@ -2072,9 +2072,10 @@ text(salary_mds, labels = levels(salary_with_dep$region),
      cex = 0.5)
 
 ```
+One can see that Languedoc Roussilon, the worst region in terms of GDP per capita, is further away from the center.
 
 #### Multi-dimensional scaling (MDS) on firms data
-Since tha data is normalized according to population size, Haute Normandie and Midi Pyrenees are further away.
+
 ```{r}
 
 firms_with_dep <- firms_with_dep[, -9]
@@ -2139,9 +2140,10 @@ text(firms_mds, labels = levels(firms_with_dep_normalized$region),
      cex = 0.5)
 
 ```
+Since tha data is normalized according to population size, Haute Normandie and Midi Pyrenees are further away.
 
 #### Multi-Dimensional Scaling for merged dataset
-On the merged dataset one can Rhone-Alpes and Cote d'Azur, the two biggest economies after Ile de France.
+
 ```{r}
 nums <- unlist(lapply(commune, is.numeric)) 
 commune_selected <- commune[, nums]
@@ -2221,18 +2223,12 @@ text(selected_mds, labels = levels(selected_pca_with_dep$region),
      cex = 0.5)
 
 ```
+On the merged dataset one can Rhone-Alpes and Cote d'Azur, the two biggest economies after Ile de France.
 
 ## PCA
 
 #### PCA on salary data and delta M-F
-There are three main directions of eigenvectors
-contributing to principal components' scores: variables describing salaries of ordinary staff
-across different age categories, variables describing mid-manager and manager salaries, and
-salaries of executives.
 
-PCA on delta M-F revealed three main directions
-of eigenvectors contributing to scores: male-female salary differences of mid-managers,
-executives, and 51 and older aged people.
 ```{r}
 
 pca_salary <- prcomp(salary_variables)
@@ -2264,12 +2260,18 @@ autoplot(pca_salary_delta, data = salary_with_dep, colour = 'region',
 plot(pca_salary_delta, type = "l")
 
 ```
+There are three main directions of eigenvectors
+contributing to principal components' scores: variables describing salaries of ordinary staff
+across different age categories, variables describing mid-manager and manager salaries, and
+salaries of executives.
+
+PCA on delta M-F revealed three main directions
+of eigenvectors contributing to scores: male-female salary differences of mid-managers,
+executives, and 51 and older aged people.
+
 
 #### PCA on firms data
-Since there is a strong
-multicollinearity among the variables of the firms data, the conducted PCA results
-in the variable with considerably higher values, i.e. very small firms, to form a main
-eigenvector, leaving firms of other sizes to form a separate group of eigenvectors.
+
 ```{r}
 firms_variables_normalized <- firms_variables[, -1]/population$total_population
 
@@ -2280,10 +2282,14 @@ autoplot(pca_firms, data = firms_with_dep, colour = 'region',
 plot(pca_firms, type = "l")
 
 ```
+Since there is a strong
+multicollinearity among the variables of the firms data, the conducted PCA results
+in the variable with considerably higher values, i.e. very small firms, to form a main
+eigenvector, leaving firms of other sizes to form a separate group of eigenvectors.
+
+
 #### PCA on commune dataset
-PCA conducted
-on the commune dataset revealed two main directions of eigenvectors:
-proportion of active employers in each town, and industry related variables.
+
 ```{r}
 commune_trimmed <- commune[,c("nb_firms_service","nb_firms_commerce","nb_firms_construction")]
 commune_trimmed$active_empl_prop <- commune$nb_active_employees/population$total_population
@@ -2311,11 +2317,12 @@ scatter3d(x = commune_pca_scores$PC1, y = commune_pca_scores$PC2, z = commune_pc
           grid = FALSE, surface = FALSE)
 
 ```
+PCA conducted
+on the commune dataset revealed two main directions of eigenvectors:
+proportion of active employers in each town, and industry related variables.
 
 #### PCA on selected variables
-regional GDP is a striking important
-factor, comprising a distinctly oriented eigenvector. Another distinct eigenvector, though less
-substantial, is the unemployment rate.
+
 ```{r}
 nums <- unlist(lapply(commune, is.numeric)) 
 commune_selected <- commune[, nums]
@@ -2336,6 +2343,9 @@ autoplot(pca_selected_variables, data = geo, colour = 'region',
 plot(pca_selected_variables, type = "l")
 
 ```
+regional GDP is a striking important
+factor, comprising a distinctly oriented eigenvector. Another distinct eigenvector, though less
+substantial, is the unemployment rate.
 
 
 ## Cluster Analysis
