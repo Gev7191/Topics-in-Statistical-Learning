@@ -2033,12 +2033,13 @@ plot(xyplot(medium ~ large| cut(total, 3),
 
 ### Multi-dimensional scaling (MDS) 
 #### Multi-dimensional scaling (MDS) on salary data
+
 ```{r}
 #Multi-dimensional scaling (MDS) on salary data
 # produces a list with covariance matrix
 # for each region as component:
 salary_var <- tapply(1:nrow(salary_with_dep), salary_with_dep$region, 
-                     function(i) var(salary_with_dep[i,3:34]))
+                     function(i) var(salary_with_dep[i,3:7]))
 
 #remove regions with null values
 salary_var <- salary_var[-c(11, 12, 15, 19, 20, 28)]
@@ -2058,12 +2059,12 @@ S <- regions_count_sub$Freq[1] * as.matrix(salary_var[[1]])
 # creates common covariance matrix S
 s <- 0
 for (v in c(1:22)) S <- S + regions_count_sub$Freq[v] * as.matrix(salary_var[[v]]) 
-S <- S / 5021
+S <- S / 5003
 
 # finds center of each variable (sal_general, etc)
 # for each region
 salary_cen <- tapply(1:nrow(salary_with_dep), salary_with_dep$region, 
-    function(i) apply(salary_with_dep[i,-c(1:2)], 2, mean))
+    function(i) apply(salary_with_dep[i,c(3:7)], 2, mean))
 salary_cen <- salary_cen[-c(11, 12, 15, 19, 20, 28)]
 
 
@@ -2092,8 +2093,10 @@ text(salary_mds, labels = levels(salary_with_dep$region),
      cex = 0.5)
 
 ```
+One can see that Languedoc Roussilon, the worst region in terms of GDP per capita, is further away from the center.
 
 #### Multi-dimensional scaling (MDS) on firms data
+
 ```{r}
 
 firms_with_dep <- firms_with_dep[, -9]
@@ -2124,7 +2127,7 @@ S <- regions_count_sub$Freq[1] * as.matrix(firms_var[[1]])
 # creates common covariance matrix S
 s <- 0
 for (v in c(1:22)) S <- S + (regions_count_sub$Freq[v] - 1) * as.matrix(firms_var[[v]]) 
-S <- S / 5020
+S <- S / 5003
 
 # finds center of each variable (micro, etc)
 # for each region
@@ -2158,8 +2161,10 @@ text(firms_mds, labels = levels(firms_with_dep_normalized$region),
      cex = 0.5)
 
 ```
+Since tha data is normalized according to population size, Haute Normandie and Midi Pyrenees are further away.
 
 #### Multi-Dimensional Scaling for merged dataset
+
 ```{r}
 nums <- unlist(lapply(commune, is.numeric)) 
 commune_selected <- commune[, nums]
@@ -2207,7 +2212,7 @@ S <- regions_count_sub$Freq[1] * as.matrix(selected_PCA_var[[1]])
 # creates common covariance matrix S
 s <- 0
 for (v in c(1:22)) S <- S + (regions_count_sub$Freq[v] - 1) * as.matrix(selected_PCA_var[[v]])
-S <- S / 5021
+S <- S / 5003
 
 # finds center of each variable (micro, etc)
 # for each region
@@ -2239,10 +2244,12 @@ text(selected_mds, labels = levels(selected_pca_with_dep$region),
      cex = 0.5)
 
 ```
+On the merged dataset one can Rhone-Alpes and Cote d'Azur, the two biggest economies after Ile de France.
 
 ## PCA
 
 #### PCA on salary data and delta M-F
+
 ```{r}
 
 pca_salary <- prcomp(salary_variables)
@@ -2274,8 +2281,18 @@ autoplot(pca_salary_delta, data = salary_with_dep, colour = 'region',
 plot(pca_salary_delta, type = "l")
 
 ```
+There are three main directions of eigenvectors
+contributing to principal components' scores: variables describing salaries of ordinary staff
+across different age categories, variables describing mid-manager and manager salaries, and
+salaries of executives.
+
+PCA on delta M-F revealed three main directions
+of eigenvectors contributing to scores: male-female salary differences of mid-managers,
+executives, and 51 and older aged people.
+
 
 #### PCA on firms data
+
 ```{r}
 firms_variables_normalized <- firms_variables[, -1]/population$total_population
 
@@ -2286,7 +2303,14 @@ autoplot(pca_firms, data = firms_with_dep, colour = 'region',
 plot(pca_firms, type = "l")
 
 ```
+Since there is a strong
+multicollinearity among the variables of the firms data, the conducted PCA results
+in the variable with considerably higher values, i.e. very small firms, to form a main
+eigenvector, leaving firms of other sizes to form a separate group of eigenvectors.
+
+
 #### PCA on commune dataset
+
 ```{r}
 commune_trimmed <- commune[,c("nb_firms_service","nb_firms_commerce","nb_firms_construction")]
 commune_trimmed$active_empl_prop <- commune$nb_active_employees/population$total_population
@@ -2314,8 +2338,12 @@ scatter3d(x = commune_pca_scores$PC1, y = commune_pca_scores$PC2, z = commune_pc
           grid = FALSE, surface = FALSE)
 
 ```
+PCA conducted
+on the commune dataset revealed two main directions of eigenvectors:
+proportion of active employers in each town, and industry related variables.
 
 #### PCA on selected variables
+
 ```{r}
 nums <- unlist(lapply(commune, is.numeric)) 
 commune_selected <- commune[, nums]
@@ -2336,6 +2364,9 @@ autoplot(pca_selected_variables, data = geo, colour = 'region',
 plot(pca_selected_variables, type = "l")
 
 ```
+regional GDP is a striking important
+factor, comprising a distinctly oriented eigenvector. Another distinct eigenvector, though less
+substantial, is the unemployment rate.
 
 
 ## Cluster Analysis
