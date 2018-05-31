@@ -28,52 +28,26 @@ output:
 
 # General information 
 
-We analyze a dataset published on [Kaggle](https://www.kaggle.com/etiennelq/french-employment-by-town).
-It refers to french employment, salaries, population per town. 
-The aim is to evaluate equality/inequalities in France, and geographical distribution of business according to their size.
+We analyze various datasets published on [INSEE](https://www.insee.fr/).
+The datasets we gathered are french employment, salaries, population, status of work, education level, socio-professional categories, commune and inequality data per town. 
+The aim of this project is to evaluate the state of France and examine the paradox of urbanization in France and also to study the gender inequality that occurs due to urbanization in France. 
 
-Such data are collected by the INSEE.
-Information regarding the number of firms in every french town, categorized by size
-can be found [here](https://www.insee.fr/fr/metadonnees/definition/c1135). This dataset contains about 35000 units/per town.
+Each unit in each dataset refers to a specific town, which is coded as CODGEO and the focus is on the year 2014.
+All the dataset except salary data contains about 35,000 units/per town. The salary data contains 5000 units. 
+This allows to investigate the research question in a small geographic scale.
 
-Information about salaries around french town per job categories, age and sex (expressed in average net amount per hour in euro) can be found [here](https://www.insee.fr/fr/statistiques/2522515). This dataset contains about 5000 units/per town. 
-
-Demographic information in France per town, age, sex and living mode
-can be found [here](https://www.insee.fr/fr/statistiques/2863607). This dataset contains about 8 million units/per town. Additional info about Population Data can be found [here](https://www.insee.fr/fr/statistiques/2863607#dictionnaire). 
-
-These datasets have been pre-processed and put together. The final dataset contains 58 variables and 5022 observations. 
+These datasets have been pre-processed and put together. The final dataset contains 130 variables and 5025 observations. 
 
 
 ## Aim of the study 
 
-This project aims to explore structure of French labour market. 
-In particular, we are interested in:
+This project aims to explore different development of cities in France and analyze whether paradox of urbanization is causing gender inequality in the French labour market. 
+In order to answer the question, we are interested in;
 
-* evaluating possible inequalities: per towns/region, sex, age, job categories etc.;
-* discover geographical distribution of business according to their size
-* predicting the ... using a regression model;
-* reduce the dimensionality of ... performing a PCA;
-* explore different algorithms to cluster male/females using ...
+* discovering geographical distribution of business according to their size
+* exploring different algorithms to cluster male/females
 
 
-## Plan for the study 
-
-1. Unsupervised learning: 
-* PCA
-* Clustering methods (K-means/Hierarchical)
-2. Supervised learning:
-* GLM
-* Linear/Quadratic Discriminant Analysis
-* KNN
-* Cross-validation
-* Bootstrap
-* Subset selection 
-* Shrinkage methods
-* Dimension reduction methods
-3. Description of population demographics in France
-4. Structure of the french labour market
-5. ...
-6. Future works
 
 
 ## Loading tools
@@ -1525,8 +1499,55 @@ describe(educ$univ/educ$nodip)
  
 # remove the dataset created to save memory 
 rm(list=c("geo_educ", "educ_ratio_NoDipUniv")) 
- 
+
+```
+
+```{r Boxplot-education}
+
+#  number of units
+n_sex <- length(educ$female_NoDip)
+
+# vector representing males and females
+Label <- c(rep("M", n_sex*4), rep("F", n_sex*4))
+
+# vector representing the variable considered
+Variable <- c(rep("No diploma", n_sex), 
+             rep("Secondary", n_sex),
+             rep("High school", n_sex),
+             rep("Univeristy", n_sex),
+             rep("No diploma", n_sex), 
+             rep("Secondary", n_sex),
+             rep("High school", n_sex),
+             rep("Univeristy", n_sex))
+             
+# merge these data
+educ_sex = cbind.data.frame(Label = Label, 
+             value = c(educ$female_NoDip, educ$male_NoDip, educ$female_Sec, educ$male_Sec, educ$female_Hi,
+                       educ$male_Hi, educ$female_Univ, educ$male_Univ),
+             Variable = Variable)
+
+# plotting phase
+ggplot(data = educ_sex, aes(x=Label, y=value)) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Sex") + ylab("# of individuals") + ggtitle("Gender comparison") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
+
+
+# the same but excluding outliers
+ggplot(data = educ_sex, aes(x=Label, y=value)) +
+  scale_y_continuous(limits = quantile(status_sex$value, c(0, 0.9))) +
+  geom_boxplot(aes(fill = Label)) +
+  geom_point(aes(y=value, colour=Label), position = position_dodge(width=0.75)) +
+  facet_wrap( ~ Variable, scales="free") +
+  xlab("Sex") + ylab("# of individuals") + 
+  ggtitle("Gender comparison excluding the last decile") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_boxplot(geom = "errorbar", width = 0.5)
 ``` 
+
  
 ### What we have learned 
  
